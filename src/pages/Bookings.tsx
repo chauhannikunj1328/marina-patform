@@ -14,7 +14,8 @@ import { BookingBadge, bookingLabel, InvoiceBadge } from "@/components/status";
 type Tab = "list" | "today" | "calendar" | "conflicts";
 
 export function Bookings() {
-  const { db, ix, scope, update, toast } = useStore();
+  const { db, ix, scope, update, toast, can } = useStore();
+  const canEdit = can("bookings") !== "view";
   const [params, setParams] = useSearchParams();
   const [tab, setTab] = useState<Tab>(params.get("view") === "today" ? "today" : params.get("view") === "conflicts" ? "conflicts" : "list");
   const [bulkApprove, setBulkApprove] = useState(false);
@@ -84,7 +85,7 @@ export function Bookings() {
         actions={
           <>
             <Button icon={Download} onClick={exportRows}>Export CSV</Button>
-            <Button variant="primary" icon={CalendarPlus} onClick={() => setParams((p) => { p.set("new", "1"); return p; })}>New booking</Button>
+            {canEdit && <Button variant="primary" icon={CalendarPlus} onClick={() => setParams((p) => { p.set("new", "1"); return p; })}>New booking</Button>}
           </>
         }
       />
@@ -181,7 +182,7 @@ export function Bookings() {
         confirmLabel={`Approve ${pendingVisible.length}`}
         onConfirm={approveAll}
       />
-      {creating && <BookingForm onClose={() => setParams((p) => { p.delete("new"); p.delete("berth"); return p; })} defaultMarina={marinaId !== "all" ? marinaId : undefined} defaultBerth={params.get("berth") ?? undefined} />}
+      {creating && canEdit && <BookingForm onClose={() => setParams((p) => { p.delete("new"); p.delete("berth"); return p; })} defaultMarina={marinaId !== "all" ? marinaId : undefined} defaultBerth={params.get("berth") ?? undefined} />}
       {open && <BookingDetail booking={ix.booking(open.id) ?? open} onClose={() => setOpen(undefined)} />}
     </>
   );
@@ -307,7 +308,8 @@ function CalendarView({ all, onOpen }: { all: Booking[]; onOpen: (b: Booking) =>
 }
 
 function BookingDetail({ booking: b, onClose }: { booking: Booking; onClose: () => void }) {
-  const { db, ix, update, toast } = useStore();
+  const { db, ix, update, toast, can } = useStore();
+  const canEdit = can("bookings") !== "view";
   const navigate = useNavigate();
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -339,6 +341,9 @@ function BookingDetail({ booking: b, onClose }: { booking: Booking; onClose: () 
       title={`Booking ${b.code}`}
       description={`Created ${fmtDate(b.createdAt)}`}
       footer={
+        !canEdit ? (
+          <Button onClick={onClose}>Close</Button>
+        ) : (
         <>
           {(b.status === "pending" || b.status === "confirmed") && <Button onClick={() => setConfirmCancel(true)}>Cancel booking</Button>}
           {(b.status === "pending" || b.status === "confirmed" || b.status === "checked-in") && <Button icon={Pencil} onClick={() => setEditing(true)}>Change dates or berth</Button>}
@@ -347,6 +352,7 @@ function BookingDetail({ booking: b, onClose }: { booking: Booking; onClose: () 
           {b.status === "checked-in" && <Button variant="primary" icon={LogOut} onClick={() => setStatus("completed", `${boat?.name} checked out`)}>Check out</Button>}
           {(b.status === "completed" || b.status === "cancelled") && <Button onClick={onClose}>Close</Button>}
         </>
+        )
       }
     >
       <div className="mb-4 flex flex-wrap items-center gap-2">
@@ -474,7 +480,7 @@ function Detail({ label, value, sub }: { label: string; value?: string; sub?: st
 }
 
 function BookingForm({ onClose, defaultMarina, defaultBerth }: { onClose: () => void; defaultMarina?: string; defaultBerth?: string }) {
-  const { db, ix, scope, update, toast } = useStore();
+  const { db, ix, scope, update, toast, user } = useStore();
   const now = today();
   const [ownerMode, setOwnerMode] = useState<"existing" | "new">("existing");
   const [ownerQuery, setOwnerQuery] = useState("");
@@ -545,7 +551,17 @@ function BookingForm({ onClose, defaultMarina, defaultBerth }: { onClose: () => 
       const next = { ...d, owners, boats, bookings: [...d.bookings, booking] };
       return f.status === "confirmed" ? withInvoice(next, id, price) : next;
     }, { text: `New ${f.status} booking for ${ownerMode === "new" ? f.newBoat : ix.boat(f.boatId)?.name} at ${ix.marina(f.marinaId)?.name}, berth ${berth?.code}`, marinaId: f.marinaId });
-    toast(f.status === "confirmed" ? "Booking confirmed and invoiced" : "Booking saved as pending");
+    // Guide 12: the first booking someone creates gets a soft yellow glow (no confetti).
+    const firstKey = `mms.firstBooking.${user?.id}`;
+    let first = false;
+    try {
+      first = !localStorage.getItem(firstKey);
+      localStorage.setItem(firstKey, "1");
+    } catch {
+      /* storage unavailable */
+    }
+    if (first) toast("Your first booking is in. Nice work!", undefined, "celebrate");
+    else toast(f.status === "confirmed" ? "Booking confirmed and invoiced" : "Booking saved as pending");
     onClose();
   };
 

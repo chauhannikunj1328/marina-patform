@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Anchor, Ban, CircleAlert, CircleCheck, Clock, DollarSign, Download, Eye, Printer, Send } from "lucide-react";
+import { Anchor, Ban, CircleAlert, CircleCheck, CircleDollarSign, Clock, DollarSign, Download, Eye, Printer, Send } from "lucide-react";
 import { useStore } from "@/data/store";
 import type { Invoice, InvoiceStatus, PaymentMethod } from "@/data/types";
 import { withMessage } from "@/data/actions";
@@ -9,6 +9,7 @@ import { money, money2 } from "@/lib/format";
 import { downloadCsv } from "@/lib/csv";
 import { Button, Card, ConfirmDialog, Field, IconButton, Input, Modal, PageHeader, Pagination, paginate, SearchInput, Select, StatCard, Table, Toolbar, useSort } from "@/components/ui";
 import { InvoiceBadge } from "@/components/status";
+import { Badge } from "@/components/ui";
 
 function useInvoiceActions() {
   const { ix, update, toast } = useStore();
@@ -27,28 +28,56 @@ function useInvoiceActions() {
 
 function RecordPayment({ invoice, onClose }: { invoice: Invoice; onClose: () => void }) {
   const { db, ix, update, toast } = useStore();
-  const [f, setF] = useState({ date: today(), method: "Card" as PaymentMethod, amount: String(invoice.amount) });
+  const balance = ix.balance(invoice);
+  const [f, setF] = useState({ date: today(), method: "Card" as PaymentMethod, amount: String(balance) });
   const [error, setError] = useState("");
   const save = () => {
-    if (Number(f.amount) !== invoice.amount) return setError(`Partial payments aren't supported yet. Enter the full ${money(invoice.amount)}.`);
+    const amount = Math.round(Number(f.amount) * 100) / 100;
+    if (!(amount > 0)) return setError("Enter an amount above zero.");
+    if (amount > balance) return setError(`That's more than the ${money2(balance)} still owed.`);
     if (f.date > today()) return setError("Payment date can't be in the future.");
     const before = db;
+    const full = amount >= balance;
     update(
-      (d) => ({ ...d, invoices: d.invoices.map((i) => (i.id === invoice.id ? { ...i, status: "paid", paidAt: f.date, method: f.method } : i)) }),
-      { text: `Recorded ${money(invoice.amount)} payment for ${invoice.number} (${f.method})`, to: `/billing?open=${invoice.id}`, marinaId: ix.marinaOfInvoice(invoice) },
+      (d) => ({
+        ...d,
+        invoices: d.invoices.map((i) =>
+          i.id === invoice.id
+            ? { ...i, payments: [...i.payments, { date: f.date, amount, method: f.method }], ...(full ? { status: "paid" as const, paidAt: f.date, method: f.method } : {}) }
+            : i,
+        ),
+      }),
+      { text: `Recorded ${money2(amount)} ${full ? "payment" : "part payment"} for ${invoice.number} (${f.method})`, to: `/billing?open=${invoice.id}`, marinaId: ix.marinaOfInvoice(invoice) },
     );
-    toast(`${invoice.number} marked as paid`, before);
+    toast(full ? `${invoice.number} is now paid` : `${money2(amount)} recorded. ${money2(balance - amount)} still owed.`, before);
     onClose();
   };
   return (
-    <Modal open onClose={onClose} title={`Record payment for ${invoice.number}`} footer={<><Button onClick={onClose}>Cancel</Button><Button variant="primary" onClick={save}>Record payment</Button></>}>
+    <Modal
+      open
+      onClose={onClose}
+      title={`Record payment for ${invoice.number}`}
+      description={`${money2(balance)} still owed of ${money2(invoice.amount)}`}
+      footer={<><Button onClick={onClose}>Cancel</Button><Button variant="primary" onClick={save}>Record payment</Button></>}
+    >
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Field label="Amount">{(id) => <Input id={id} type="number" value={f.amount} onChange={(e) => { setF({ ...f, amount: e.target.value }); setError(""); }} />}</Field>
+        <Field label="Amount" hint="Less than the balance records a part payment" error={error}>{(id) => <Input id={id} type="number" min={0.01} step="0.01" max={balance} value={f.amount} onChange={(e) => { setF({ ...f, amount: e.target.value }); setError(""); }} />}</Field>
         <Field label="Paid on">{(id) => <Input id={id} type="date" max={today()} value={f.date} onChange={(e) => { setF({ ...f, date: e.target.value }); setError(""); }} />}</Field>
         <Field label="Method">{(id) => <Select id={id} value={f.method} onChange={(e) => setF({ ...f, method: e.target.value as PaymentMethod })}>{(["Card", "Bank transfer", "Cash", "Check"] as const).map((m) => <option key={m}>{m}</option>)}</Select>}</Field>
       </div>
-      {error && <p role="alert" className="mt-3 text-[13px] font-medium">⚠ {error}</p>}
     </Modal>
+  );
+}
+
+/** Status badge that also shows when an open invoice is partly paid. */
+function InvoiceStatus({ inv }: { inv: Invoice }) {
+  const { ix } = useStore();
+  const part = (inv.status === "due" || inv.status === "overdue") && ix.paidSoFar(inv) > 0;
+  return (
+    <span className="inline-flex flex-wrap items-center gap-1">
+      <InvoiceBadge status={inv.status} />
+      {part && <Badge tone="info" icon={CircleDollarSign}>Part paid</Badge>}
+    </span>
   );
 }
 
@@ -84,7 +113,7 @@ function InvoiceDetail({ invoice: inv, onClose }: { invoice: Invoice; onClose: (
         </>
       }
     >
-      <div id="print-invoice" className="text-[13px]">
+      <div className="print-area text-[13px]">
         <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-center gap-3">
             <span className="flex size-10 items-center justify-center rounded-md bg-primary text-on-primary"><Anchor className="size-5" aria-hidden /></span>
@@ -94,7 +123,7 @@ function InvoiceDetail({ invoice: inv, onClose }: { invoice: Invoice; onClose: (
             </div>
           </div>
           <div className="text-right">
-            <InvoiceBadge status={live.status} />
+            <InvoiceStatus inv={live} />
             <p className="mt-2 text-ink-3">Issued {fmtDate(live.issued)}</p>
             <p className="text-ink-3">Due {fmtDate(live.due)}</p>
           </div>
@@ -140,7 +169,17 @@ function InvoiceDetail({ invoice: inv, onClose }: { invoice: Invoice; onClose: (
           </tfoot>
         </table>
         <div className="mt-6 space-y-1 rounded-md bg-surface-2 p-4 text-[13px]">
-          {live.status === "paid" && <p><strong>Paid</strong> {live.paidAt && `on ${fmtDate(live.paidAt)}`} {live.method && `by ${live.method.toLowerCase()}`}</p>}
+          {live.payments.length > 0 && (
+            <ul className="mb-2 space-y-1">
+              {live.payments.map((p, k) => (
+                <li key={k} className="flex justify-between gap-4">
+                  <span>Paid {fmtDate(p.date)} by {p.method.toLowerCase()}</span>
+                  <span className="num font-medium">{money2(p.amount)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          {open && <p className="flex justify-between gap-4"><strong>Balance due</strong><span className="num font-semibold">{money2(ix.balance(live))}</span></p>}
           {live.status === "overdue" && <p><strong>{daysBetween(live.due, today())} {daysBetween(live.due, today()) === 1 ? "day" : "days"} overdue.</strong></p>}
           {live.status === "void" && <p><strong>Void.</strong> This invoice is no longer payable.</p>}
           <p className="text-ink-3">{live.reminders.length ? `Reminders sent: ${live.reminders.map(fmtDate).join(", ")}` : "No reminders sent."}</p>
@@ -205,10 +244,11 @@ export function Billing() {
   const overdueVisible = rows.filter((r) => r.i.status === "overdue");
   const [bulkRemind, setBulkRemind] = useState(false);
 
-  const sum = (f: (i: Invoice) => boolean) => invoices.filter((r) => f(r.i)).reduce((s, r) => s + r.i.amount, 0);
+  const sum = (f: (i: Invoice) => boolean) => invoices.filter((r) => f(r.i)).reduce((s, r) => s + ix.balance(r.i), 0);
   const outstanding = sum((i) => i.status === "due" || i.status === "overdue");
   const overdue = sum((i) => i.status === "overdue");
-  const collected = sum((i) => i.status === "paid" && !!i.paidAt && monthKey(i.paidAt) === monthKey(now));
+  // Every payment received this month, including part payments.
+  const collected = invoices.reduce((t, r) => t + r.i.payments.filter((p) => monthKey(p.date) === monthKey(now)).reduce((a, p) => a + p.amount, 0), 0);
   const open = (id: string) => setParams((p) => { p.set("open", id); return p; });
 
   return (
@@ -220,8 +260,8 @@ export function Billing() {
           <Button
             icon={Download}
             onClick={() =>
-              downloadCsv("invoices.csv", ["Invoice", "Booking", "Boat owner", "Marina", "Issued", "Due", "Amount", "Status", "Paid on", "Method"], rows.map((r) => [
-                r.i.number, r.bk.code, ix.ownerOfBooking(r.bk)?.name ?? "", ix.marinaOfBerth(r.bk.berthId)?.name ?? "", r.i.issued, r.i.due, r.i.amount, r.i.status, r.i.paidAt ?? "", r.i.method ?? "",
+              downloadCsv("invoices.csv", ["Invoice", "Booking", "Boat owner", "Marina", "Issued", "Due", "Amount", "Paid so far", "Balance", "Status", "Paid on", "Method"], rows.map((r) => [
+                r.i.number, r.bk.code, ix.ownerOfBooking(r.bk)?.name ?? "", ix.marinaOfBerth(r.bk.berthId)?.name ?? "", r.i.issued, r.i.due, r.i.amount, ix.paidSoFar(r.i), ix.balance(r.i), r.i.status, r.i.paidAt ?? "", r.i.method ?? "",
               ]))
             }
           >
@@ -232,7 +272,7 @@ export function Billing() {
       <div className="mb-4 grid grid-cols-2 gap-4 min-[1400px]:grid-cols-4">
         <StatCard active={status === "due"} onClick={() => { setStatus(status === "due" ? "all" : "due"); setPage(1); }} label="Outstanding" icon={Clock} value={money(outstanding)} sub={`${invoices.filter((r) => r.i.status === "due" || r.i.status === "overdue").length} invoices`} />
         <StatCard active={status === "overdue"} onClick={() => { setStatus(status === "overdue" ? "all" : "overdue"); setPage(1); }} label="Overdue" icon={CircleAlert} value={money(overdue)} sub={`${invoices.filter((r) => r.i.status === "overdue").length} invoices`} />
-        <StatCard active={status === "paid"} onClick={() => { setStatus(status === "paid" ? "all" : "paid"); setPage(1); }} label="Collected this month" icon={CircleCheck} value={money(collected)} sub="Payments received this month" />
+        <StatCard active={status === "paid"} onClick={() => { setStatus(status === "paid" ? "all" : "paid"); setPage(1); }} label="Collected this month" icon={CircleCheck} value={money(collected)} sub="Payments received this month, including part payments" />
         <StatCard to="/analytics" label="Revenue booked this month" icon={DollarSign} value={money(ix.metrics(ids).revenue)} sub="From stays this month, paid or not" />
       </div>
       <Card>
@@ -270,8 +310,11 @@ export function Billing() {
                 <td>{ix.marinaOfBerth(bk.berthId)?.name}</td>
                 <td className="whitespace-nowrap">{fmtDate(i.issued)}</td>
                 <td className="whitespace-nowrap">{fmtDate(i.due)}{late > 0 && <span className="block text-xs font-semibold">{late} {late === 1 ? "day" : "days"} late</span>}</td>
-                <td className={`font-medium num ${i.status === "void" ? "text-ink-3 line-through" : ""}`}>{money(i.amount)}</td>
-                <td><InvoiceBadge status={i.status} /></td>
+                <td className={`font-medium num ${i.status === "void" ? "text-ink-3 line-through" : ""}`}>
+                  {money(i.amount)}
+                  {ix.paidSoFar(i) > 0 && ix.balance(i) > 0 && <span className="block text-xs font-normal text-ink-3">{money(ix.balance(i))} left</span>}
+                </td>
+                <td><InvoiceStatus inv={i} /></td>
                 <td className="whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                   <IconButton icon={Eye} label={`Open ${i.number}`} onClick={() => open(i.id)} />
                   {(i.status === "due" || i.status === "overdue") && (

@@ -3,64 +3,93 @@ import { Link } from "react-router-dom";
 import { Check, Minus } from "lucide-react";
 import { useStore } from "@/data/store";
 import type { Role } from "@/data/types";
-import { Button, Card, CardHeader, ConfirmDialog, Field, Input, PageHeader, Pagination, paginate, SearchInput, Select, Table, Toolbar } from "@/components/ui";
-import { fmtDateTime } from "@/lib/date";
+import { ADMIN_ONLY, AREAS, DEFAULT_PERMISSIONS, LEVEL_LABEL, type Area, type Level } from "@/data/permissions";
+import { Button, Card, CardHeader, ConfirmDialog, Field, Input, Modal, PageHeader, Pagination, paginate, SearchInput, Select, Table, Toolbar } from "@/components/ui";
+import { fmtDate, fmtDateTime, nowInZone, today } from "@/lib/date";
+import { money, pct } from "@/lib/format";
 import { ROLE_LABEL } from "./People";
 
-const PERMISSIONS: { area: string; actions: Record<Role, "full" | "own" | "view" | "none"> }[] = [
-  { area: "Global, county and city dashboards", actions: { admin: "full", manager: "own", staff: "none" } },
-  { area: "Marinas: add, edit, deactivate", actions: { admin: "full", manager: "own", staff: "view" } },
-  { area: "Berths: add, edit, maintenance", actions: { admin: "full", manager: "own", staff: "own" } },
-  { area: "Bookings: create, approve, check in/out", actions: { admin: "full", manager: "own", staff: "own" } },
-  { area: "Staff and shifts", actions: { admin: "full", manager: "own", staff: "view" } },
-  { area: "Work orders", actions: { admin: "full", manager: "own", staff: "own" } },
-  { area: "Billing: invoices, payments, reminders", actions: { admin: "full", manager: "own", staff: "none" } },
-  { area: "Reports and analytics", actions: { admin: "full", manager: "own", staff: "none" } },
-  { area: "Locations (counties and cities)", actions: { admin: "full", manager: "none", staff: "none" } },
-  { area: "Users and access control", actions: { admin: "full", manager: "none", staff: "none" } },
-];
-
-const LEVEL = {
-  full: { label: "All marinas", icon: true },
-  own: { label: "Assigned marinas", icon: true },
-  view: { label: "View only", icon: true },
-  none: { label: "No access", icon: false },
-};
+function LevelCell({ level }: { level: Level }) {
+  const off = level === "none";
+  return (
+    <span className={`inline-flex items-center gap-1.5 text-[13px] ${off ? "text-ink-3" : ""}`}>
+      {off ? <Minus className="size-4" aria-hidden /> : <Check className="size-4" aria-hidden />}
+      {LEVEL_LABEL[level]}
+    </span>
+  );
+}
 
 export function AccessControl() {
-  const { db } = useStore();
+  const { db, update, toast } = useStore();
   const roles: Role[] = ["admin", "manager", "staff"];
+  const perms = db.settings.permissions;
+  const changed = JSON.stringify(perms) !== JSON.stringify(DEFAULT_PERMISSIONS);
+
+  const setLevel = (area: Area, role: "manager" | "staff", level: Level) => {
+    const before = db;
+    const label = AREAS.find((a) => a.key === area)?.label.split(":")[0];
+    update(
+      (d) => ({ ...d, settings: { ...d.settings, permissions: { ...d.settings.permissions, [area]: { ...d.settings.permissions[area], [role]: level } } } }),
+      `Set ${ROLE_LABEL[role].toLowerCase()} access to ${label}: ${LEVEL_LABEL[level]}`,
+    );
+    toast(`${ROLE_LABEL[role]}: ${label} set to ${LEVEL_LABEL[level].toLowerCase()}`, before);
+  };
+
   return (
     <>
-      <PageHeader title="Access Control" description="What each role can see and do. Assign roles on the Users tab." actions={<Link to="/users"><Button>Manage users</Button></Link>} />
+      <PageHeader title="Access Control" description="What each role can see and do. Assign roles on the Users tab." actions={<Link to="/users?tab=users"><Button>Manage users</Button></Link>} />
       <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-3">
         {roles.map((r) => (
-          <Card key={r} className="p-5">
-            <p className="font-semibold">{ROLE_LABEL[r]}</p>
-            <p className="mt-1 text-[13px] text-ink-3">
-              {r === "admin" ? "Runs the whole company: every marina, billing, users and settings." : r === "manager" ? "Runs one or more marinas day to day, including billing for them." : "Handles bookings, berths and work orders at assigned marinas."}
+          <Card key={r} className="p-6">
+            <p className="text-[15px] font-semibold">{ROLE_LABEL[r]}</p>
+            <p className="mt-1 text-[13px] leading-5 text-ink-3">
+              {r === "admin" ? "Runs the whole company: every marina, billing, users and settings. Always has full access." : r === "manager" ? "Runs one or more marinas day to day." : "Handles day-to-day work at assigned marinas."}
             </p>
-            <p className="mt-3 text-[13px] font-medium">{db.users.filter((u) => u.role === r).length} users</p>
+            <p className="num mt-3 text-[13px] font-medium">{db.users.filter((u) => u.role === r).length} users</p>
           </Card>
         ))}
       </div>
       <Card className="mb-4">
-        <CardHeader title="Permissions" />
+        <CardHeader
+          title="Permissions"
+          description="Changes apply right away. “No access” hides the page; “View only” hides create and edit actions."
+          actions={
+            changed && (
+              <Button
+                size="sm"
+                onClick={() => {
+                  const before = db;
+                  update((d) => ({ ...d, settings: { ...d.settings, permissions: DEFAULT_PERMISSIONS } }), "Reset role permissions to defaults");
+                  toast("Permissions reset to defaults", before);
+                }}
+              >
+                Reset to defaults
+              </Button>
+            )
+          }
+        />
         <Table head={["Area", ...roles.map((r) => ROLE_LABEL[r])]}>
-          {PERMISSIONS.map((p) => (
-            <tr key={p.area}>
-              <td className="font-medium">{p.area}</td>
-              {roles.map((r) => {
-                const l = LEVEL[p.actions[r]];
-                return (
-                  <td key={r} className="!text-left">
-                    <span className={`inline-flex items-center gap-1.5 text-[13px] ${l.icon ? "" : "text-ink-3"}`}>
-                      {l.icon ? <Check className="size-4" aria-hidden /> : <Minus className="size-4" aria-hidden />}
-                      {l.label}
-                    </span>
-                  </td>
-                );
-              })}
+          {AREAS.map((a) => (
+            <tr key={a.key}>
+              <td className="font-medium">{a.label}</td>
+              <td className="!text-left"><LevelCell level="full" /></td>
+              {(["manager", "staff"] as const).map((r) => (
+                <td key={r} className="!text-left">
+                  <Select aria-label={`${ROLE_LABEL[r]} access to ${a.label}`} value={perms[a.key][r]} onChange={(e) => setLevel(a.key, r, e.target.value as Level)} className="w-48">
+                    {(["own", "view", "none"] as const).map((l) => (
+                      <option key={l} value={l}>{LEVEL_LABEL[l]}</option>
+                    ))}
+                  </Select>
+                </td>
+              ))}
+            </tr>
+          ))}
+          {ADMIN_ONLY.map((a) => (
+            <tr key={a.label}>
+              <td className="font-medium">{a.label}<span className="block text-xs font-normal text-ink-3">Admins only</span></td>
+              <td className="!text-left"><LevelCell level="full" /></td>
+              <td className="!text-left"><LevelCell level="none" /></td>
+              <td className="!text-left"><LevelCell level="none" /></td>
             </tr>
           ))}
         </Table>
@@ -116,6 +145,40 @@ function Toggle({ label, hint, checked, onChange }: { label: string; hint?: stri
   );
 }
 
+function DailySummary({ onClose }: { onClose: () => void }) {
+  const { db, ix, scope, user } = useStore();
+  const m = ix.metrics(scope);
+  const overdue = db.invoices.filter((i) => i.status === "overdue" && scope.includes(ix.marinaOfInvoice(i) ?? ""));
+  const urgent = db.tasks.filter((t) => scope.includes(t.marinaId) && t.priority === "high" && t.status !== "done").length;
+  const rows: [string, string][] = [
+    ["Arrivals today", String(m.arrivalsToday)],
+    ["Departures today", String(m.departuresToday)],
+    ["Berths occupied", `${m.occupied} of ${m.berths} (${pct(m.occupancy)})`],
+    ["Bookings awaiting approval", String(m.pending)],
+    ["Overdue invoices", `${overdue.length} · ${money(overdue.reduce((t, i) => t + ix.balance(i), 0))}`],
+    ["High priority work orders", String(urgent)],
+  ];
+  return (
+    <Modal open onClose={onClose} title="Daily summary preview" description={`What ${user?.name.split(" ")[0]} would receive at 7 am`} footer={<Button onClick={onClose}>Close</Button>}>
+      <div className="rounded-[16px] border border-line bg-sidebar p-5">
+        <div className="rounded-[12px] bg-surface p-5">
+          <p className="text-xs text-ink-3">From Marina System · {fmtDate(today())}</p>
+          <p className="mt-2 text-[18px] leading-[26px] font-medium">Good morning, here's today at a glance</p>
+          <dl className="mt-4 divide-y divide-line text-sm">
+            {rows.map(([k, v]) => (
+              <div key={k} className="flex justify-between gap-4 py-2.5">
+                <dt className="text-ink-2">{k}</dt>
+                <dd className="num font-semibold">{v}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </div>
+      <p className="mt-4 text-xs text-ink-3">Sending this email needs an email service on a server. The preview uses live data from this browser.</p>
+    </Modal>
+  );
+}
+
 export function Settings() {
   const { db, user, update, toast, resetData } = useStore();
   const [confirmReset, setConfirmReset] = useState(false);
@@ -129,6 +192,7 @@ export function Settings() {
   });
   const [orgErrors, setOrgErrors] = useState<Record<string, string>>({});
   const [notify, setNotify] = useState(db.settings.notify);
+  const [preview, setPreview] = useState(false);
   const isAdmin = user?.role === "admin";
 
   const saveOrg = () => {
@@ -174,7 +238,10 @@ export function Settings() {
             <Toggle label="Booking needs approval" checked={notify.pending} onChange={(v) => setNotify({ ...notify, pending: v })} />
             <Toggle label="Invoice becomes overdue" checked={notify.overdue} onChange={(v) => setNotify({ ...notify, overdue: v })} />
             <Toggle label="High priority work order" checked={notify.maintenance} onChange={(v) => setNotify({ ...notify, maintenance: v })} />
-            <Toggle label="Daily summary email" hint="Arrivals, departures and occupancy at 7 AM" checked={notify.digest} onChange={(v) => setNotify({ ...notify, digest: v })} />
+            <Toggle label="Daily summary email" hint="Arrivals, departures and occupancy at 7 am" checked={notify.digest} onChange={(v) => setNotify({ ...notify, digest: v })} />
+            <div className="py-3">
+              <button onClick={() => setPreview(true)} className="text-[13px] font-semibold text-green-text hover:underline cursor-pointer">Preview daily summary</button>
+            </div>
           </div>
           <div className="flex justify-end border-t border-line px-5 py-3">
             <Button variant="primary" onClick={() => { update((d) => ({ ...d, settings: { ...d.settings, notify } }), "Updated notification preferences"); toast("Notification preferences saved"); }}>Save preferences</Button>
@@ -187,7 +254,7 @@ export function Settings() {
             <div className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3">
               <Field label="Company name" hint="Shown on invoices" error={orgErrors.company}>{(id) => <Input id={id} value={org.company} onChange={(e) => setOrg({ ...org, company: e.target.value })} />}</Field>
               <Field label="Currency">{(id) => <Select id={id} value={org.currency} onChange={(e) => setOrg({ ...org, currency: e.target.value as typeof org.currency })}><option>USD</option><option>CAD</option><option>EUR</option><option>GBP</option></Select>}</Field>
-              <Field label="Time zone">{(id) => <Select id={id} value={org.timezone} onChange={(e) => setOrg({ ...org, timezone: e.target.value })}><option value="America/Los_Angeles">Pacific Time</option><option value="America/Denver">Mountain Time</option><option value="America/Chicago">Central Time</option><option value="America/New_York">Eastern Time</option></Select>}</Field>
+              <Field label="Time zone" hint={`Times in the app show in this zone. Now: ${nowInZone(org.timezone)}`}>{(id) => <Select id={id} value={org.timezone} onChange={(e) => setOrg({ ...org, timezone: e.target.value })}><option value="America/Los_Angeles">Pacific Time</option><option value="America/Denver">Mountain Time</option><option value="America/Chicago">Central Time</option><option value="America/New_York">Eastern Time</option></Select>}</Field>
               <Field label="Invoice due after (days)" hint="For invoices created from now on" error={orgErrors.dueDays}>{(id) => <Input id={id} type="number" min={1} value={org.dueDays} onChange={(e) => setOrg({ ...org, dueDays: e.target.value })} />}</Field>
               <Field label="Monthly rate applies from (nights)" hint="Shorter stays use the daily rate. Changes booking prices." error={orgErrors.monthlyFrom}>{(id) => <Input id={id} type="number" min={7} value={org.monthlyFrom} onChange={(e) => setOrg({ ...org, monthlyFrom: e.target.value })} />}</Field>
             </div>
@@ -205,6 +272,7 @@ export function Settings() {
           </div>
         </Card>
       </div>
+      {preview && <DailySummary onClose={() => setPreview(false)} />}
       <ConfirmDialog
         open={confirmReset}
         onClose={() => setConfirmReset(false)}

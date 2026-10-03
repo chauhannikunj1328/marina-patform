@@ -59,6 +59,16 @@ The bell menu is built from live data: pending approvals, today's arrivals, over
 - **Bulk actions:** filter Bookings by *Pending* to approve all; filter Billing by *Overdue* to remind all.
 - Sortable columns, a "Clear filters" link, unsaved-changes warning on every form, and an ⓘ on dashboard numbers explaining how they're calculated.
 
+## Also included
+
+- **Remember me** keeps you signed in after the browser closes; otherwise sign-in ends with the tab.
+- **Access Control** is editable: set each role to Assigned marinas, View only or No access per area. "No access" hides the page; "View only" hides create and edit actions.
+- **Part payments** on invoices, with payment history and remaining balance everywhere totals are shown.
+- **Reports → Download PDF** prints a branded report (use "Save as PDF" in the print dialog). Invoices print the same way.
+- **Time zone** from Settings is used for every time shown; **Preview daily summary** shows the 7 am email.
+- First sign-in **welcome steps**, a soft glow on your **first booking**, an **offline** banner, branded **404 / error / no-access** pages, loading **skeletons**, and **phone-friendly tables** (rows become cards).
+- Home-screen icons, a web app manifest and a 1200 × 630 **link preview image** (`public/`).
+
 ## How the numbers stay consistent
 
 Every figure is calculated from one data set (`src/data/seed.ts`) by the functions in `src/data/selectors.ts`. Totals on one page always match the same totals on another, because nothing is typed in by hand.

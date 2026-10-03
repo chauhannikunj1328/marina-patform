@@ -1,14 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
-  Anchor, ArrowLeft, ArrowRight, Bell, Building, CalendarDays, ChartLine, CircleAlert, CircleCheck, EllipsisVertical, FileText, Globe, House, Info, Landmark,
-  Keyboard, LogOut, MapPin, Menu, Moon, Receipt, Search, Settings, ShieldCheck, Sun, TriangleAlert, UserCog, Users, Warehouse, Wrench, X,
+  Anchor, ArrowLeft, ArrowRight, Bell, Eye, Building, CalendarDays, ChartLine, CircleAlert, CircleCheck, EllipsisVertical, FileText, Globe, House, Info, Landmark,
+  Keyboard, LogOut, MapPin, Menu, Moon, Sparkles, Receipt, Search, Settings, ShieldCheck, Sun, TriangleAlert, UserCog, Users, Warehouse, Wrench, X,
   type LucideIcon,
 } from "lucide-react";
 import { useStore } from "@/data/store";
 import { cx } from "@/lib/format";
 import { buildNotifications } from "@/data/notifications";
-import { Avatar, IconButton, Modal, Tooltip } from "./ui";
+import { Avatar, Badge, IconButton, Modal, Tooltip } from "./ui";
+import { OfflineBanner } from "./StatusPage";
+import { Welcome } from "./Welcome";
+import { areaForPath } from "@/data/permissions";
 import { Logo, Logomark } from "./Logo";
 import type { ToastKind } from "@/data/store";
 
@@ -127,7 +130,7 @@ function useCollapsed() {
 
 /** Guide 07 Navigation: warm sidebar, 20 px outline icon + label; active = filled icon, Ink text, 3 px Slate bar. */
 function Sidebar({ onNavigate, collapsed = false, onToggle }: { onNavigate?: () => void; collapsed?: boolean; onToggle?: () => void }) {
-  const { user, scope } = useStore();
+  const { user, scope, can } = useStore();
   return (
     <div className="flex h-full flex-col">
       <div className={cx("flex h-20 shrink-0 items-center", collapsed ? "justify-center px-2" : "justify-between gap-2 pr-3 pl-6")}>
@@ -146,7 +149,7 @@ function Sidebar({ onNavigate, collapsed = false, onToggle }: { onNavigate?: () 
       <nav className={cx("flex-1 overflow-y-auto pb-6", collapsed ? "px-3" : "px-4")} aria-label="Main">
         {NAV.map((g) => {
           // A single-marina manager doesn't need county and city roll-ups.
-          const items = g.items.filter((i) => (!i.adminOnly || user?.role === "admin") && !(i.multiMarina && scope.length < 2));
+          const items = g.items.filter((i) => (!i.adminOnly || user?.role === "admin") && !(i.multiMarina && scope.length < 2) && can(areaForPath(i.to)) !== "none");
           if (!items.length) return null;
           return (
             <div key={g.group} className="mt-5 first:mt-2">
@@ -412,6 +415,9 @@ function useCrumbs() {
 
 function Breadcrumb() {
   const crumbs = useCrumbs();
+  const { can } = useStore();
+  const { pathname } = useLocation();
+  const viewOnly = can(areaForPath(pathname)) === "view";
   useEffect(() => {
     document.title = [crumbs[crumbs.length - 1]?.label, "Marina System"].filter(Boolean).join(" · ");
   }, [crumbs]);
@@ -430,6 +436,7 @@ function Breadcrumb() {
           )}
         </span>
       ))}
+      {viewOnly && <Badge tone="info" icon={Eye}>View only</Badge>}
     </nav>
   );
 }
@@ -474,6 +481,7 @@ const TOAST_ICON: Record<ToastKind, { icon: LucideIcon; cls: string }> = {
   info: { icon: Info, cls: "text-secondary" },
   warning: { icon: TriangleAlert, cls: "text-warning" },
   error: { icon: CircleAlert, cls: "text-error" },
+  celebrate: { icon: Sparkles, cls: "text-accent-strong" },
 };
 
 export default function Layout() {
@@ -514,6 +522,7 @@ export default function Layout() {
       )}
 
       <div className="flex min-w-0 flex-1 flex-col">
+        <OfflineBanner />
         <header className="flex h-16 shrink-0 items-center gap-4 border-b border-line bg-surface px-4 md:px-8">
           <IconButton look="outline" icon={Menu} label="Open menu" onClick={() => setDrawer(true)} className="md:hidden" />
           <Breadcrumb />
@@ -538,6 +547,8 @@ export default function Layout() {
         </main>
       </div>
 
+      <Welcome />
+
       <Modal open={help} onClose={() => setHelp(false)} title="Keyboard shortcuts">
         <dl className="divide-y divide-line text-sm">
           {SHORTCUTS.map(([k, d]) => (
@@ -554,7 +565,7 @@ export default function Layout() {
         {toasts.map((t) => {
           const { icon: Icon, cls } = TOAST_ICON[t.kind];
           return (
-            <div key={t.id} className="pointer-events-auto flex max-w-md items-center gap-3 rounded-[16px] border border-line bg-raised px-4 py-3 text-sm text-ink shadow-e2 animate-in">
+            <div key={t.id} className={cx("pointer-events-auto flex max-w-md items-center gap-3 rounded-[16px] border border-line bg-raised px-4 py-3 text-sm text-ink shadow-e2 animate-in", t.kind === "celebrate" && "glow-accent border-accent")}>
               <Icon className={cx("size-5 shrink-0", cls)} aria-hidden />
               <span className="min-w-0">{t.message}</span>
               {t.undo && (

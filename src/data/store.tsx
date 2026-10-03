@@ -1,13 +1,14 @@
 import { useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { StoreContext } from "./context";
-import { today } from "@/lib/date";
+import { setTimeZone, today } from "@/lib/date";
 import { setCurrency } from "@/lib/format";
 import { notifyOwner } from "@/lib/notify";
+import { DEFAULT_PERMISSIONS, levelFor, type Area, type Level } from "./permissions";
 import { createSeed, type Db } from "./seed";
 import { Index } from "./selectors";
 import type { SystemUser } from "./types";
 
-export type ToastKind = "success" | "info" | "warning" | "error";
+export type ToastKind = "success" | "info" | "warning" | "error" | "celebrate";
 
 interface Toast {
   id: number;
@@ -27,7 +28,7 @@ interface Store {
   restore: (snapshot: Db, label: string) => void;
   user: SystemUser | null;
   /** Resolves to an error message, or null when signed in. */
-  signIn: (email: string, password: string) => Promise<string | null>;
+  signIn: (email: string, password: string, remember?: boolean) => Promise<string | null>;
   /** Creates an admin account in this browser and signs in. Resolves to an error message, or null. */
   register: (a: { name: string; email: string; company?: string; password: string }) => Promise<string | null>;
   signOut: () => void;
@@ -40,6 +41,8 @@ interface Store {
   toast: (message: string, undo?: Db, kind?: ToastKind) => void;
   /** Activity entries visible to the signed-in user. */
   activity: Db["activity"];
+  /** Permission level of the signed-in user for an area of the app. */
+  can: (area?: Area) => Level;
 }
 
 
@@ -116,14 +119,21 @@ function normalize(db: Db): Db {
   const missing = [...BUILT_IN_USERS, ...readAccounts().map(toUser)].filter((b) => !db.users.some((u) => u.email.toLowerCase() === b.email.toLowerCase()));
   return {
     ...db,
+    // Data saved before permissions existed gets the defaults.
+    settings: { ...db.settings, permissions: { ...DEFAULT_PERMISSIONS, ...db.settings.permissions } },
     users: [...db.users, ...missing],
-    invoices: db.invoices.map((i) => (i.status === "due" && i.due < now ? { ...i, status: "overdue" } : i)),
+    invoices: db.invoices.map((i) => {
+      // Data saved before partial payments existed: rebuild the payment list from paidAt.
+      const payments = i.payments ?? (i.status === "paid" && i.paidAt ? [{ date: i.paidAt, amount: i.amount, method: i.method ?? "Card" }] : []);
+      return { ...i, payments, status: i.status === "due" && i.due < now ? "overdue" : i.status };
+    }),
   };
 }
 
+/** "Remember me" keeps the session in localStorage; otherwise it ends when the tab closes. */
 function readSession(): string | null {
   try {
-    return sessionStorage.getItem(SESSION_KEY);
+    return sessionStorage.getItem(SESSION_KEY) ?? localStorage.getItem(SESSION_KEY);
   } catch {
     return null;
   }
@@ -170,6 +180,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   // Synchronous so the very first render already uses the right currency.
   setCurrency(db.settings.currency);
+  setTimeZone(db.settings.timezone);
 
   const dismiss = useCallback((id: number) => setToasts((t) => t.filter((x) => x.id !== id)), []);
 
@@ -199,28 +210,32 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [restore, dismiss],
   );
 
+  const can = useCallback((area?: Area) => levelFor(db.settings.permissions, user?.role, area), [db.settings.permissions, user?.role]);
+
   const activity = useMemo(
     () => (user?.role === "admin" ? db.activity : db.activity.filter((a) => a.marinaId && scope.includes(a.marinaId))),
     [db.activity, user, scope],
   );
 
-  const startSession = (id: string) => {
+  const startSession = (id: string, remember = false) => {
     setUserId(id);
     try {
       sessionStorage.setItem(SESSION_KEY, id);
+      if (remember) localStorage.setItem(SESSION_KEY, id);
+      else localStorage.removeItem(SESSION_KEY);
     } catch {
       /* storage unavailable */
     }
   };
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string, remember = false) => {
     const key = email.trim().toLowerCase();
     const u = db.users.find((x) => x.email.toLowerCase() === key);
     const account = readAccounts().find((a) => a.email.toLowerCase() === key);
     const expected = PASSWORD_HASHES[key] ?? account?.hash;
     if (!u || !expected || expected !== (await sha256(password))) return "That email and password don't match. Try again.";
     if (u.status !== "active") return "This account isn't active yet.";
-    startSession(u.id);
+    startSession(u.id, remember);
     notifyOwner({ event: "Signed in", name: u.name, email: u.email, role: u.role, company: account?.company });
     return null;
   };
@@ -246,13 +261,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setUserId(null);
     try {
       sessionStorage.removeItem(SESSION_KEY);
+      localStorage.removeItem(SESSION_KEY);
     } catch {
       /* storage unavailable */
     }
   };
 
   return (
-    <StoreContext.Provider value={{ db, ix, update, restore, user, signIn, register, signOut, scope, resetData, toasts, toast, activity }}>{children}</StoreContext.Provider>
+    <StoreContext.Provider value={{ db, ix, update, restore, user, signIn, register, signOut, can, scope, resetData, toasts, toast, activity }}>{children}</StoreContext.Provider>
   );
 }
 

@@ -1,26 +1,45 @@
-import type { ReactNode } from "react";
-import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { lazy, Suspense, type ReactNode } from "react";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useStore } from "@/data/store";
+import { AREAS, type Area } from "@/data/permissions";
 import Layout from "@/components/Layout";
-import { EmptyState, Button } from "@/components/ui";
+import { ErrorBoundary, NoAccess, NotFoundPage } from "@/components/StatusPage";
+import { PageSkeleton } from "@/components/Skeleton";
 import { ForgotPassword, Login, Register } from "@/pages/Login";
-import { CityDashboard, CountyDashboard, GlobalOverview } from "@/pages/Dashboards";
-import { MarinaDetail, Marinas } from "@/pages/Marinas";
-import { Berths } from "@/pages/Berths";
-import { Bookings } from "@/pages/Bookings";
-import { Locations } from "@/pages/Locations";
-import { Maintenance, StaffPage } from "@/pages/Operations";
-import { People } from "@/pages/People";
-import { Billing } from "@/pages/Billing";
-import { Analytics, Reports } from "@/pages/Insights";
-import { AccessControl, Settings } from "@/pages/System";
 
-function RequireAuth({ children, admin }: { children: ReactNode; admin?: boolean }) {
+// Each page is its own download, so the first visit only loads what it needs.
+const page = <K extends string>(load: () => Promise<Record<K, React.ComponentType>>, name: K) =>
+  lazy(() => load().then((m) => ({ default: m[name] })));
+const GlobalOverview = page(() => import("@/pages/Dashboards"), "GlobalOverview");
+const CountyDashboard = page(() => import("@/pages/Dashboards"), "CountyDashboard");
+const CityDashboard = page(() => import("@/pages/Dashboards"), "CityDashboard");
+const Marinas = page(() => import("@/pages/Marinas"), "Marinas");
+const MarinaDetail = page(() => import("@/pages/Marinas"), "MarinaDetail");
+const Berths = page(() => import("@/pages/Berths"), "Berths");
+const Bookings = page(() => import("@/pages/Bookings"), "Bookings");
+const Locations = page(() => import("@/pages/Locations"), "Locations");
+const StaffPage = page(() => import("@/pages/Operations"), "StaffPage");
+const Maintenance = page(() => import("@/pages/Operations"), "Maintenance");
+const People = page(() => import("@/pages/People"), "People");
+const Billing = page(() => import("@/pages/Billing"), "Billing");
+const Reports = page(() => import("@/pages/Insights"), "Reports");
+const Analytics = page(() => import("@/pages/Insights"), "Analytics");
+const AccessControl = page(() => import("@/pages/System"), "AccessControl");
+const Settings = page(() => import("@/pages/System"), "Settings");
+
+function RequireAuth({ children }: { children: ReactNode }) {
   const { user } = useStore();
   const loc = useLocation();
   if (!user) return <Navigate to="/login" replace state={{ from: loc.pathname + loc.search }} />;
-  if (admin && user.role !== "admin")
-    return <EmptyState title="You don't have access to this page" body="Ask an admin if you need it." action={<Link to="/"><Button>Go to overview</Button></Link>} />;
+  return <>{children}</>;
+}
+
+/** Blocks a page the signed-in role can't open (admin-only pages, or "No access" in Access Control). */
+function Guard({ area, admin, children }: { area?: Area; admin?: boolean; children: ReactNode }) {
+  const { user, can } = useStore();
+  const label = area ? AREAS.find((a) => a.key === area)?.label.split(":")[0].toLowerCase() : undefined;
+  if (admin && user?.role !== "admin") return <NoAccess />;
+  if (area && can(area) === "none") return <NoAccess area={label} />;
   return <>{children}</>;
 }
 
@@ -33,31 +52,35 @@ function ByQuery({ children }: { children: ReactNode }) {
   return <div key={key.toString()}>{children}</div>;
 }
 
+const lazyPage = (node: ReactNode) => <Suspense fallback={<PageSkeleton />}>{node}</Suspense>;
+
 export default function App() {
   return (
-    <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route path="/forgot-password" element={<ForgotPassword />} />
-      <Route path="/register" element={<Register />} />
-      <Route element={<RequireAuth><Layout /></RequireAuth>}>
-        <Route index element={<GlobalOverview />} />
-        <Route path="county/:id?" element={<CountyDashboard />} />
-        <Route path="city/:id?" element={<CityDashboard />} />
-        <Route path="marinas" element={<Marinas />} />
-        <Route path="marinas/:id" element={<MarinaDetail />} />
-        <Route path="berths" element={<Berths />} />
-        <Route path="bookings" element={<ByQuery><Bookings /></ByQuery>} />
-        <Route path="locations" element={<RequireAuth admin><Locations /></RequireAuth>} />
-        <Route path="staff" element={<ByQuery><StaffPage /></ByQuery>} />
-        <Route path="maintenance" element={<ByQuery><Maintenance /></ByQuery>} />
-        <Route path="users" element={<ByQuery><People /></ByQuery>} />
-        <Route path="billing" element={<ByQuery><Billing /></ByQuery>} />
-        <Route path="reports" element={<Reports />} />
-        <Route path="analytics" element={<Analytics />} />
-        <Route path="access" element={<RequireAuth admin><AccessControl /></RequireAuth>} />
-        <Route path="settings" element={<Settings />} />
-        <Route path="*" element={<EmptyState title="Page not found" body="Check the address or use the menu." action={<Link to="/"><Button>Go to overview</Button></Link>} />} />
-      </Route>
-    </Routes>
+    <ErrorBoundary>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/register" element={<Register />} />
+        <Route element={<RequireAuth><Layout /></RequireAuth>}>
+          <Route index element={<Guard area="dashboards">{lazyPage(<GlobalOverview />)}</Guard>} />
+          <Route path="county/:id?" element={<Guard area="dashboards">{lazyPage(<CountyDashboard />)}</Guard>} />
+          <Route path="city/:id?" element={<Guard area="dashboards">{lazyPage(<CityDashboard />)}</Guard>} />
+          <Route path="marinas" element={<Guard area="marinas">{lazyPage(<Marinas />)}</Guard>} />
+          <Route path="marinas/:id" element={<Guard area="marinas">{lazyPage(<MarinaDetail />)}</Guard>} />
+          <Route path="berths" element={<Guard area="berths">{lazyPage(<Berths />)}</Guard>} />
+          <Route path="bookings" element={<Guard area="bookings">{lazyPage(<ByQuery><Bookings /></ByQuery>)}</Guard>} />
+          <Route path="locations" element={<Guard admin>{lazyPage(<Locations />)}</Guard>} />
+          <Route path="staff" element={<Guard area="staff">{lazyPage(<ByQuery><StaffPage /></ByQuery>)}</Guard>} />
+          <Route path="maintenance" element={<Guard area="maintenance">{lazyPage(<ByQuery><Maintenance /></ByQuery>)}</Guard>} />
+          <Route path="users" element={<Guard area="owners">{lazyPage(<ByQuery><People /></ByQuery>)}</Guard>} />
+          <Route path="billing" element={<Guard area="billing">{lazyPage(<ByQuery><Billing /></ByQuery>)}</Guard>} />
+          <Route path="reports" element={<Guard area="reports">{lazyPage(<Reports />)}</Guard>} />
+          <Route path="analytics" element={<Guard area="reports">{lazyPage(<Analytics />)}</Guard>} />
+          <Route path="access" element={<Guard admin>{lazyPage(<AccessControl />)}</Guard>} />
+          <Route path="settings" element={lazyPage(<Settings />)} />
+        </Route>
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+    </ErrorBoundary>
   );
 }

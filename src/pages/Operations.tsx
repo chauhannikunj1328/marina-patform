@@ -135,7 +135,8 @@ function WeekSchedule({ staff }: { staff: Staff[] }) {
 }
 
 export function StaffPage() {
-  const { db, ix, scope, update, toast } = useStore();
+  const { db, ix, scope, update, toast, can } = useStore();
+  const canEditStaff = can("staff") !== "view";
   const [params] = useSearchParams();
   const [tab, setTab] = useState<"directory" | "schedule" | "shifts">("directory");
   const [q, setQ] = useState(params.get("q") ?? "");
@@ -156,7 +157,7 @@ export function StaffPage() {
 
   return (
     <>
-      <PageHeader title="Staff" description="Team members, roles and weekly schedules" actions={<Button variant="primary" icon={Plus} onClick={() => setEditing("new")}>Add staff member</Button>} />
+      <PageHeader title="Staff" description="Team members, roles and weekly schedules" actions={canEditStaff && <Button variant="primary" icon={Plus} onClick={() => setEditing("new")}>Add staff member</Button>} />
       <div className="mb-4 grid grid-cols-2 gap-4 min-[1400px]:grid-cols-4">
         <StatCard label="Total staff" icon={Users} value={staff.length} active={tab === "directory" && !leaveOnly} onClick={() => { setTab("directory"); setLeaveOnly(false); }} />
         <StatCard label="Working today" icon={UserCheck} value={onToday.length} sub={`of ${active.length} active`} active={tab === "schedule"} onClick={() => setTab("schedule")} />
@@ -175,7 +176,7 @@ export function StaffPage() {
         {tab === "directory" && (
           <Table head={["Name", "Role", "Marina", "Shift", "Days off", "Status", "Actions"]} empty={rows.length === 0}>
             {rows.map((s) => (
-              <tr key={s.id} className="cursor-pointer hover:bg-row-hover" onClick={() => setEditing(s)}>
+              <tr key={s.id} className={canEditStaff ? "cursor-pointer" : undefined} onClick={canEditStaff ? () => setEditing(s) : undefined}>
                 <td>
                   <div className="flex items-center gap-3">
                     <Avatar name={s.name} />
@@ -188,8 +189,12 @@ export function StaffPage() {
                 <td className="whitespace-nowrap">{s.daysOff.map((d) => DAYS[d]).join(", ") || "None"}</td>
                 <td><ActiveBadge status={s.status} /></td>
                 <td className="whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                  <IconButton icon={Pencil} label={`Edit ${s.name}`} onClick={() => setEditing(s)} />
-                  <IconButton icon={Trash} label={`Remove ${s.name}`} onClick={() => setRemoving(s)} />
+                  {canEditStaff && (
+                    <>
+                      <IconButton icon={Pencil} label={`Edit ${s.name}`} onClick={() => setEditing(s)} />
+                      <IconButton icon={Trash} label={`Remove ${s.name}`} onClick={() => setRemoving(s)} />
+                    </>
+                  )}
                 </td>
               </tr>
             ))}
@@ -367,7 +372,8 @@ function TaskDetail({ task, onClose, onEdit }: { task: MaintenanceTask; onClose:
 }
 
 export function Maintenance() {
-  const { db, ix, scope } = useStore();
+  const { db, ix, scope, can } = useStore();
+  const canEditTasks = can("maintenance") !== "view";
   const [params, setParams] = useSearchParams();
   const [status, setStatus] = useState<"active" | TaskStatus | "all">("active");
   const [marinaId, setMarinaId] = useState("all");
@@ -391,7 +397,7 @@ export function Maintenance() {
 
   return (
     <>
-      <PageHeader title="Maintenance" description="Work orders for berths, docks and facilities" actions={<Button variant="primary" icon={Plus} onClick={() => setEditing("new")}>New work order</Button>} />
+      <PageHeader title="Maintenance" description="Work orders for berths, docks and facilities" actions={canEditTasks && <Button variant="primary" icon={Plus} onClick={() => setEditing("new")}>New work order</Button>} />
       <div className="mb-4 grid grid-cols-2 gap-4 min-[1400px]:grid-cols-4">
         <StatCard label="Open work orders" icon={Wrench} value={open.length} active={status === "active" && priority === "all" && !overdueOnly} onClick={() => { setStatus("active"); setPriority("all"); setOverdueOnly(false); }} />
         <StatCard label="High priority" icon={CircleAlert} value={open.filter((t) => t.priority === "high").length} active={priority === "high"} onClick={() => { setStatus("active"); setPriority(priority === "high" ? "all" : "high"); }} />
@@ -431,8 +437,8 @@ export function Maintenance() {
                 <td><TaskBadge status={t.status} /></td>
                 <td className="whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                   <IconButton icon={Eye} label={`Open ${t.code}`} onClick={() => setOpen(t.id)} />
-                  {t.status !== "done" && <IconButton icon={CircleCheck} label={`Mark ${t.code} as done`} onClick={() => complete(t)} />}
-                  <IconButton icon={Pencil} label={`Edit ${t.code}`} onClick={() => setEditing(t)} />
+                  {canEditTasks && t.status !== "done" && <IconButton icon={CircleCheck} label={`Mark ${t.code} as done`} onClick={() => complete(t)} />}
+                  {canEditTasks && <IconButton icon={Pencil} label={`Edit ${t.code}`} onClick={() => setEditing(t)} />}
                 </td>
               </tr>
             );

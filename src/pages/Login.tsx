@@ -37,6 +37,7 @@ export function Login() {
   if (user) return <Navigate to={target} replace />;
 
   const [busy, setBusy] = useState(false);
+  const [remember, setRemember] = useState(false);
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !password) {
@@ -44,7 +45,7 @@ export function Login() {
       return;
     }
     setBusy(true);
-    const err = await signIn(email, password);
+    const err = await signIn(email, password, remember);
     setBusy(false);
     if (err) setError(err);
     else navigate(target, { replace: true });
@@ -79,7 +80,7 @@ export function Login() {
         </Field>
         <div className="flex items-center justify-between text-[13px]">
           <label className="flex items-center gap-2 text-ink-2">
-            <input type="checkbox" className="size-4 rounded-sm border-line-strong accent-[var(--primary)]" /> Remember me
+            <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="size-4 rounded-sm border-line-strong accent-[var(--primary)]" /> Remember me
           </label>
           <Link to="/forgot-password" className="font-semibold text-green-text hover:underline">
             Forgot password?

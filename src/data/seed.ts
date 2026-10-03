@@ -6,6 +6,7 @@ import type {
 } from "./types";
 import { addDays, daysBetween, today } from "@/lib/date";
 import { bookingAmount } from "./pricing";
+import { DEFAULT_PERMISSIONS } from "./permissions";
 
 export interface Db {
   counties: County[];
@@ -197,7 +198,10 @@ export function createSeed(): Db {
       method: status === "paid" ? pick(["Card", "Card", "Card", "Bank transfer", "Check", "Cash"] as const) : undefined,
       // A reminder goes out a few days after the due date, never later than today.
       reminders: status === "overdue" ? [addDays(due, 3) < now ? addDays(due, 3) : now] : [],
+      payments: [],
     });
+    const last = invoices[invoices.length - 1];
+    if (last.status === "paid") last.payments = [{ date: last.paidAt!, amount: last.amount, method: last.method! }];
     inv++;
   }
 
@@ -281,6 +285,7 @@ export function createSeed(): Db {
     invoiceDueDays: 14,
     monthlyFromNights: 28,
     notify: { pending: true, overdue: true, maintenance: true, digest: false },
+    permissions: DEFAULT_PERMISSIONS,
   };
 
   const marinaName = new Map(marinas.map((m) => [m.id, m.name]));

@@ -123,6 +123,14 @@ export interface Invoice {
   paidAt?: string;
   method?: PaymentMethod;
   reminders: string[];
+  /** Payments received. The invoice is paid when they add up to the amount. */
+  payments: Payment[];
+}
+
+export interface Payment {
+  date: string;
+  amount: number;
+  method: PaymentMethod;
 }
 
 export type PaymentMethod = "Card" | "Bank transfer" | "Cash" | "Check";
@@ -165,4 +173,5 @@ export interface Settings {
   invoiceDueDays: number;
   monthlyFromNights: number;
   notify: { pending: boolean; overdue: boolean; maintenance: boolean; digest: boolean };
+  permissions: import("./permissions").Permissions;
 }

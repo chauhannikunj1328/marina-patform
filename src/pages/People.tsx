@@ -103,7 +103,7 @@ function OwnerDetail({ owner, onClose }: { owner: BoatOwner; onClose: () => void
     .sort((a, b) => b.start.localeCompare(a.start));
   const spent = bookings.filter((b) => b.status !== "cancelled" && b.status !== "pending").reduce((s, b) => s + ix.amount(b), 0);
   const invoices = db.invoices.filter((i) => bookings.some((b) => b.id === i.bookingId));
-  const owed = invoices.filter((i) => i.status === "due" || i.status === "overdue").reduce((s, i) => s + i.amount, 0);
+  const owed = invoices.reduce((s, i) => s + ix.balance(i), 0);
 
   if (editing) return <OwnerForm owner={o} onClose={() => setEditing(false)} />;
   if (boatForm) return <BoatForm ownerId={o.id} boat={boatForm === "new" ? undefined : boatForm} onClose={() => setBoatForm(undefined)} />;
@@ -210,7 +210,7 @@ function InviteForm({ user, onClose }: { user?: SystemUser; onClose: () => void 
 }
 
 export function People() {
-  const { db, ix, scope, user: me, update, toast } = useStore();
+  const { db, ix, scope, user: me, update, toast, can } = useStore();
   const [params, setParams] = useSearchParams();
   const [tab, setTab] = useState<"owners" | "users">(params.get("tab") === "users" && me?.role === "admin" ? "users" : "owners");
   const [q, setQ] = useState("");
@@ -243,7 +243,7 @@ export function People() {
         description={isAdmin ? "Customers who book berths, and team members who sign in" : "Customers who book berths at your marinas"}
         actions={
           tab === "owners" ? (
-            <Button variant="primary" icon={UserPlus} onClick={() => setAddingOwner(true)}>Add boat owner</Button>
+            can("owners") !== "view" && <Button variant="primary" icon={UserPlus} onClick={() => setAddingOwner(true)}>Add boat owner</Button>
           ) : (
             isAdmin && <Button variant="primary" icon={MailPlus} onClick={() => setEditing("new")}>Invite user</Button>
           )

@@ -74,7 +74,22 @@ export function relative(iso: string): string {
   return `In ${-diff} days`;
 }
 
-const timeFmt = new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit" });
+let timeZone = "America/Los_Angeles";
+let timeFmt = new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", timeZone });
+let dayFmt = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", timeZone });
+
+/** Called by the store when the company time zone setting changes. Times are shown in this zone. */
+export function setTimeZone(tz: string) {
+  if (tz === timeZone) return;
+  timeZone = tz;
+  timeFmt = new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", timeZone });
+  dayFmt = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", timeZone });
+}
+
+/** Current time in the company time zone, e.g. "2:05 pm PDT". */
+export function nowInZone(tz = timeZone): string {
+  return new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", timeZone: tz, timeZoneName: "short" }).format(new Date()).replace(/AM|PM/, (m) => m.toLowerCase());
+}
 /** Guide 13: relative under 24 hours (12h, 45m), otherwise "3 Oct, 2:05 pm". Accepts a date-time or a plain date. */
 export function fmtDateTime(iso: string): string {
   if (iso.length <= 10) return fmtDate(iso);
@@ -82,5 +97,5 @@ export function fmtDateTime(iso: string): string {
   const mins = Math.round((Date.now() - d.getTime()) / 60_000);
   if (mins >= 0 && mins < 60) return mins < 1 ? "Just now" : `${mins}m ago`;
   if (mins >= 60 && mins < 24 * 60) return `${Math.floor(mins / 60)}h ago`;
-  return `${shortFmt.format(d)}, ${timeFmt.format(d).toLowerCase()}`;
+  return `${dayFmt.format(d).replace("Sept", "Sep")}, ${timeFmt.format(d).toLowerCase()}`;
 }

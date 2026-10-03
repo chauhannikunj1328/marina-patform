@@ -72,7 +72,7 @@ export function Button({
       type="button"
       className={cx(
         "inline-flex items-center justify-center gap-2 rounded-full font-semibold whitespace-nowrap transition-colors duration-[120ms] ease-brand disabled:pointer-events-none disabled:opacity-40 cursor-pointer",
-        size === "sm" ? "h-8 px-3.5 text-[13px]" : "h-10 px-5 text-sm",
+        size === "sm" ? "h-8 px-3.5 text-[13px] pointer-coarse:h-11" : "h-10 px-5 text-sm pointer-coarse:h-11",
         variants[variant],
         className,
       )}
@@ -102,7 +102,7 @@ export function IconButton({
         aria-label={label}
         className={cx(
           "inline-flex items-center justify-center rounded-full text-ink-2 transition-colors duration-[120ms] ease-brand hover:text-ink disabled:pointer-events-none disabled:opacity-40 cursor-pointer",
-          look === "outline" ? "size-10 border border-line bg-surface hover:bg-sidebar" : "size-8 hover:bg-sidebar-hover",
+          look === "outline" ? "size-10 border border-line bg-surface hover:bg-sidebar pointer-coarse:size-11" : "size-8 hover:bg-sidebar-hover pointer-coarse:size-11",
           className,
         )}
         {...rest}
@@ -426,9 +426,17 @@ export function useDirty<T>(current: T): boolean {
 type Head = ReactNode | { label: string; sortKey: string };
 
 export function Table({ head, children, empty, sort }: { head: Head[]; children: ReactNode; empty?: boolean; sort?: SortState }) {
+  const ref = useRef<HTMLTableElement>(null);
+  const labels = head.map((h) => (typeof h === "string" ? h : h && typeof h === "object" && "label" in h ? h.label : ""));
+  // On phones each row becomes a card; cells show their column name from data-label (see .rtable in index.css).
+  useLayoutEffect(() => {
+    ref.current?.querySelectorAll("tbody > tr").forEach((tr) => {
+      [...tr.children].forEach((td, i) => td.setAttribute("data-label", labels[i] ?? ""));
+    });
+  });
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-[13px] leading-5">
+    <div className="overflow-x-auto max-sm:overflow-visible max-sm:pb-2">
+      <table ref={ref} className="rtable w-full text-[13px] leading-5">
         <thead>
           <tr className="border-y border-table-line bg-table-head text-left">
             {head.map((h, i) => {

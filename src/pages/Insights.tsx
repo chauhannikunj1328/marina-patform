@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { CalendarRange, Clock, Download, FileText, Ruler, Sailboat } from "lucide-react";
+import { CalendarRange, Clock, Download, FileDown, FileText, Ruler, Sailboat } from "lucide-react";
+import { Logo } from "@/components/Logo";
 import { useStore } from "@/data/store";
-import { daysBetween, fmtMonth, lastMonths, monthKey, nightsInMonth, today } from "@/lib/date";
+import { daysBetween, fmtDate, fmtMonth, lastMonths, monthKey, nightsInMonth, today } from "@/lib/date";
 import { money, pct } from "@/lib/format";
 import { downloadCsv } from "@/lib/csv";
 import { Button, Card, CardHeader, Field, PageHeader, Select, StatCard, Table } from "@/components/ui";
@@ -51,9 +52,9 @@ export function Reports() {
         .map((i) => {
           const bk = ix.booking(i.bookingId)!;
           const owner = ix.owner(ix.boat(bk.boatId)?.ownerId ?? "");
-          return [i.number, owner?.name ?? "", ix.marinaOfBerth(bk.berthId)?.name ?? "", i.due, Math.max(0, daysBetween(i.due, now)), i.amount];
+          return [i.number, owner?.name ?? "", ix.marinaOfBerth(bk.berthId)?.name ?? "", i.due, Math.max(0, daysBetween(i.due, now)), ix.balance(i)];
         });
-      return { head: ["Invoice", "Boat owner", "Marina", "Due", "Days late", "Amount"], rows, display: rows.map((r) => [...r.slice(0, 5), money(Number(r[5]))]) };
+      return { head: ["Invoice", "Boat owner", "Marina", "Due", "Days late", "Balance due"], rows, display: rows.map((r) => [...r.slice(0, 5), money(Number(r[5]))]) };
     }
     const byOwner = new Map<string, number>();
     for (const b of ix.bookingsIn(scope)) {
@@ -79,9 +80,34 @@ export function Reports() {
         <div className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-[1fr_200px_auto] sm:items-end">
           <Field label="Report">{(id) => <Select id={id} value={kind} onChange={(e) => setKind(e.target.value as ReportKind)}>{REPORTS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}</Select>}</Field>
           <Field label="Month">{(id) => <Select id={id} value={month} onChange={(e) => setMonth(e.target.value)} disabled={kind === "receivables"}>{[...months].reverse().map((m) => <option key={m} value={m}>{fmtMonth(m)} {m.slice(0, 4)}{m === months[months.length - 1] ? " (to date)" : ""}</option>)}</Select>}</Field>
-          <Button variant="primary" icon={Download} onClick={() => downloadCsv(`${kind}-${kind === "receivables" ? today() : month}.csv`, report.head, report.rows)}>Download CSV</Button>
+          <div className="flex gap-2">
+            <Button icon={Download} onClick={() => downloadCsv(`${kind}-${kind === "receivables" ? today() : month}.csv`, report.head, report.rows)}>CSV</Button>
+            <Button variant="primary" icon={FileDown} onClick={() => window.print()}>Download PDF</Button>
+          </div>
         </div>
       </Card>
+      {/* Guide 14 Exports: header with logo, Ink text, Neutral table lines. Printed via "Save as PDF". */}
+      <div className="print-area pointer-events-none fixed top-0 left-[-10000px] w-[800px] text-[12px]" aria-hidden>
+        <div className="mb-6 flex items-center justify-between border-b border-[#e5e5e1] pb-4">
+          <Logo />
+          <span className="text-[#656565]">{db.settings.company}</span>
+        </div>
+        <h1 className="text-[22px] font-medium">{info.label}</h1>
+        <p className="mt-1 mb-5 text-[#484848]">
+          {info.description}. {kind === "receivables" ? `As of ${fmtDate(today())}` : `${fmtMonth(month)} ${month.slice(0, 4)}`} · Generated {fmtDate(today())}
+        </p>
+        <table className="w-full border-collapse">
+          <thead>
+            <tr>{report.head.map((h) => <th key={h} className="border-b border-[#d9d9d6] py-2 pr-3 text-left text-[10px] font-medium text-[#656565] uppercase">{h}</th>)}</tr>
+          </thead>
+          <tbody>
+            {(report.display ?? report.rows).map((r, i) => (
+              <tr key={i}>{r.map((c, j) => <td key={j} className="num border-b border-[#e5e5e1] py-2 pr-3">{c}</td>)}</tr>
+            ))}
+          </tbody>
+        </table>
+        <p className="mt-6 text-[10px] text-[#656565]">Marina Management System · Sample data for demonstration</p>
+      </div>
       <Card>
         <CardHeader title={info.label} description={info.description} icon={FileText} />
         <Table head={report.head} empty={report.rows.length === 0}>

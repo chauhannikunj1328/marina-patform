@@ -103,7 +103,7 @@ export function MarinaForm({ open, onClose, marina }: { open: boolean; onClose: 
 }
 
 export function Marinas() {
-  const { db, ix, scope, update, toast, user } = useStore();
+  const { db, ix, scope, update, toast, user, can } = useStore();
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
   const [q, setQ] = useState("");
@@ -177,7 +177,7 @@ export function Marinas() {
                 <td className="font-medium num">{money(met.revenue)}</td>
                 <td className="whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                   <IconButton icon={Eye} label={`View ${m.name}`} onClick={() => navigate(`/marinas/${m.id}`)} />
-                  <IconButton icon={Pencil} label={`Edit ${m.name}`} onClick={() => setEditing(m)} />
+                  {can("marinas") !== "view" && <IconButton icon={Pencil} label={`Edit ${m.name}`} onClick={() => setEditing(m)} />}
                   {user?.role === "admin" && <IconButton icon={Trash} label={`Delete ${m.name}`} onClick={() => setDeleting(m)} />}
                 </td>
               </tr>
@@ -217,7 +217,7 @@ export function Marinas() {
 
 export function MarinaDetail() {
   const { id } = useParams();
-  const { db, ix, scope } = useStore();
+  const { db, ix, scope, can } = useStore();
   const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
   const [viewing, setViewing] = useState<Berth | undefined>();
@@ -246,7 +246,7 @@ export function MarinaDetail() {
         description={`${marina.address}, ${city?.name}`}
         actions={
           <>
-            <Button icon={Pencil} onClick={() => setEditing(true)}>Edit</Button>
+            {can("marinas") !== "view" && <Button icon={Pencil} onClick={() => setEditing(true)}>Edit</Button>}
             <Button variant="primary" icon={CalendarPlus} onClick={() => navigate(`/bookings?new=1&marina=${marina.id}`)}>New booking</Button>
           </>
         }

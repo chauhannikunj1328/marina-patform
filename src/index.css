@@ -378,6 +378,77 @@
   }
 }
 
+/* 05 Mobile: table rows become cards with a label beside each value */
+@media (max-width: 639px) {
+  .rtable thead {
+    display: none;
+  }
+  .rtable,
+  .rtable tbody,
+  .rtable tr,
+  .rtable td {
+    display: block;
+  }
+  .rtable tbody > tr {
+    margin: 0 16px 12px;
+    padding: 12px 16px;
+    border: 1px solid var(--border) !important;
+    border-radius: 16px;
+  }
+  .rtable tbody > tr > td {
+    display: flow-root;
+    height: auto !important;
+    padding: 6px 0 !important;
+    text-align: right !important;
+  }
+  .rtable tbody > tr > td::before {
+    content: attr(data-label);
+    float: left;
+    margin-right: 16px;
+    padding-top: 2px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    text-align: left;
+  }
+  .rtable tbody > tr > td[data-label=""]::before {
+    display: none;
+  }
+  /* First cell is the card title */
+  .rtable tbody > tr > td:first-child {
+    text-align: left !important;
+    padding-bottom: 10px !important;
+    margin-bottom: 4px;
+    border-bottom: 1px solid var(--border);
+  }
+  .rtable tbody > tr > td:first-child::before {
+    display: none;
+  }
+  .rtable tbody > tr > td > .flex {
+    justify-content: flex-end;
+  }
+  .rtable tbody > tr > td:first-child > .flex {
+    justify-content: flex-start;
+  }
+}
+
+/* 11 Skeletons: Neutral 100 with a subtle 1.4 s shimmer */
+.skeleton {
+  background: linear-gradient(90deg, var(--surface-3) 25%, var(--sidebar-hover) 37%, var(--surface-3) 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease infinite;
+}
+@keyframes shimmer {
+  from {
+    background-position: 100% 50%;
+  }
+  to {
+    background-position: 0 50%;
+  }
+}
+
 @keyframes fade-up {
   from {
     opacity: 0;
@@ -400,19 +471,34 @@
   }
 }
 
-/* Printing an invoice prints only the invoice. */
+/* Printing (invoices, report PDFs) prints only the .print-area, in light colors. */
 @media print {
+  @page {
+    margin: 16mm;
+  }
   body * {
     visibility: hidden;
   }
-  #print-invoice,
-  #print-invoice * {
+  .print-area,
+  .print-area * {
     visibility: visible;
   }
-  #print-invoice {
+  .print-area {
     position: absolute;
     inset: 0 auto auto 0;
     width: 100%;
-    padding: 24px;
+    padding: 0;
+    color: #17191e;
+    background: #ffffff;
+    /* Paper is always light, even when the app is in dark mode */
+    --text: #17191e;
+    --text-2: #484848;
+    --text-3: #656565;
+    --border: #e5e5e1;
+    --surface: #ffffff;
+    --surface-2: #fafaf8;
+    --surface-3: #f1f0ec;
+    --primary: #2f3740;
+    --on-primary: #ffffff;
   }
 }

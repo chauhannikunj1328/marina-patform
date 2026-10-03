@@ -83,7 +83,8 @@ function BerthForm({ berth, defaultMarina, onClose }: { berth?: Berth; defaultMa
 }
 
 export function Berths() {
-  const { db, ix, scope, update, toast } = useStore();
+  const { db, ix, scope, update, toast, can } = useStore();
+  const canEdit = can("berths") !== "view";
   const [params, setParams] = useSearchParams();
   const [tab, setTab] = useState<"list" | "map">("list");
   const [q, setQ] = useState("");
@@ -144,7 +145,7 @@ export function Berths() {
       <PageHeader
         title="Berths"
         description="Dock spaces, sizes, pricing and today's availability"
-        actions={<Button variant="primary" icon={Plus} onClick={() => setEditing("new")}>Add berth</Button>}
+        actions={canEdit && <Button variant="primary" icon={Plus} onClick={() => setEditing("new")}>Add berth</Button>}
       />
       <div className="mb-4 grid grid-cols-2 gap-4 min-[1400px]:grid-cols-4">
         <StatCard label="Available" icon={CircleDashed} value={m.available} sub={`of ${m.berths} berths`} active={status === "available"} onClick={() => { setStatus(status === "available" ? "all" : "available"); setPage(1); }} />
@@ -191,9 +192,13 @@ export function Berths() {
                     <td className="num whitespace-nowrap">{money(b.dailyRate)}/day<span className="block text-xs text-ink-3">{money(b.monthlyRate)}/month</span></td>
                     <td className="whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                       <IconButton icon={Eye} label={`Open berth ${b.code}`} onClick={() => setViewing(b)} />
-                      <IconButton icon={Wrench} label={b.underMaintenance ? `Return ${b.code} to service` : `Mark ${b.code} for maintenance`} onClick={() => toggleMaintenance(b)} />
+                      {canEdit && (
+                      <>
+<IconButton icon={Wrench} label={b.underMaintenance ? `Return ${b.code} to service` : `Mark ${b.code} for maintenance`} onClick={() => toggleMaintenance(b)} />
                       <IconButton icon={Pencil} label={`Edit berth ${b.code}`} onClick={() => setEditing(b)} />
                       <IconButton icon={Trash} label={`Delete berth ${b.code}`} onClick={() => setDeleting(b)} />
+                      </>
+                      )}
                     </td>
                   </tr>
                 );

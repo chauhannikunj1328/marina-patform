@@ -17,6 +17,7 @@ export function withInvoice(d: Db, bookingId: string, amount: number): Db {
     amount,
     status: "due",
     reminders: [],
+    payments: [],
   };
   return { ...d, invoices: [...d.invoices, invoice] };
 }

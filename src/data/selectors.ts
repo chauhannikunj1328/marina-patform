@@ -1,5 +1,5 @@
 // All dashboard numbers come from these functions, so every page agrees.
-import type { Berth, Booking } from "./types";
+import type { Berth, Booking, Invoice } from "./types";
 import type { Db } from "./seed";
 import { bookingAmount } from "./pricing";
 import { addDays, daysBetween, daysInMonth, lastMonths, monthKey, nightsInMonth, today } from "@/lib/date";
@@ -41,6 +41,10 @@ export class Index {
   };
 
   invoiceOf = (bookingId: string) => this.db.invoices.find((i) => i.bookingId === bookingId);
+  /** Amount still to pay on an invoice (0 when paid or void). */
+  balance = (inv: Invoice) => (inv.status === "paid" || inv.status === "void" ? 0 : Math.max(0, inv.amount - (inv.payments ?? []).reduce((t, p) => t + p.amount, 0)));
+  paidSoFar = (inv: Invoice) => (inv.payments ?? []).reduce((t, p) => t + p.amount, 0);
+
   marinaOfInvoice = (inv: { bookingId: string }) => this.berth(this.booking(inv.bookingId)?.berthId ?? "")?.marinaId;
 
   /** Boat owners who have booked at one of these marinas, plus new owners with no bookings yet. */
