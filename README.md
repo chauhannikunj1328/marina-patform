@@ -87,7 +87,7 @@ The UI follows the **Marina Brand to Product Handoff Guide v1**. All values live
 - **Status badges:** section 07 colors (ocean blue, amber, red, coral, slate), always with an icon.
 - **Charts:** section 10 palette, horizontal dashed gridlines, legend top right.
 - **Formats:** dates "3 Oct 2026", relative times under 24 hours, invoices with 2 decimals.
-- **Logo:** `src/components/Logo.tsx` holds a placeholder mark until the brand SVG package arrives.
+- **Logo:** the brand logomark lives in `src/components/Logo.tsx` (in-app) and `public/brand/logomark-ink.svg` / `logomark-white.svg`; wordmark "Marina".
 
 Icons are from [Lucide](https://lucide.dev) via `lucide-react`, set to a 1.5 px rounded stroke to match the guide's icon style.
 

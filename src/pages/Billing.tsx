@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Anchor, Ban, CircleAlert, CircleCheck, CircleDollarSign, Clock, DollarSign, Download, Eye, Printer, Send } from "lucide-react";
+import { Ban, CircleAlert, CircleCheck, CircleDollarSign, Clock, DollarSign, Download, Eye, Printer, Send } from "lucide-react";
 import { useStore } from "@/data/store";
 import type { Invoice, InvoiceStatus, PaymentMethod } from "@/data/types";
 import { withMessage } from "@/data/actions";
@@ -10,6 +10,7 @@ import { downloadCsv } from "@/lib/csv";
 import { Button, Card, ConfirmDialog, Field, IconButton, Input, Modal, PageHeader, Pagination, paginate, SearchInput, Select, StatCard, Table, Toolbar, useSort } from "@/components/ui";
 import { InvoiceBadge } from "@/components/status";
 import { Badge } from "@/components/ui";
+import { Logomark } from "@/components/Logo";
 
 function useInvoiceActions() {
   const { ix, update, toast } = useStore();
@@ -116,7 +117,7 @@ function InvoiceDetail({ invoice: inv, onClose }: { invoice: Invoice; onClose: (
       <div className="print-area text-[13px]">
         <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-center gap-3">
-            <span className="flex size-10 items-center justify-center rounded-md bg-primary text-on-primary"><Anchor className="size-5" aria-hidden /></span>
+            <Logomark size={36} />
             <div>
               <p className="font-semibold">{db.settings.company}</p>
               <p className="text-ink-3">{marina?.name} · {marina?.address}</p>

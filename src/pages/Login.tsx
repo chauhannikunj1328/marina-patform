@@ -215,7 +215,7 @@ export function Register() {
       <Brand />
       <div className="mb-8 text-center">
         <h1 className="text-[22px] leading-[30px] font-medium">Create your account</h1>
-        <p className="mt-1 text-sm text-ink-2">Explore the full Marina System dashboard with sample data.</p>
+        <p className="mt-1 text-sm text-ink-2">Explore the full Marina dashboard with sample data.</p>
       </div>
       <form onSubmit={submit} className="space-y-4" noValidate>
         <Field label="Full name" error={errors.name}>

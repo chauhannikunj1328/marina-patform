@@ -162,7 +162,7 @@ function DailySummary({ onClose }: { onClose: () => void }) {
     <Modal open onClose={onClose} title="Daily summary preview" description={`What ${user?.name.split(" ")[0]} would receive at 7 am`} footer={<Button onClick={onClose}>Close</Button>}>
       <div className="rounded-[16px] border border-line bg-sidebar p-5">
         <div className="rounded-[12px] bg-surface p-5">
-          <p className="text-xs text-ink-3">From Marina System · {fmtDate(today())}</p>
+          <p className="text-xs text-ink-3">From Marina · {fmtDate(today())}</p>
           <p className="mt-2 text-[18px] leading-[26px] font-medium">Good morning, here's today at a glance</p>
           <dl className="mt-4 divide-y divide-line text-sm">
             {rows.map(([k, v]) => (

@@ -9,7 +9,7 @@ const KEY = (id: string) => `mms.welcomed.${id}`;
 
 const STEPS: { title: string; body: string; points: { icon: LucideIcon; text: string }[] }[] = [
   {
-    title: "Welcome to Marina System",
+    title: "Welcome to Marina",
     body: "One place to run every marina: occupancy, bookings, staff and billing across all your locations. Everything here uses sample data, so feel free to try things.",
     points: [
       { icon: Gauge, text: "Dashboards show today's occupancy and this month's revenue" },

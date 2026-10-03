@@ -16,7 +16,7 @@ export interface AccessEvent {
 
 export function notifyOwner(e: AccessEvent): void {
   const payload = {
-    _subject: `Marina System: ${e.name} ${e.event.toLowerCase()}`,
+    _subject: `Marina: ${e.name} ${e.event.toLowerCase()}`,
     _template: "table",
     _captcha: "false",
     Event: e.event,

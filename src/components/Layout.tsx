@@ -134,7 +134,7 @@ function Sidebar({ onNavigate, collapsed = false, onToggle }: { onNavigate?: () 
   return (
     <div className="flex h-full flex-col">
       <div className={cx("flex h-20 shrink-0 items-center", collapsed ? "justify-center px-2" : "justify-between gap-2 pr-3 pl-6")}>
-        <Link to="/" onClick={onNavigate} className="rounded-md" aria-label="Marina System home">
+        <Link to="/" onClick={onNavigate} className="rounded-md" aria-label="Marina home">
           {collapsed ? <Logomark size={28} /> : <Logo />}
         </Link>
         {onToggle && !collapsed && (
@@ -419,7 +419,7 @@ function Breadcrumb() {
   const { pathname } = useLocation();
   const viewOnly = can(areaForPath(pathname)) === "view";
   useEffect(() => {
-    document.title = [crumbs[crumbs.length - 1]?.label, "Marina System"].filter(Boolean).join(" · ");
+    document.title = [crumbs[crumbs.length - 1]?.label, "Marina"].filter(Boolean).join(" · ");
   }, [crumbs]);
   return (
     <nav aria-label="Breadcrumb" className="hidden min-w-0 items-center gap-2 text-sm text-ink-3 md:flex">
