@@ -18,7 +18,7 @@ import { AccessControl, Settings } from "@/pages/System";
 function RequireAuth({ children, admin }: { children: ReactNode; admin?: boolean }) {
   const { user } = useStore();
   const loc = useLocation();
-  if (!user) return <Navigate to="/login" replace state={{ from: loc.pathname }} />;
+  if (!user) return <Navigate to="/login" replace state={{ from: loc.pathname + loc.search }} />;
   if (admin && user.role !== "admin")
     return <EmptyState title="You don't have access to this page" body="Ask an admin if you need it." action={<Link to="/"><Button>Go to overview</Button></Link>} />;
   return <>{children}</>;

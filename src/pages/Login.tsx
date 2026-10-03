@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Link, Navigate, useNavigate } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft, CircleAlert, Eye, EyeOff, MailCheck } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { useStore } from "@/data/store";
@@ -26,12 +26,15 @@ function Brand() {
 export function Login() {
   const { signIn, user } = useStore();
   const navigate = useNavigate();
+  // A shared link sends people here first; after signing in, take them to the page they opened.
+  const from = (useLocation().state as { from?: string } | null)?.from;
+  const target = from && from.startsWith("/") && !from.startsWith("/login") ? from : "/";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (user) return <Navigate to="/" replace />;
+  if (user) return <Navigate to={target} replace />;
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -41,7 +44,7 @@ export function Login() {
     }
     const err = signIn(email, password);
     if (err) setError(err);
-    else navigate("/");
+    else navigate(target, { replace: true });
   };
 
   return (
