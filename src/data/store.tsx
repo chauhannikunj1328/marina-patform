@@ -25,7 +25,8 @@ interface Store {
   /** Put the database back to an earlier snapshot (used by Undo). */
   restore: (snapshot: Db, label: string) => void;
   user: SystemUser | null;
-  signIn: (email: string, password: string) => string | null;
+  /** Resolves to an error message, or null when signed in. */
+  signIn: (email: string, password: string) => Promise<string | null>;
   signOut: () => void;
   /** Marinas the signed-in user may see. */
   scope: string[];
@@ -39,11 +40,23 @@ interface Store {
 }
 
 
-// Demo accounts for the prototype only. Replace with a real auth provider.
-const DEMO_PASSWORDS: Record<string, string> = {
-  "admin@marina.com": "admin123",
-  "manager@marina.com": "manager123",
+// Prototype sign-in only: passwords are stored as SHA-256 hashes, never in plain text.
+// Replace with a real auth provider before launch.
+const PASSWORD_HASHES: Record<string, string> = {
+  "admin@marina.com": "240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9",
+  "manager@marina.com": "866485796cfa8d7c0cf7111640205b83076433547577511d81f8030ae99ecea5",
+  "chauhan.nikunj1328@gmail.com": "22b1ef6bfcd16329eb678346e6409561d2f3b46e9010a5226e552a4ddf3b1bba",
 };
+
+/** Accounts that must always exist, even in data saved before they were added. */
+const BUILT_IN_USERS: SystemUser[] = [
+  { id: "u-owner", name: "Nikunj Chauhan", email: "chauhan.nikunj1328@gmail.com", role: "admin", marinaIds: [], lastActive: today(), status: "active" },
+];
+
+async function sha256(text: string): Promise<string> {
+  const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return [...new Uint8Array(bytes)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
 
 const SESSION_KEY = "mms.session";
 const DATA_KEY = "mms.data.v3";
@@ -68,7 +81,12 @@ function loadDb(): Db {
 /** Derived states that depend on today's date. */
 function normalize(db: Db): Db {
   const now = today();
-  return { ...db, invoices: db.invoices.map((i) => (i.status === "due" && i.due < now ? { ...i, status: "overdue" } : i)) };
+  const missing = BUILT_IN_USERS.filter((b) => !db.users.some((u) => u.email.toLowerCase() === b.email));
+  return {
+    ...db,
+    users: [...db.users, ...missing],
+    invoices: db.invoices.map((i) => (i.status === "due" && i.due < now ? { ...i, status: "overdue" } : i)),
+  };
 }
 
 function readSession(): string | null {
@@ -154,9 +172,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [db.activity, user, scope],
   );
 
-  const signIn = (email: string, password: string) => {
+  const signIn = async (email: string, password: string) => {
     const u = db.users.find((x) => x.email.toLowerCase() === email.trim().toLowerCase());
-    if (!u || DEMO_PASSWORDS[u.email] !== password) return "That email and password don't match. Try again.";
+    if (!u || PASSWORD_HASHES[u.email.toLowerCase()] !== (await sha256(password))) return "That email and password don't match. Try again.";
     if (u.status !== "active") return "This account isn't active yet.";
     setUserId(u.id);
     try {

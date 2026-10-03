@@ -36,13 +36,16 @@ export function Login() {
 
   if (user) return <Navigate to={target} replace />;
 
-  const submit = (e: FormEvent) => {
+  const [busy, setBusy] = useState(false);
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !password) {
       setError("Enter your email and password.");
       return;
     }
-    const err = signIn(email, password);
+    setBusy(true);
+    const err = await signIn(email, password);
+    setBusy(false);
     if (err) setError(err);
     else navigate(target, { replace: true });
   };
@@ -88,8 +91,8 @@ export function Login() {
             {error}
           </p>
         )}
-        <Button type="submit" variant="primary" className="h-12 w-full text-[15px]">
-          Sign in
+        <Button type="submit" variant="primary" className="h-12 w-full text-[15px]" disabled={busy}>
+          {busy ? "Signing in…" : "Sign in"}
         </Button>
       </form>
       {import.meta.env.DEV && (
