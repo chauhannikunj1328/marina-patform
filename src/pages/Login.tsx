@@ -94,6 +94,12 @@ export function Login() {
         <Button type="submit" variant="primary" className="h-12 w-full text-[15px]" disabled={busy}>
           {busy ? "Signing in…" : "Sign in"}
         </Button>
+        <p className="text-center text-[13px] text-ink-2">
+          New here?{" "}
+          <Link to="/register" state={{ from }} className="font-semibold text-green-text hover:underline">
+            Create an account
+          </Link>
+        </p>
       </form>
       {import.meta.env.DEV && (
         <div className="mt-8 border-t border-line pt-5 text-xs text-ink-3">
@@ -172,6 +178,88 @@ export function ForgotPassword() {
           </form>
         </>
       )}
+    </Shell>
+  );
+}
+
+export function Register() {
+  const { register, user } = useStore();
+  const navigate = useNavigate();
+  const from = (useLocation().state as { from?: string } | null)?.from;
+  const target = from && from.startsWith("/") && !from.startsWith("/login") && !from.startsWith("/register") ? from : "/";
+  const [f, setF] = useState({ name: "", email: "", company: "", password: "" });
+  const [show, setShow] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [busy, setBusy] = useState(false);
+
+  if (user) return <Navigate to={target} replace />;
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    const errs: Record<string, string> = {};
+    if (!f.name.trim()) errs.name = "Enter your full name.";
+    if (!/^\S+@\S+\.\S+$/.test(f.email.trim())) errs.email = "Enter a valid email address.";
+    if (f.password.length < 8) errs.password = "Use at least 8 characters.";
+    setErrors(errs);
+    if (Object.keys(errs).length) return;
+    setBusy(true);
+    const err = await register(f);
+    setBusy(false);
+    if (err) setErrors({ form: err });
+    else navigate(target, { replace: true });
+  };
+
+  return (
+    <Shell>
+      <Brand />
+      <div className="mb-8 text-center">
+        <h1 className="text-[22px] leading-[30px] font-medium">Create your account</h1>
+        <p className="mt-1 text-sm text-ink-2">Explore the full Marina System dashboard with sample data.</p>
+      </div>
+      <form onSubmit={submit} className="space-y-4" noValidate>
+        <Field label="Full name" error={errors.name}>
+          {(id) => <Input id={id} autoComplete="name" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />}
+        </Field>
+        <Field label="Work email" error={errors.email}>
+          {(id) => <Input id={id} type="email" autoComplete="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} placeholder="you@company.com" />}
+        </Field>
+        <Field label="Company" hint="Optional">
+          {(id) => <Input id={id} autoComplete="organization" value={f.company} onChange={(e) => setF({ ...f, company: e.target.value })} />}
+        </Field>
+        <Field label="Password" error={errors.password} hint="At least 8 characters">
+          {(id) => (
+            <div className="relative">
+              <Input id={id} type={show ? "text" : "password"} autoComplete="new-password" value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} className="pr-10" />
+              <button
+                type="button"
+                onClick={() => setShow((v) => !v)}
+                aria-label={show ? "Hide password" : "Show password"}
+                className="absolute top-1/2 right-2 -translate-y-1/2 rounded-full p-1.5 text-ink-2 hover:bg-sidebar hover:text-ink cursor-pointer"
+              >
+                {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+              </button>
+            </div>
+          )}
+        </Field>
+        {errors.form && (
+          <p role="alert" className="flex items-start gap-2 rounded-[12px] border border-error-border bg-error-bg px-3.5 py-2.5 text-[13px] text-error-fg">
+            <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+            {errors.form}
+          </p>
+        )}
+        <p className="rounded-[12px] bg-surface-2 px-3.5 py-2.5 text-xs leading-[18px] text-ink-3">
+          The product owner is emailed your name, email, company and sign-in times so they know who is reviewing the demo. Your password is never shared. Your account and any changes you make are saved only in this browser.
+        </p>
+        <Button type="submit" variant="primary" className="h-12 w-full text-[15px]" disabled={busy}>
+          {busy ? "Creating account…" : "Create account"}
+        </Button>
+        <p className="text-center text-[13px] text-ink-2">
+          Already have an account?{" "}
+          <Link to="/login" state={{ from }} className="font-semibold text-green-text hover:underline">
+            Sign in
+          </Link>
+        </p>
+      </form>
     </Shell>
   );
 }

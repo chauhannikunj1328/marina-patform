@@ -2,6 +2,7 @@ import { useCallback, useContext, useEffect, useMemo, useState, type ReactNode }
 import { StoreContext } from "./context";
 import { today } from "@/lib/date";
 import { setCurrency } from "@/lib/format";
+import { notifyOwner } from "@/lib/notify";
 import { createSeed, type Db } from "./seed";
 import { Index } from "./selectors";
 import type { SystemUser } from "./types";
@@ -27,6 +28,8 @@ interface Store {
   user: SystemUser | null;
   /** Resolves to an error message, or null when signed in. */
   signIn: (email: string, password: string) => Promise<string | null>;
+  /** Creates an admin account in this browser and signs in. Resolves to an error message, or null. */
+  register: (a: { name: string; email: string; company?: string; password: string }) => Promise<string | null>;
   signOut: () => void;
   /** Marinas the signed-in user may see. */
   scope: string[];
@@ -52,6 +55,35 @@ const PASSWORD_HASHES: Record<string, string> = {
 const BUILT_IN_USERS: SystemUser[] = [
   { id: "u-owner", name: "Nikunj Chauhan", email: "chauhan.nikunj1328@gmail.com", role: "admin", marinaIds: [], lastActive: today(), status: "active" },
 ];
+
+/** Accounts created with "Create account". Kept separately so they survive the daily data reset. */
+interface RegisteredAccount {
+  id: string;
+  name: string;
+  email: string;
+  company?: string;
+  hash: string;
+  createdAt: string;
+}
+const ACCOUNTS_KEY = "mms.accounts";
+
+function readAccounts(): RegisteredAccount[] {
+  try {
+    return JSON.parse(localStorage.getItem(ACCOUNTS_KEY) ?? "[]") as RegisteredAccount[];
+  } catch {
+    return [];
+  }
+}
+
+function writeAccounts(list: RegisteredAccount[]) {
+  try {
+    localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(list));
+  } catch {
+    /* storage unavailable: the account lasts for this visit only */
+  }
+}
+
+const toUser = (a: RegisteredAccount): SystemUser => ({ id: a.id, name: a.name, email: a.email, role: "admin", marinaIds: [], lastActive: today(), status: "active" });
 
 async function sha256(text: string): Promise<string> {
   const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
@@ -81,7 +113,7 @@ function loadDb(): Db {
 /** Derived states that depend on today's date. */
 function normalize(db: Db): Db {
   const now = today();
-  const missing = BUILT_IN_USERS.filter((b) => !db.users.some((u) => u.email.toLowerCase() === b.email));
+  const missing = [...BUILT_IN_USERS, ...readAccounts().map(toUser)].filter((b) => !db.users.some((u) => u.email.toLowerCase() === b.email.toLowerCase()));
   return {
     ...db,
     users: [...db.users, ...missing],
@@ -172,16 +204,41 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [db.activity, user, scope],
   );
 
-  const signIn = async (email: string, password: string) => {
-    const u = db.users.find((x) => x.email.toLowerCase() === email.trim().toLowerCase());
-    if (!u || PASSWORD_HASHES[u.email.toLowerCase()] !== (await sha256(password))) return "That email and password don't match. Try again.";
-    if (u.status !== "active") return "This account isn't active yet.";
-    setUserId(u.id);
+  const startSession = (id: string) => {
+    setUserId(id);
     try {
-      sessionStorage.setItem(SESSION_KEY, u.id);
+      sessionStorage.setItem(SESSION_KEY, id);
     } catch {
       /* storage unavailable */
     }
+  };
+
+  const signIn = async (email: string, password: string) => {
+    const key = email.trim().toLowerCase();
+    const u = db.users.find((x) => x.email.toLowerCase() === key);
+    const account = readAccounts().find((a) => a.email.toLowerCase() === key);
+    const expected = PASSWORD_HASHES[key] ?? account?.hash;
+    if (!u || !expected || expected !== (await sha256(password))) return "That email and password don't match. Try again.";
+    if (u.status !== "active") return "This account isn't active yet.";
+    startSession(u.id);
+    notifyOwner({ event: "Signed in", name: u.name, email: u.email, role: u.role, company: account?.company });
+    return null;
+  };
+
+  const register = async ({ name, email, company, password }: { name: string; email: string; company?: string; password: string }) => {
+    const key = email.trim().toLowerCase();
+    if (PASSWORD_HASHES[key] || db.users.some((x) => x.email.toLowerCase() === key) || readAccounts().some((a) => a.email.toLowerCase() === key))
+      return "An account with this email already exists. Sign in instead.";
+    const account: RegisteredAccount = { id: `u-reg-${Date.now()}`, name: name.trim(), email: email.trim(), company: company?.trim() || undefined, hash: await sha256(password), createdAt: new Date().toISOString() };
+    writeAccounts([...readAccounts(), account]);
+    const user = toUser(account);
+    setDb((d) => ({
+      ...d,
+      users: [...d.users, user],
+      activity: [{ id: `a-reg-${Date.now()}`, at: account.createdAt, by: user.name, text: `${user.name} created an account` }, ...d.activity],
+    }));
+    startSession(user.id);
+    notifyOwner({ event: "Registered", name: user.name, email: user.email, role: user.role, company: account.company });
     return null;
   };
 
@@ -195,7 +252,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <StoreContext.Provider value={{ db, ix, update, restore, user, signIn, signOut, scope, resetData, toasts, toast, activity }}>{children}</StoreContext.Provider>
+    <StoreContext.Provider value={{ db, ix, update, restore, user, signIn, register, signOut, scope, resetData, toasts, toast, activity }}>{children}</StoreContext.Provider>
   );
 }
 

@@ -3,7 +3,7 @@ import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useStore } from "@/data/store";
 import Layout from "@/components/Layout";
 import { EmptyState, Button } from "@/components/ui";
-import { ForgotPassword, Login } from "@/pages/Login";
+import { ForgotPassword, Login, Register } from "@/pages/Login";
 import { CityDashboard, CountyDashboard, GlobalOverview } from "@/pages/Dashboards";
 import { MarinaDetail, Marinas } from "@/pages/Marinas";
 import { Berths } from "@/pages/Berths";
@@ -38,6 +38,7 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/register" element={<Register />} />
       <Route element={<RequireAuth><Layout /></RequireAuth>}>
         <Route index element={<GlobalOverview />} />
         <Route path="county/:id?" element={<CountyDashboard />} />

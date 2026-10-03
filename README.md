@@ -18,6 +18,8 @@ Open http://localhost:5173 and sign in with a demo account (shown on the login p
 | Admin (all marinas) | admin@marina.com | admin123 |
 | Marina manager (Golden Gate Marina only) | manager@marina.com | manager123 |
 
+Reviewers can also choose **Create an account** on the sign-in page. New accounts get admin access and are saved in that browser. On the deployed site, the owner (chauhan.nikunj1328@gmail.com) is emailed each time someone registers or signs in (name, email, company, role, time, browser; never the password) through [FormSubmit](https://formsubmit.co). FormSubmit asks the owner to confirm the address with the very first email. Edit `src/lib/notify.ts` to change the address.
+
 Changes you make are saved in your browser until midnight; then fresh sample data is generated so dates stay current. Settings → Demo data → **Reset demo data** starts over at any time.
 
 ## Screens
