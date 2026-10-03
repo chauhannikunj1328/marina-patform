@@ -53,6 +53,10 @@ export function createSeed(): Db {
     { id: "c-sf", name: "San Francisco County", state: "California" },
     { id: "c-md", name: "Miami-Dade County", state: "Florida" },
     { id: "c-king", name: "King County", state: "Washington" },
+    { id: "c-marin", name: "Marin County", state: "California" },
+    { id: "c-sd", name: "San Diego County", state: "California" },
+    { id: "c-brow", name: "Broward County", state: "Florida" },
+    { id: "c-mon", name: "Monroe County", state: "Florida" },
   ];
 
   const cities: City[] = [
@@ -61,6 +65,11 @@ export function createSeed(): Db {
     { id: "ct-mb", name: "Miami Beach", countyId: "c-md", lat: 25.7907, lng: -80.13 },
     { id: "ct-sea", name: "Seattle", countyId: "c-king", lat: 47.6062, lng: -122.3321 },
     { id: "ct-kir", name: "Kirkland", countyId: "c-king", lat: 47.6769, lng: -122.206 },
+    { id: "ct-sau", name: "Sausalito", countyId: "c-marin", lat: 37.8591, lng: -122.4853 },
+    { id: "ct-sd", name: "San Diego", countyId: "c-sd", lat: 32.7157, lng: -117.1611 },
+    { id: "ct-cor", name: "Coronado", countyId: "c-sd", lat: 32.6859, lng: -117.1831 },
+    { id: "ct-ftl", name: "Fort Lauderdale", countyId: "c-brow", lat: 26.1224, lng: -80.1373 },
+    { id: "ct-kw", name: "Key West", countyId: "c-mon", lat: 24.5551, lng: -81.78 },
   ];
 
   const marinaDefs = [
@@ -70,6 +79,14 @@ export function createSeed(): Db {
     { id: "m-bp", name: "Biscayne Point Marina", cityId: "ct-mb", phone: "(305) 555-0341", berths: 24, docks: "AB", address: "1800 West Ave" },
     { id: "m-sw", name: "Seattle Waterfront", cityId: "ct-sea", phone: "(206) 555-0321", berths: 30, docks: "ABC", address: "2601 Alaskan Way" },
     { id: "m-lw", name: "Lake Washington Marina", cityId: "ct-kir", phone: "(425) 555-0198", berths: 20, docks: "AB", address: "25 Lake St" },
+    { id: "m-sau", name: "Sausalito Yacht Harbor", cityId: "ct-sau", phone: "(415) 555-0612", berths: 26, docks: "AB", address: "300 Bridgeway" },
+    { id: "m-mb", name: "Mission Bay Moorings", cityId: "ct-sf", phone: "(415) 555-0733", berths: 22, docks: "AB", address: "650 Terry Francois Blvd" },
+    { id: "m-pl", name: "Point Loma Harbor", cityId: "ct-sd", phone: "(619) 555-0144", berths: 34, docks: "ABC", address: "2600 Shelter Island Dr" },
+    { id: "m-cb", name: "Coronado Bay Marina", cityId: "ct-cor", phone: "(619) 555-0277", berths: 22, docks: "AB", address: "1715 Strand Way" },
+    { id: "m-lo", name: "Las Olas Harbor", cityId: "ct-ftl", phone: "(954) 555-0390", berths: 30, docks: "ABC", address: "240 E Las Olas Cir" },
+    { id: "m-nr", name: "New River Moorings", cityId: "ct-ftl", phone: "(954) 555-0518", berths: 18, docks: "AB", address: "15 SW 1st Ave" },
+    { id: "m-kw", name: "Southernmost Harbor", cityId: "ct-kw", phone: "(305) 555-0921", berths: 24, docks: "AB", address: "201 William St" },
+    { id: "m-sp", name: "Shilshole Point Marina", cityId: "ct-sea", phone: "(206) 555-0466", berths: 28, docks: "AB", address: "7001 Seaview Ave NW" },
   ];
   const AMENITIES = ["Wi-Fi", "Shore power", "Fresh water", "Fuel dock", "Pump-out", "Showers", "Laundry", "Security", "Parking"];
 
@@ -117,7 +134,7 @@ export function createSeed(): Db {
 
   const owners: BoatOwner[] = [];
   const boats: Boat[] = [];
-  for (let i = 0; i < 140; i++) {
+  for (let i = 0; i < 260; i++) {
     const name = `${FIRST[i % FIRST.length]} ${LAST[(i * 7 + Math.floor(i / 30)) % LAST.length]}`;
     const id = `o-${i + 1}`;
     owners.push({
@@ -130,7 +147,7 @@ export function createSeed(): Db {
     boats.push({
       id: `bt-${i + 1}`,
       ownerId: id,
-      name: `${BOAT_NAMES[i % BOAT_NAMES.length]}${i >= BOAT_NAMES.length ? ` ${["II", "III", "IV", "V", "VI", "VII", "VIII"][Math.floor(i / BOAT_NAMES.length) - 1]}` : ""}`,
+      name: `${BOAT_NAMES[i % BOAT_NAMES.length]}${i >= BOAT_NAMES.length ? ` ${["II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII", "XIII", "XIV"][Math.floor(i / BOAT_NAMES.length) - 1]}` : ""}`,
       type: pick(BOAT_TYPES),
       length: pick([24, 28, 32, 35, 38, 42, 48, 55]),
       registration: `${pick(["CA", "FL", "WA"])} ${1000 + between(0, 8999)} ${String.fromCharCode(65 + between(0, 25))}${String.fromCharCode(65 + between(0, 25))}`,
@@ -253,7 +270,7 @@ export function createSeed(): Db {
     });
     ti++;
   }
-  for (let k = 0; k < 10; k++) {
+  for (let k = 0; k < marinaDefs.length + 4; k++) {
     const m = marinaDefs[k % marinaDefs.length];
     const done = k < 6;
     tasks.push({
@@ -272,10 +289,11 @@ export function createSeed(): Db {
       .filter((s) => s.position === "Marina Manager")
       .map((s, i): SystemUser => ({
         id: `u-${i + 2}`, name: s.name, email: i === 0 ? "manager@marina.com" : s.email, role: "manager",
-        marinaIds: [s.marinaId], lastActive: addDays(now, -i), status: "active",
+        // The demo manager runs the San Francisco Bay group; other managers run one marina each.
+        marinaIds: i === 0 ? ["m-gg", "m-bh", "m-mb", "m-sau"] : [s.marinaId], lastActive: addDays(now, -(i % 7)), status: "active",
       })),
-    { id: "u-9", name: "Priya Shah", email: "priya.shah@marinaops.com", role: "staff", marinaIds: ["m-gg", "m-bh"], lastActive: addDays(now, -3), status: "active" },
-    { id: "u-10", name: "Tom Becker", email: "tom.becker@marinaops.com", role: "staff", marinaIds: ["m-sw"], lastActive: addDays(now, -20), status: "invited" },
+    { id: "u-staff-1", name: "Priya Shah", email: "priya.shah@marinaops.com", role: "staff", marinaIds: ["m-gg", "m-bh"], lastActive: addDays(now, -3), status: "active" },
+    { id: "u-staff-2", name: "Tom Becker", email: "tom.becker@marinaops.com", role: "staff", marinaIds: ["m-sw"], lastActive: addDays(now, -20), status: "invited" },
   ];
 
   const settings: Settings = {
@@ -293,11 +311,11 @@ export function createSeed(): Db {
   const activity: Activity[] = bookings
     .filter((b) => b.createdAt <= now && b.status !== "cancelled")
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-    .slice(0, 8)
+    .slice(0, 40)
     .map((b, i) => ({
       id: `a-${i + 1}`,
       // Entries from today are spaced back from the current time so none are in the future.
-      at: b.createdAt === now ? new Date(Date.now() - (i + 1) * 23 * 60_000).toISOString() : new Date(`${b.createdAt}T${String(17 - i).padStart(2, "0")}:${String((i * 17) % 60).padStart(2, "0")}:00`).toISOString(),
+      at: b.createdAt === now ? new Date(Date.now() - (i + 1) * 23 * 60_000).toISOString() : new Date(`${b.createdAt}T${String(18 - (i % 10)).padStart(2, "0")}:${String((i * 17) % 60).padStart(2, "0")}:00`).toISOString(),
       by: i % 3 === 0 ? "Online booking" : "Front desk",
       text: `New booking ${b.code} for ${boatName.get(b.boatId)} at ${marinaName.get(berthById.get(b.berthId)!.marinaId)}`,
       to: `/bookings?q=${b.code}`,

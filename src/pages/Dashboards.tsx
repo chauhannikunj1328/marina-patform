@@ -263,7 +263,7 @@ export function GlobalOverview() {
         <KpiRow ids={scope} scopeLabel={`${counties.length} ${counties.length === 1 ? "county" : "counties"}`} />
         <Charts groups={counties.map((x) => ({ name: x.c.name.replace(" County", ""), ids: x.ids }))} />
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-          <div className="xl:col-span-2">
+          <div className="space-y-4 xl:col-span-2">
             <RankTable
               title="Marinas"
               nameHead="Marina"
@@ -271,11 +271,11 @@ export function GlobalOverview() {
                 .filter((m) => scope.includes(m.id))
                 .map((m) => ({ id: m.id, name: m.name, sub: ix.city(m.cityId)?.name ?? "", ids: [m.id], to: `/marinas/${m.id}` }))}
             />
+            <RecentActivity />
           </div>
           <div className="space-y-4">
             <BerthRing ids={scope} />
             <TodayPanel ids={scope} />
-            <RecentActivity />
             <UpdateCard onDownload={() => exportSummary(ix, db.marinas.filter((m) => scope.includes(m.id)).map((m) => ({ name: m.name, ids: [m.id] })), "monthly-marina-report.csv")} />
           </div>
         </div>
