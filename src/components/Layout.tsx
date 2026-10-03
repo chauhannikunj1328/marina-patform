@@ -502,7 +502,7 @@ export default function Layout() {
   return (
     <div className="flex h-full bg-bg">
       {/* 05 Breakpoints: tablet = icon sidebar, laptop+ = expanded (user can collapse) */}
-      <aside className={cx("hidden shrink-0 bg-sidebar transition-[width] duration-[320ms] ease-brand md:block", collapsed ? "w-[72px]" : "w-[72px] lg:w-[260px]")}>
+      <aside className={cx("hidden shrink-0 bg-sidebar transition-[width] duration-[320ms] ease-brand md:block", collapsed ? "w-[72px]" : "w-[72px] lg:w-[280px]")}>
         <div className="h-full lg:hidden">
           <Sidebar collapsed />
         </div>
