@@ -135,7 +135,7 @@ function Sidebar({ onNavigate, collapsed = false, onToggle }: { onNavigate?: () 
     <div className="flex h-full flex-col">
       <div className={cx("flex h-20 shrink-0 items-center", collapsed ? "justify-center px-2" : "justify-between gap-2 pr-3 pl-6")}>
         <Link to="/" onClick={onNavigate} className="rounded-md" aria-label="Marina home">
-          {collapsed ? <Logomark size={28} /> : <Logo />}
+          {collapsed ? <Logomark size={20} /> : <Logo />}
         </Link>
         {onToggle && !collapsed && (
           <IconButton icon={ArrowLeft} label="Collapse sidebar" onClick={onToggle} className="max-lg:hidden" />

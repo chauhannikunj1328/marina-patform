@@ -13,11 +13,11 @@ export function Logomark({ size = 24, className }: { size?: number; className?: 
   );
 }
 
-/** Horizontal logo: 24 px mark + 22 px wordmark, gap of half the mark height. */
+/** Horizontal logo: 20 px mark + 22 px wordmark, gap of half the mark height. */
 export function Logo({ collapsed = false, size = "md" }: { collapsed?: boolean; size?: "md" | "lg" }) {
-  const mark = size === "lg" ? 36 : 24;
+  const mark = size === "lg" ? 36 : 20;
   return (
-    <span className="inline-flex items-center gap-3" aria-label="Marina">
+    <span className={cx("inline-flex items-center", size === "lg" ? "gap-4" : "gap-2.5")} aria-label="Marina">
       <Logomark size={mark} />
       {!collapsed && <span className={cx("font-medium tracking-[-0.01em] whitespace-nowrap text-ink", size === "lg" ? "text-[30px] leading-9" : "text-[22px] leading-7")}>Marina</span>}
     </span>
