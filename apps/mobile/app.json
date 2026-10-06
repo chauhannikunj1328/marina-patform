@@ -1,0 +1,64 @@
+{
+  "expo": {
+    "name": "Marina Staff",
+    "slug": "marina-staff",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "marinastaff",
+    "userInterfaceStyle": "automatic",
+    "icon": "./assets/icon.png",
+    "ios": {
+      "bundleIdentifier": "com.marina.staff",
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Marina Staff uses the camera to add photos to repair reports.",
+        "NSPhotoLibraryUsageDescription": "Marina Staff lets you attach photos to repair reports."
+      }
+    },
+    "android": {
+      "package": "com.marina.staff",
+      "adaptiveIcon": {
+        "backgroundColor": "#2F3740",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/favicon.png",
+      "name": "Marina Staff",
+      "shortName": "Marina",
+      "themeColor": "#2F3740",
+      "backgroundColor": "#2F3740"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 120,
+          "backgroundColor": "#2F3740",
+          "dark": {
+            "image": "./assets/splash-icon.png",
+            "backgroundColor": "#121417"
+          }
+        }
+      ],
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Marina Staff uses the camera to add photos to repair reports.",
+          "photosPermission": "Marina Staff lets you attach photos to repair reports."
+        }
+      ],
+      "expo-status-bar"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

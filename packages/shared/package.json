@@ -1,0 +1,8 @@
+{
+  "name": "@marina/shared",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Data model, sample data, calculations and brand values shared by the Marina apps",
+  "main": "src/index.ts",
+  "types": "src/index.ts"
+}
