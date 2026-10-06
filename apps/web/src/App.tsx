@@ -33,7 +33,7 @@ function RequireAuth({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
-/** Staff use the Marina Staff mobile app; the web app is for admins and managers. */
+/** Staff use the Marina mobile app; the web app is for admins and managers. */
 function OfficeOnly({ children }: { children: ReactNode }) {
   const { user } = useStore();
   if (user?.role === "staff") return <StaffUseMobile />;

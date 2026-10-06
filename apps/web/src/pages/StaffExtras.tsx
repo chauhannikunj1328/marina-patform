@@ -1,4 +1,4 @@
-// Staff page panels fed by the Marina Staff app: time off and swap requests, hours worked, messages.
+// Staff page panels fed by the Marina app: time off and swap requests, hours worked, messages.
 import { useState } from "react";
 import { CalendarClock, Check, Clock, MessagesSquare, Send, X } from "lucide-react";
 import { useStore } from "@/data/store";
@@ -33,7 +33,7 @@ export function RequestsPanel({ staff, canEdit }: { staff: Staff[]; canEdit: boo
         <Tabs value={show} onChange={setShow} items={[{ value: "pending", label: "Waiting", count: pending.length }, { value: "all", label: "All requests", count: all.length }]} />
       </div>
       {rows.length === 0 ? (
-        <EmptyState icon={CalendarClock} title={show === "pending" ? "No requests waiting" : "No requests yet"} body="Staff ask for time off and shift swaps from the Marina Staff app." />
+        <EmptyState icon={CalendarClock} title={show === "pending" ? "No requests waiting" : "No requests yet"} body="Staff ask for time off and shift swaps from the Marina app." />
       ) : (
         <Table head={["Staff member", "Request", "Reason", "Sent", "Status", "Actions"]}>
           {rows.map((r) => {
@@ -84,7 +84,7 @@ export function HoursPanel({ staff }: { staff: Staff[] }) {
         </div>
       </div>
       {rows.length === 0 ? (
-        <EmptyState icon={Clock} title="No hours recorded this week" body="Staff clock in and out from the Marina Staff app." />
+        <EmptyState icon={Clock} title="No hours recorded this week" body="Staff clock in and out from the Marina app." />
       ) : (
         <Table head={["Staff member", ...days.map((d, i) => `${DAYS[i]} ${Number(d.slice(8))}`), "Total"]}>
           {rows.map((s) => {
@@ -179,7 +179,7 @@ export function MessagesPanel({ staff }: { staff: Staff[] }) {
           </div>
         </div>
       ) : (
-        <EmptyState icon={MessagesSquare} title="No conversations" body="Messages from staff in the Marina Staff app show up here." />
+        <EmptyState icon={MessagesSquare} title="No conversations" body="Messages from staff in the Marina app show up here." />
       )}
     </div>
   );

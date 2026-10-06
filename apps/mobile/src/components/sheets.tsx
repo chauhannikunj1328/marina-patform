@@ -6,7 +6,8 @@ import {
   addDays, bookingAmount, daysBetween, fmtDate, fmtShort, money2, nextId, relative, today, withInvoice,
   type Berth, type Booking, type BookingStatus, type BoatType, type Invoice, type MaintenanceTask, type PaymentMethod, type Priority,
 } from "@marina/shared";
-import { useMe, useStore } from "../store";
+import { ALL, useMe, useStore } from "../store";
+import { clashFor, useApprovals } from "../lib/approvals";
 import { useTheme } from "../theme";
 import { pickPhoto, takePhoto } from "../lib/photos";
 import { BerthBadge, BookingBadge, PriorityBadge, TaskBadge } from "./status";
@@ -25,9 +26,10 @@ export function useBookingStatus() {
 }
 
 export function BookingSheet({ booking, onClose }: { booking: Booking; onClose: () => void }) {
-  const { db, ix, can } = useStore();
+  const { db, ix, can, isManager } = useStore();
   const { t } = useTheme();
   const setStatus = useBookingStatus();
+  const { approve, decline } = useApprovals();
   const [paying, setPaying] = useState<Invoice | undefined>();
   const b = db.bookings.find((x) => x.id === booking.id) ?? booking;
   const boat = ix.boat(b.boatId);
@@ -36,6 +38,8 @@ export function BookingSheet({ booking, onClose }: { booking: Booking; onClose: 
   const canEdit = can("bookings") !== "view";
   const canCheckIn = canEdit && b.status === "confirmed" && b.start <= today();
   const canCheckOut = canEdit && b.status === "checked-in";
+  const canDecide = canEdit && isManager && b.status === "pending";
+  const clash = canDecide ? clashFor(ix, b) : undefined;
   return (
     <Sheet
       open
@@ -43,7 +47,13 @@ export function BookingSheet({ booking, onClose }: { booking: Booking; onClose: 
       title={boat?.name ?? "Booking"}
       subtitle={`${b.code} · Berth ${berth?.code}`}
       footer={
-        canCheckIn ? <Button variant="primary" size="lg" icon={LogIn} label="Check in" onPress={() => { setStatus(b, "checked-in"); onClose(); }} />
+        canDecide ? (
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            <Button style={{ flex: 1 }} size="lg" label="Decline" onPress={() => { decline(b); onClose(); }} />
+            <Button style={{ flex: 1 }} size="lg" variant="primary" icon={CircleCheck} label="Approve" disabled={!!clash} onPress={() => { approve(b); onClose(); }} />
+          </View>
+        )
+        : canCheckIn ? <Button variant="primary" size="lg" icon={LogIn} label="Check in" onPress={() => { setStatus(b, "checked-in"); onClose(); }} />
         : canCheckOut ? <Button variant="primary" size="lg" icon={LogOut} label="Check out" onPress={() => { setStatus(b, "completed"); onClose(); }} />
         : <Button size="lg" label="Close" onPress={onClose} />
       }
@@ -54,8 +64,10 @@ export function BookingSheet({ booking, onClose }: { booking: Booking; onClose: 
       <Row label="Berth" value={`${berth?.code} · up to ${berth?.maxLength} ft`} sub={`${berth?.type}${berth?.power ? " · power" : ""}${berth?.water ? " · water" : ""}`} />
       <Row label="Boat owner" value={owner?.name ?? ""} sub={owner?.email} />
       {b.status === "pending" && (
-        <View style={{ backgroundColor: t.status.pending.bg, borderRadius: 12, padding: 12, marginBottom: 12 }}>
-          <Txt v="bodySm" color={t.status.pending.fg}>Waiting for a manager to approve this booking.</Txt>
+        <View style={{ backgroundColor: clash ? t.error.bg : t.status.pending.bg, borderRadius: 12, padding: 12, marginBottom: 12 }}>
+          <Txt v="bodySm" color={clash ? t.error.fg : t.status.pending.fg}>
+            {clash ? `${clash} Move it to another berth in the web app, or decline it.` : isManager ? `Waiting for your approval. Approving creates a ${money2(ix.amount(b))} invoice.` : "Waiting for a manager to approve this booking."}
+          </Txt>
         </View>
       )}
       <InvoiceRow bookingId={b.id} onPay={setPaying} />
@@ -136,12 +148,33 @@ export function PaymentSheet({ invoice, onClose }: { invoice: Invoice; onClose: 
   );
 }
 
+/** Asks which marina a new record is for when the app is showing All marinas. */
+function useMarinaChoice() {
+  const { marinaId, scope } = useStore();
+  const [chosen, setChosen] = useState(marinaId === ALL ? "" : marinaId);
+  return { needed: marinaId === ALL, value: marinaId === ALL ? chosen : marinaId, set: setChosen, options: scope };
+}
+
+function MarinaField({ choice, error, onPick }: { choice: ReturnType<typeof useMarinaChoice>; error?: string; onPick?: () => void }) {
+  const { ix } = useStore();
+  if (!choice.needed) return null;
+  return (
+    <Field label="Marina" error={error}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+        {choice.options.map((id) => <Chip key={id} label={ix.marina(id)?.name ?? id} on={choice.value === id} onPress={() => { choice.set(id); onPick?.(); }} />)}
+      </ScrollView>
+    </Field>
+  );
+}
+
 const BOAT_TYPES: BoatType[] = ["Sailboat", "Motor Yacht", "Catamaran", "Center Console", "Trawler"];
 
 /** Book a boat that turns up without a booking: pick or add the boat, choose a free berth, check in. */
 export function WalkInSheet({ onClose, onDone }: { onClose: () => void; onDone: (bookingId: string) => void }) {
-  const { db, ix, update, toast, marinaId } = useStore();
+  const { db, ix, update, toast } = useStore();
   const { t } = useTheme();
+  const choice = useMarinaChoice();
+  const marinaId = choice.value;
   const [mode, setMode] = useState<"existing" | "new">("existing");
   const [q, setQ] = useState("");
   const [boatId, setBoatId] = useState("");
@@ -176,7 +209,8 @@ export function WalkInSheet({ onClose, onDone }: { onClose: () => void; onDone: 
       if (!f.boat.trim()) e.newBoat = "Enter the boat name.";
       if (!(Number(f.length) >= 10)) e.length = "Enter the boat length in feet (10 or more).";
     }
-    if (!berth) e.berth = free.length ? "Choose a berth." : "No berth is free and big enough tonight.";
+    if (!marinaId) e.marina = "Choose the marina.";
+    else if (!berth) e.berth = free.length ? "Choose a berth." : "No berth is free and big enough tonight.";
     setErrors(e);
     if (Object.keys(e).length || !berth) return;
     const id = nextId("bk", db.bookings);
@@ -200,6 +234,7 @@ export function WalkInSheet({ onClose, onDone }: { onClose: () => void; onDone: 
   return (
     <Sheet open onClose={onClose} title="Walk-in booking" subtitle="Arriving today without a booking" footer={<Button variant="primary" size="lg" icon={checkIn ? LogIn : undefined} label={berth ? `${checkIn ? "Book and check in" : "Book"} · ${money2(price)}` : "Book"} onPress={save} />}>
       <View style={{ gap: 16 }}>
+        <MarinaField choice={choice} error={errors.marina} onPick={() => { setBerthId(""); setErrors({}); }} />
         <Segmented value={mode} onChange={(v) => { setMode(v); setErrors({}); }} items={[{ value: "existing", label: "Known boat" }, { value: "new", label: "New boat" }]} />
         {mode === "existing" ? (
           <Field label="Boat" error={errors.boat}>
@@ -252,8 +287,8 @@ export function WalkInSheet({ onClose, onDone }: { onClose: () => void; onDone: 
           <Field label="Nights" hint={`Leaves ${fmtShort(end)}`}><Stepper label="nights" value={nights} onChange={(n) => { setNights(n); setBerthId(""); }} max={60} /></Field>
           <Field label="Guests"><Stepper label="guests" value={guests} onChange={setGuests} max={20} /></Field>
         </View>
-        <Field label="Berth" error={errors.berth} hint={length ? `Free tonight${nights > 1 ? ` for ${nights} nights` : ""} and fits ${length} ft, smallest first.` : "Choose the boat first to see berths that fit."}>
-          {length > 0 && (
+        <Field label="Berth" error={errors.berth} hint={!marinaId ? "Choose the marina first." : length ? `Free tonight${nights > 1 ? ` for ${nights} nights` : ""} and fits ${length} ft, smallest first.` : "Choose the boat first to see berths that fit."}>
+          {length > 0 && !!marinaId && (
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
               {free.slice(0, 12).map((b) => <Chip key={b.id} label={b.code} sub={`${b.maxLength} ft`} on={berthId === b.id} onPress={() => { setBerthId(b.id); setErrors({}); }} />)}
             </View>
@@ -352,8 +387,10 @@ function PhotoTile({ icon, onPress }: { icon: "camera" | "library"; onPress: () 
 }
 
 export function ReportProblem({ berthId, onClose }: { berthId?: string; onClose: () => void }) {
-  const { db, update, toast, marinaId } = useStore();
+  const { db, ix, update, toast, user } = useStore();
   const me = useMe();
+  const choice = useMarinaChoice();
+  const marinaId = berthId ? ix.berth(berthId)?.marinaId ?? choice.value : choice.value;
   const { t } = useTheme();
   const [title, setTitle] = useState("");
   const [berth, setBerth] = useState(berthId ?? "");
@@ -363,16 +400,17 @@ export function ReportProblem({ berthId, onClose }: { berthId?: string; onClose:
   const [error, setError] = useState("");
   const save = () => {
     if (!title.trim()) return setError("Say what's wrong.");
+    if (!marinaId) return setError("Choose the marina.");
     update((d) => {
       const task: MaintenanceTask = {
         id: nextId("t", d.tasks), code: `WO-${String(d.tasks.length + 1).padStart(3, "0")}`, title: title.trim(), marinaId, berthId: berth || undefined,
         priority, status: "open", created: today(), due: addDays(today(), priority === "high" ? 1 : 7),
-        notes: [{ at: today(), by: me?.name ?? "Staff", text: "Reported from the staff app." }], photos,
+        notes: [{ at: today(), by: me?.name ?? user?.name ?? "Staff", text: "Reported from the mobile app." }], photos,
       };
       const berths = takeOut && berth ? d.berths.map((b) => (b.id === berth ? { ...b, underMaintenance: true } : b)) : d.berths;
       return { ...d, tasks: [...d.tasks, task], berths };
     }, { text: `Reported a problem: ${title.trim()}`, to: "/maintenance", marinaId });
-    toast("Problem reported. Your manager can see it now.");
+    toast(user?.role === "staff" ? "Problem reported. Your manager can see it now." : "Work order created");
     onClose();
   };
   return (
@@ -381,6 +419,7 @@ export function ReportProblem({ berthId, onClose }: { berthId?: string; onClose:
         <Field label="What's wrong?" error={error}>
           <Input multiline value={title} onChangeText={(v) => { setTitle(v); setError(""); }} placeholder="e.g. Power pedestal sparks when plugged in" invalid={!!error} />
         </Field>
+        {!berthId && <MarinaField choice={choice} onPick={() => { setBerth(""); setError(""); }} />}
         <Field label="Berth">
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
             {[{ id: "", code: "Not a berth" }, ...db.berths.filter((b) => b.marinaId === marinaId)].map((b) => {
@@ -417,10 +456,11 @@ export function ReportProblem({ berthId, onClose }: { berthId?: string; onClose:
 }
 
 export function TaskSheet({ task, onClose }: { task: MaintenanceTask; onClose: () => void }) {
-  const { db, ix, update, toast, can } = useStore();
+  const { db, ix, update, toast, can, isManager, user } = useStore();
   const me = useMe();
   const { t } = useTheme();
   const x = db.tasks.find((y) => y.id === task.id) ?? task;
+  const [assigning, setAssigning] = useState(false);
   const [note, setNote] = useState("");
   const [photos, setPhotos] = useState<string[]>([]);
   const canEdit = can("maintenance") !== "view";
@@ -436,13 +476,21 @@ export function TaskSheet({ task, onClose }: { task: MaintenanceTask; onClose: (
       }),
       log(status === "done" ? `Finished: ${x.title}` : `Started: ${x.title}`),
     );
-    toast(status === "done" ? "Marked as done" : "Started. It's now assigned to you.", before);
+    toast(status === "done" ? "Marked as done" : me ? "Started. It's now assigned to you." : "Marked as started", before);
   };
+  const assign = (staffId: string) => {
+    const before = db;
+    const who = ix.staffMember(staffId);
+    update((d) => ({ ...d, tasks: d.tasks.map((y) => (y.id === x.id ? { ...y, assigneeId: staffId } : y)) }), log(`Assigned to ${who?.name}`));
+    setAssigning(false);
+    toast(`Assigned to ${who?.name}. They see it in the app.`, before);
+  };
+  const crew = db.staff.filter((s) => s.marinaId === x.marinaId && s.position !== "Marina Manager" && s.status === "active");
   const addUpdate = () => {
     if (!note.trim() && photos.length === 0) return;
     update((d) => ({
       ...d,
-      tasks: d.tasks.map((y) => (y.id === x.id ? { ...y, notes: note.trim() ? [...y.notes, { at: today(), by: me?.name ?? "Staff", text: note.trim() }] : y.notes, photos: [...(y.photos ?? []), ...photos].slice(-6) } : y)),
+      tasks: d.tasks.map((y) => (y.id === x.id ? { ...y, notes: note.trim() ? [...y.notes, { at: today(), by: me?.name ?? user?.name ?? "Staff", text: note.trim() }] : y.notes, photos: [...(y.photos ?? []), ...photos].slice(-6) } : y)),
     }), log("Added an update"));
     setNote("");
     setPhotos([]);
@@ -455,7 +503,13 @@ export function TaskSheet({ task, onClose }: { task: MaintenanceTask; onClose: (
       title={x.title}
       subtitle={`${x.code} · ${x.berthId ? `Berth ${ix.berth(x.berthId)?.code}` : "Facility"}`}
       footer={
-        canEdit && x.status === "open" ? <Button variant="primary" size="lg" label="Start work" onPress={() => setStatus("in-progress")} />
+        canEdit && isManager && x.status !== "done" ? (
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            <Button style={{ flex: 1 }} size="lg" label={x.assigneeId ? "Reassign" : "Assign"} onPress={() => setAssigning(true)} />
+            <Button style={{ flex: 1 }} size="lg" variant="primary" icon={CircleCheck} label="Mark done" onPress={() => { setStatus("done"); onClose(); }} />
+          </View>
+        )
+        : canEdit && x.status === "open" ? <Button variant="primary" size="lg" label="Start work" onPress={() => setStatus("in-progress")} />
         : canEdit && x.status === "in-progress" ? <Button variant="primary" size="lg" icon={CircleCheck} label="Mark as done" onPress={() => { setStatus("done"); onClose(); }} />
         : <Button size="lg" label="Close" onPress={onClose} />
       }
@@ -464,7 +518,7 @@ export function TaskSheet({ task, onClose }: { task: MaintenanceTask; onClose: (
         <TaskBadge status={x.status} />
         <PriorityBadge priority={x.priority} />
       </View>
-      <Txt v="bodySm" color={t.text3} style={{ marginBottom: 16 }}>Due {fmtDate(x.due)} · {x.assigneeId ? `Assigned to ${ix.staffMember(x.assigneeId)?.name}` : "Unassigned"}</Txt>
+      <Txt v="bodySm" color={t.text3} style={{ marginBottom: 16 }}>Due {fmtDate(x.due)} · {x.assigneeId ? `Assigned to ${ix.staffMember(x.assigneeId)?.name}` : "Unassigned"}{isManager ? ` · ${ix.marina(x.marinaId)?.name}` : ""}</Txt>
       {(x.photos?.length ?? 0) > 0 && (
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
           {x.photos!.map((p, i) => <Image key={i} source={{ uri: p }} style={{ width: 96, height: 96, borderRadius: 12 }} accessibilityLabel={`Task photo ${i + 1}`} />)}
@@ -476,6 +530,15 @@ export function TaskSheet({ task, onClose }: { task: MaintenanceTask; onClose: (
           <Txt v="caption" color={t.text3}>{n.by} · {fmtShort(n.at)}</Txt>
         </View>
       ))}
+      {assigning && (
+        <View style={{ gap: 8, marginBottom: 16 }}>
+          <Txt v="bodySm" weight="medium">Assign to</Txt>
+          {crew.length === 0 && <Txt v="bodySm" color={t.text3}>No active staff at this marina.</Txt>}
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+            {crew.map((s) => <Chip key={s.id} label={s.name} sub={s.department} on={x.assigneeId === s.id} onPress={() => assign(s.id)} />)}
+          </View>
+        </View>
+      )}
       {canEdit && (
         <View style={{ gap: 12, borderWidth: 1, borderColor: t.border, borderRadius: 16, padding: 12, marginTop: 4 }}>
           <Input multiline value={note} onChangeText={setNote} placeholder="Add a note…" accessibilityLabel="Add a note" />

@@ -1,7 +1,7 @@
 {
   "name": "marina",
   "private": true,
-  "description": "Marina Management System: web app, staff mobile app and shared code",
+  "description": "Marina Management System: web app, mobile app and shared code",
   "scripts": {
     "dev:web": "npm --prefix apps/web run dev",
     "build:web": "npm --prefix apps/web run build",

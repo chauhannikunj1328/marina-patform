@@ -3,15 +3,15 @@ import { useState } from "react";
 import { Pressable, View } from "react-native";
 import { Warehouse } from "lucide-react-native";
 import type { BerthStatus } from "@marina/shared";
-import { EmptyState, Screen, Txt } from "@/components/ui";
+import { Chip, EmptyState, Screen, Txt } from "@/components/ui";
 import { berthLabel } from "@/components/status";
 import { BerthSheet, ReportProblem } from "@/components/sheets";
 import { useOpenParam } from "@/lib/useOpenParam";
-import { useStore } from "@/store";
+import { ALL, useStore } from "@/store";
 import { useTheme } from "@/theme";
 
 export default function Berths() {
-  const { db, ix, marinaId } = useStore();
+  const { db, ix, marinaId, scope, setMarinaId } = useStore();
   const { t } = useTheme();
   const [filter, setFilter] = useState<"all" | BerthStatus>("all");
   const [openId, setOpenId] = useOpenParam();
@@ -27,6 +27,17 @@ export default function Berths() {
   const shown = berths.filter((x) => filter === "all" || x.st === filter);
   const docks = new Map<string, typeof shown>();
   shown.forEach((x) => docks.set(x.b.code.split("-")[0], [...(docks.get(x.b.code.split("-")[0]) ?? []), x]));
+
+  if (marinaId === ALL) {
+    return (
+      <Screen title="Berths">
+        <EmptyState icon={Warehouse} title="Choose a marina" body="The dock map shows one marina at a time." />
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, justifyContent: "center" }}>
+          {scope.map((id) => <Chip key={id} label={ix.marina(id)?.name ?? id} on={false} onPress={() => setMarinaId(id)} />)}
+        </View>
+      </Screen>
+    );
+  }
 
   return (
     <Screen title="Berths">

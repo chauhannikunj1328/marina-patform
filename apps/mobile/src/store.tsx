@@ -1,5 +1,6 @@
-// App state for Marina Staff. Uses the same data model, sample data, permissions and
-// sign-in accounts as the web app (via @marina/shared); data is saved on this device.
+// App state for the Marina mobile app (staff, managers and admins). Uses the same data model,
+// sample data, permissions and sign-in accounts as the web app (via @marina/shared); data is
+// saved on this device.
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Platform } from "react-native";
 import * as Crypto from "expo-crypto";
@@ -25,9 +26,13 @@ interface Store {
   user: SystemUser | null;
   /** Marinas this person can work at. */
   scope: string[];
-  /** Marina currently shown in the app. */
+  /** Marina currently shown in the app, or ALL (managers and admins only). */
   marinaId: string;
   setMarinaId: (id: string) => void;
+  /** Marinas currently shown: every marina in scope on ALL, otherwise just the current one. */
+  ids: string[];
+  /** Managers and admins get the manager screens (overview, approvals, team). */
+  isManager: boolean;
   signIn: (email: string, password: string) => Promise<string | null>;
   signOut: () => void;
   update: (fn: (db: Db) => Db, log?: { text: string; marinaId?: string; to?: string }) => void;
@@ -43,6 +48,9 @@ interface Store {
 }
 
 const Ctx = createContext<Store | null>(null);
+
+/** Marina switcher value for "All marinas". */
+export const ALL = "all";
 
 const DATA_KEY = "marina.data.v1";
 const SESSION_KEY = "marina.session";
@@ -110,7 +118,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const user = db.users.find((u) => u.id === userId) ?? null;
   const scope = useMemo(() => (!user ? [] : user.marinaIds.length ? user.marinaIds : db.marinas.map((m) => m.id)), [user, db.marinas]);
   const me = user && db.staff.find((s) => s.email.toLowerCase() === user.email.toLowerCase());
-  const currentMarina = scope.includes(marinaId) ? marinaId : me && scope.includes(me.marinaId) ? me.marinaId : scope[0] ?? "";
+  const isManager = !!user && user.role !== "staff";
+  const currentMarina =
+    scope.includes(marinaId) || (isManager && marinaId === ALL && scope.length > 1) ? marinaId
+    : isManager && scope.length > 1 ? ALL
+    : me && scope.includes(me.marinaId) ? me.marinaId
+    : scope[0] ?? "";
+  const ids = useMemo(() => (currentMarina === ALL ? scope : [currentMarina]), [currentMarina, scope]);
 
   const setMarinaId = useCallback((id: string) => {
     setMarinaIdState(id);
@@ -167,7 +181,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setUserId(u.id);
     void save(SESSION_KEY, u.id);
     if (!__DEV__) {
-      void sendOwnerEmail({ event: "Signed in", name: u.name, email: u.email, role: u.role, app: "Staff mobile app", site: Platform.OS === "web" ? "Staff app (web)" : "Staff app", device: `${Platform.OS} ${Platform.Version ?? ""}` });
+      void sendOwnerEmail({ event: "Signed in", name: u.name, email: u.email, role: u.role, app: "Mobile app", site: Platform.OS === "web" ? "Mobile app (web)" : "Mobile app", device: `${Platform.OS} ${Platform.Version ?? ""}` });
     }
     return null;
   };
@@ -190,7 +204,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const can = useCallback((area?: Area) => levelFor(db.settings.permissions, user?.role, area), [db.settings.permissions, user?.role]);
 
   return (
-    <Ctx.Provider value={{ ready, db, ix, user, scope, marinaId: currentMarina, setMarinaId, signIn, signOut, update, can, toasts, toast, online, outbox, changePassword }}>
+    <Ctx.Provider value={{ ready, db, ix, user, scope, marinaId: currentMarina, setMarinaId, ids, isManager, signIn, signOut, update, can, toasts, toast, online, outbox, changePassword }}>
       {children}
     </Ctx.Provider>
   );

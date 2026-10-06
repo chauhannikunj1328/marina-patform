@@ -6,20 +6,30 @@ import { daysBetween, fmtShort, today } from "@marina/shared";
 import { Button, Card, EmptyState, Screen, SearchBox, Segmented, Txt } from "@/components/ui";
 import { BookingBadge } from "@/components/status";
 import { BookingSheet, WalkInSheet } from "@/components/sheets";
+import { useLocalSearchParams } from "expo-router";
 import { useOpenParam } from "@/lib/useOpenParam";
-import { useStore } from "@/store";
+import { ALL, useStore } from "@/store";
 import { useTheme } from "@/theme";
 
 export default function Bookings() {
-  const { db, ix, marinaId, can } = useStore();
+  const { db, ix, marinaId, ids, can } = useStore();
   const { t } = useTheme();
-  const [view, setView] = useState<"today" | "upcoming" | "in">("today");
+  const params = useLocalSearchParams<{ view?: string }>();
+  type View3 = "today" | "upcoming" | "in";
+  const fromParam = (v?: string): View3 | undefined => (v === "today" || v === "upcoming" || v === "in" ? v : undefined);
+  const [view, setView] = useState<View3>(fromParam(params.view) ?? "today");
+  const [seenParam, setSeenParam] = useState(params.view);
+  if (params.view !== seenParam) {
+    setSeenParam(params.view);
+    const v = fromParam(params.view);
+    if (v) setView(v);
+  }
   const [q, setQ] = useState("");
   const [openId, setOpenId] = useOpenParam();
   const open = db.bookings.find((b) => b.id === openId);
   const [walkIn, setWalkIn] = useState(false);
   const now = today();
-  const all = ix.bookingsIn([marinaId]).filter((b) => b.status !== "cancelled");
+  const all = ix.bookingsIn(ids).filter((b) => b.status !== "cancelled");
   const lists = {
     today: all.filter((b) => (b.start === now || b.end === now) && b.status !== "completed").sort((a, b) => a.start.localeCompare(b.start)),
     upcoming: all.filter((b) => b.start > now && (b.status === "confirmed" || b.status === "pending")).sort((a, b) => a.start.localeCompare(b.start)),
@@ -54,7 +64,7 @@ export default function Bookings() {
               <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 12 }}>
                 <View style={{ flex: 1 }}>
                   <Txt weight="semibold" numberOfLines={1}>{ix.boat(b.boatId)?.name}</Txt>
-                  <Txt v="bodySm" color={t.text3} numberOfLines={1}>Berth {ix.berth(b.berthId)?.code} · {ix.ownerOfBooking(b)?.name}</Txt>
+                  <Txt v="bodySm" color={t.text3} numberOfLines={1}>Berth {ix.berth(b.berthId)?.code}{marinaId === ALL ? ` · ${ix.marinaOfBerth(b.berthId)?.name}` : ""} · {ix.ownerOfBooking(b)?.name}</Txt>
                 </View>
                 <BookingBadge status={b.status} />
               </View>

@@ -1,22 +1,25 @@
 {
   "expo": {
-    "name": "Marina Staff",
+    "name": "Marina",
     "slug": "marina-staff",
     "version": "1.0.0",
     "orientation": "portrait",
-    "scheme": "marinastaff",
+    "scheme": [
+      "marina",
+      "marinastaff"
+    ],
     "userInterfaceStyle": "automatic",
     "icon": "./assets/icon.png",
     "ios": {
-      "bundleIdentifier": "com.marina.staff",
+      "bundleIdentifier": "com.marina.app",
       "supportsTablet": true,
       "infoPlist": {
-        "NSCameraUsageDescription": "Marina Staff uses the camera to scan berth QR codes and add photos to repair reports.",
-        "NSPhotoLibraryUsageDescription": "Marina Staff lets you attach photos to repair reports."
+        "NSCameraUsageDescription": "Marina uses the camera to scan berth QR codes and add photos to repair reports.",
+        "NSPhotoLibraryUsageDescription": "Marina lets you attach photos to repair reports."
       }
     },
     "android": {
-      "package": "com.marina.staff",
+      "package": "com.marina.app",
       "adaptiveIcon": {
         "backgroundColor": "#2F3740",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -28,7 +31,7 @@
       "bundler": "metro",
       "output": "single",
       "favicon": "./assets/favicon.png",
-      "name": "Marina Staff",
+      "name": "Marina",
       "shortName": "Marina",
       "themeColor": "#2F3740",
       "backgroundColor": "#2F3740"
@@ -51,14 +54,14 @@
       [
         "expo-image-picker",
         {
-          "cameraPermission": "Marina Staff uses the camera to scan berth QR codes and add photos to repair reports.",
-          "photosPermission": "Marina Staff lets you attach photos to repair reports."
+          "cameraPermission": "Marina uses the camera to scan berth QR codes and add photos to repair reports.",
+          "photosPermission": "Marina lets you attach photos to repair reports."
         }
       ],
       [
         "expo-camera",
         {
-          "cameraPermission": "Marina Staff uses the camera to scan berth QR codes and add photos to repair reports.",
+          "cameraPermission": "Marina uses the camera to scan berth QR codes and add photos to repair reports.",
           "recordAudioAndroid": false,
           "barcodeScannerEnabled": true
         }

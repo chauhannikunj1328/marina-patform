@@ -104,14 +104,14 @@ export function OfflineBanner() {
   );
 }
 
-/** Staff accounts work in the Marina Staff mobile app, not the office web app. */
+/** Staff accounts work in the Marina mobile app, not the office web app. */
 export function StaffUseMobile() {
   const { signOut } = useStore();
   return (
     <FullPageState
       icon={Smartphone}
-      title="Use the Marina Staff app"
-      body="Staff accounts work in the Marina Staff app on your phone. Ask your manager for the download link, then sign in there with the same email and password."
+      title="Use the Marina app"
+      body="Staff accounts work in the Marina app on your phone. Ask your manager for the download link, then sign in there with the same email and password."
       action={
         <Button
           onClick={() => {

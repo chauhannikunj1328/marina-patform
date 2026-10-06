@@ -1,4 +1,4 @@
-// Printable QR labels for berth posts. Staff scan them with the Marina Staff app to open the berth.
+// Printable QR labels for berth posts. Staff scan them with the Marina app to open the berth.
 import { useMemo, useState } from "react";
 import qrcode from "qrcode-generator";
 import { Printer } from "lucide-react";
@@ -39,7 +39,7 @@ export function BerthLabels({ defaultMarina, onClose }: { defaultMarina: string;
       wide
       onClose={onClose}
       title="Berth QR labels"
-      description="Print and fix one to each berth post. Staff scan it in the Marina Staff app to open that berth."
+      description="Print and fix one to each berth post. Staff scan it in the Marina app to open that berth."
       footer={<Button variant="primary" icon={Printer} onClick={() => window.print()}>Print {berths.length} labels</Button>}
     >
       <div className="mb-4 max-w-xs">
@@ -55,7 +55,7 @@ export function BerthLabels({ defaultMarina, onClose }: { defaultMarina: string;
             <QrCode value={berthLink(b.id)} />
             <p className="mt-2 text-xl font-semibold">Berth {b.code}</p>
             <p className="text-[11px] text-[#656565]">{marina?.name} · {b.maxLength} ft</p>
-            <p className="mt-1 flex items-center gap-1 text-[10px] text-[#656565]"><Logomark size={10} /> Scan with Marina Staff</p>
+            <p className="mt-1 flex items-center gap-1 text-[10px] text-[#656565]"><Logomark size={10} /> Scan with the Marina app</p>
           </div>
         ))}
       </div>

@@ -1,8 +1,9 @@
 // Me: profile, this week's shifts and hours, time off and swaps, marinas, appearance and account.
+// Managers and admins without a staff record see their role, marinas and a link to the web app.
 import { useState } from "react";
-import { Pressable, View } from "react-native";
+import { Linking, Pressable, View } from "react-native";
 import { router } from "expo-router";
-import { ChevronRight, CloudOff, KeyRound, LogOut, Plus, UserRoundPen } from "lucide-react-native";
+import { ChevronRight, CloudOff, ExternalLink, KeyRound, LogOut, Plus, UserRoundPen } from "lucide-react-native";
 import { addDays, DAYS, fmtDuration, fmtShort, fmtTime, fromISO, localDay, minutesWorked, planFor, SHIFT_HOURS, today, type StaffRequest } from "@marina/shared";
 import { Avatar, Badge, Button, Screen, Section, Txt, type Icon } from "@/components/ui";
 import { PasswordSheet, ProfileSheet, RequestSheet } from "@/components/me-sheets";
@@ -16,19 +17,27 @@ function RequestBadge({ r }: { r: StaffRequest }) {
   return <Badge tone="pending" label="Waiting" />;
 }
 
-function ListRow({ icon: IconCmp, label, onPress }: { icon: Icon; label: string; onPress: () => void }) {
+/** Office web app, for everything the phone app doesn't do (billing, reports, settings). */
+const WEB_APP = "https://marina-patform.vercel.app";
+
+const ROLE_LABEL = { admin: "Admin", manager: "Marina manager", staff: "Staff" } as const;
+
+function ListRow({ icon: IconCmp, label, sub, onPress, external }: { icon: Icon; label: string; sub?: string; onPress: () => void; external?: boolean }) {
   const { t } = useTheme();
   return (
-    <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: 12, padding: 16, backgroundColor: pressed ? t.sidebar : "transparent" })}>
+    <Pressable accessibilityRole={external ? "link" : "button"} onPress={onPress} style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: 12, padding: 16, backgroundColor: pressed ? t.sidebar : "transparent" })}>
       <IconCmp size={20} color={t.text2} strokeWidth={1.5} />
-      <Txt style={{ flex: 1 }}>{label}</Txt>
-      <ChevronRight size={18} color={t.text3} />
+      <View style={{ flex: 1 }}>
+        <Txt>{label}</Txt>
+        {sub ? <Txt v="caption" color={t.text3}>{sub}</Txt> : null}
+      </View>
+      {external ? <ExternalLink size={18} color={t.text3} /> : <ChevronRight size={18} color={t.text3} />}
     </Pressable>
   );
 }
 
 export default function Me() {
-  const { db, ix, user, scope, signOut, update, toast, outbox } = useStore();
+  const { db, ix, user, scope, signOut, update, toast, outbox, isManager } = useStore();
   const me = useMe();
   const { t, mode, setMode } = useTheme();
   const now = useNow();
@@ -52,7 +61,7 @@ export default function Me() {
         <Avatar name={user?.name ?? ""} size={56} />
         <View style={{ flex: 1 }}>
           <Txt v="h2" numberOfLines={1}>{user?.name}</Txt>
-          <Txt v="bodySm" color={t.text3} numberOfLines={1}>{me?.position ?? "Staff"} · {me?.phone ?? user?.email}</Txt>
+          <Txt v="bodySm" color={t.text3} numberOfLines={1}>{me?.position ?? ROLE_LABEL[user?.role ?? "staff"]} · {me?.phone ?? user?.email}</Txt>
         </View>
       </View>
 
@@ -93,7 +102,7 @@ export default function Me() {
         </Section>
       )}
 
-      {me && (
+      {me && !isManager && (
         <Section title="Time off and swaps" action={<Button size="sm" icon={Plus} label="Request" onPress={() => setSheet("request")} />}>
           {mine.length === 0 && askedToCover.length === 0 && <Txt v="bodySm" color={t.text3}>Ask for time off or swap a shift with a colleague. Your manager approves it.</Txt>}
           {askedToCover.map((r) => (
@@ -121,16 +130,36 @@ export default function Me() {
         </Section>
       )}
 
-      <Section title="My marinas">
-        <View style={{ borderWidth: 1, borderColor: t.border, borderRadius: 16, backgroundColor: t.surface }}>
-          {scope.map((id, i) => (
-            <View key={id} style={{ padding: 16, borderTopWidth: i ? 1 : 0, borderColor: t.border }}>
-              <Txt>{ix.marina(id)?.name}</Txt>
-              <Txt v="bodySm" color={t.text3}>{ix.marina(id)?.address}, {ix.city(ix.marina(id)?.cityId ?? "")?.name}</Txt>
-            </View>
-          ))}
-        </View>
-      </Section>
+      {user?.role === "admin" && !user.marinaIds.length ? (
+        <Section title="Access">
+          <View style={{ borderWidth: 1, borderColor: t.border, borderRadius: 16, backgroundColor: t.surface, padding: 16 }}>
+            <Txt>All {scope.length} marinas</Txt>
+            <Txt v="bodySm" color={t.text3}>{db.counties.length} counties · {db.cities.length} cities. Open any marina from Overview.</Txt>
+          </View>
+        </Section>
+      ) : (
+        <Section title="My marinas">
+          <View style={{ borderWidth: 1, borderColor: t.border, borderRadius: 16, backgroundColor: t.surface, overflow: "hidden" }}>
+            {scope.map((id, i) => {
+              const body = (
+                <>
+                  <View style={{ flex: 1 }}>
+                    <Txt>{ix.marina(id)?.name}</Txt>
+                    <Txt v="bodySm" color={t.text3}>{ix.marina(id)?.address}, {ix.city(ix.marina(id)?.cityId ?? "")?.name}</Txt>
+                  </View>
+                  {isManager && <ChevronRight size={18} color={t.text3} />}
+                </>
+              );
+              const style = { flexDirection: "row" as const, alignItems: "center" as const, gap: 12, padding: 16, borderTopWidth: i ? 1 : 0, borderColor: t.border };
+              return isManager ? (
+                <Pressable key={id} accessibilityRole="button" onPress={() => router.push({ pathname: "/marina", params: { id } })} style={({ pressed }) => [style, pressed && { backgroundColor: t.sidebar }]}>{body}</Pressable>
+              ) : (
+                <View key={id} style={style}>{body}</View>
+              );
+            })}
+          </View>
+        </Section>
+      )}
 
       <Section title="Appearance">
         <View style={{ flexDirection: "row", backgroundColor: t.surface3, borderRadius: 9999, padding: 4, gap: 4 }}>
@@ -145,8 +174,14 @@ export default function Me() {
       <Section title="Account">
         <View style={{ borderWidth: 1, borderColor: t.border, borderRadius: 16, backgroundColor: t.surface, overflow: "hidden" }}>
           {me && <ListRow icon={UserRoundPen} label="Edit profile" onPress={() => setSheet("profile")} />}
-          <View style={{ height: 1, backgroundColor: t.border }} />
+          {me && <View style={{ height: 1, backgroundColor: t.border }} />}
           <ListRow icon={KeyRound} label="Change password" onPress={() => setSheet("password")} />
+          {isManager && (
+            <>
+              <View style={{ height: 1, backgroundColor: t.border }} />
+              <ListRow external icon={ExternalLink} label="Open the web app" sub="Billing, reports, staff accounts and settings" onPress={() => void Linking.openURL(WEB_APP)} />
+            </>
+          )}
         </View>
         {outbox.length > 0 && (
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>

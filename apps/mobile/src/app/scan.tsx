@@ -5,7 +5,7 @@ import { Redirect, router } from "expo-router";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { Camera } from "lucide-react-native";
 import { Button, Field, Input, StackHeader, Txt } from "@/components/ui";
-import { useStore } from "@/store";
+import { ALL, useStore } from "@/store";
 import { useTheme } from "@/theme";
 
 /** Berth id from a label: "marinastaff://berth/<id>", a web link ending in /berth/<id>, or a bare id. */
@@ -34,8 +34,10 @@ export default function Scan() {
 
   const typed = () => {
     const q = code.trim().toUpperCase().replace(/\s+/g, "");
-    const b = db.berths.find((x) => x.marinaId === marinaId && x.code.replace("-", "") === q.replace("-", ""));
-    if (!b) return setError(`No berth ${code.trim()} at this marina.`);
+    const matches = db.berths.filter((x) => (marinaId === ALL ? scope.includes(x.marinaId) : x.marinaId === marinaId) && x.code.replace("-", "") === q.replace("-", ""));
+    if (matches.length > 1) return setError(`Several marinas have a berth ${code.trim()}. Choose a marina in the header first.`);
+    const b = matches[0];
+    if (!b) return setError(`No berth ${code.trim()} at ${marinaId === ALL ? "your marinas" : "this marina"}.`);
     open(b.id);
   };
 
@@ -58,7 +60,7 @@ export default function Scan() {
             <View style={{ alignItems: "center", padding: 24, gap: 12 }}>
               <Camera size={32} color="#FFFFFF" strokeWidth={1.5} />
               <Txt color="#FFFFFF" style={{ textAlign: "center" }}>
-                {permission && !permission.canAskAgain ? "Camera access is off. Turn it on for Marina Staff in Settings." : "Allow the camera to scan berth labels."}
+                {permission && !permission.canAskAgain ? "Camera access is off. Turn it on for Marina in Settings." : "Allow the camera to scan berth labels."}
               </Txt>
               {(!permission || permission.canAskAgain) && <Button variant="secondary" label="Allow camera" onPress={() => void requestPermission()} />}
             </View>
