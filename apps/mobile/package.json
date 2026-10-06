@@ -44,5 +44,5 @@
     "lint": "expo lint"
   },
   "private": true,
-  "description": "Marina Staff: React Native app for dock and front-desk staff"
+  "description": "Marina mobile app (React Native) for staff, marina managers and admins"
 }

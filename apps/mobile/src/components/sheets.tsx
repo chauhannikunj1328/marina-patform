@@ -6,7 +6,8 @@ import {
   addDays, bookingAmount, daysBetween, fmtDate, fmtShort, money2, nextId, relative, today, withInvoice,
   type Berth, type Booking, type BookingStatus, type BoatType, type Invoice, type MaintenanceTask, type PaymentMethod, type Priority,
 } from "@marina/shared";
-import { useMe, useStore } from "../store";
+import { ALL, useMe, useStore } from "../store";
+import { MarinaPicker } from "./office";
 import { useTheme } from "../theme";
 import { pickPhoto, takePhoto } from "../lib/photos";
 import { BerthBadge, BookingBadge, PriorityBadge, TaskBadge } from "./status";
@@ -140,8 +141,9 @@ const BOAT_TYPES: BoatType[] = ["Sailboat", "Motor Yacht", "Catamaran", "Center 
 
 /** Book a boat that turns up without a booking: pick or add the boat, choose a free berth, check in. */
 export function WalkInSheet({ onClose, onDone }: { onClose: () => void; onDone: (bookingId: string) => void }) {
-  const { db, ix, update, toast, marinaId } = useStore();
+  const { db, ix, update, toast, marinaId: current, scope } = useStore();
   const { t } = useTheme();
+  const [marinaId, setMarina] = useState(current === ALL ? scope[0] : current);
   const [mode, setMode] = useState<"existing" | "new">("existing");
   const [q, setQ] = useState("");
   const [boatId, setBoatId] = useState("");
@@ -200,6 +202,7 @@ export function WalkInSheet({ onClose, onDone }: { onClose: () => void; onDone: 
   return (
     <Sheet open onClose={onClose} title="Walk-in booking" subtitle="Arriving today without a booking" footer={<Button variant="primary" size="lg" icon={checkIn ? LogIn : undefined} label={berth ? `${checkIn ? "Book and check in" : "Book"} · ${money2(price)}` : "Book"} onPress={save} />}>
       <View style={{ gap: 16 }}>
+        {current === ALL && <MarinaPicker value={marinaId} onChange={(id) => { setMarina(id); setBerthId(""); }} />}
         <Segmented value={mode} onChange={(v) => { setMode(v); setErrors({}); }} items={[{ value: "existing", label: "Known boat" }, { value: "new", label: "New boat" }]} />
         {mode === "existing" ? (
           <Field label="Boat" error={errors.boat}>
@@ -352,9 +355,11 @@ function PhotoTile({ icon, onPress }: { icon: "camera" | "library"; onPress: () 
 }
 
 export function ReportProblem({ berthId, onClose }: { berthId?: string; onClose: () => void }) {
-  const { db, update, toast, marinaId } = useStore();
+  const { db, update, toast, marinaId: current, scope } = useStore();
   const me = useMe();
   const { t } = useTheme();
+  const fromBerth = db.berths.find((b) => b.id === berthId)?.marinaId;
+  const [marinaId, setMarina] = useState(fromBerth ?? (current === ALL ? scope[0] : current));
   const [title, setTitle] = useState("");
   const [berth, setBerth] = useState(berthId ?? "");
   const [priority, setPriority] = useState<Priority>("medium");
@@ -378,6 +383,7 @@ export function ReportProblem({ berthId, onClose }: { berthId?: string; onClose:
   return (
     <Sheet open onClose={onClose} title="Report a problem" subtitle="It goes straight to the marina's work orders." footer={<Button variant="primary" size="lg" label="Send report" onPress={save} />}>
       <View style={{ gap: 16 }}>
+        {current === ALL && !fromBerth && <MarinaPicker value={marinaId} onChange={(id) => { setMarina(id); setBerth(""); }} />}
         <Field label="What's wrong?" error={error}>
           <Input multiline value={title} onChangeText={(v) => { setTitle(v); setError(""); }} placeholder="e.g. Power pedestal sparks when plugged in" invalid={!!error} />
         </Field>
@@ -417,7 +423,8 @@ export function ReportProblem({ berthId, onClose }: { berthId?: string; onClose:
 }
 
 export function TaskSheet({ task, onClose }: { task: MaintenanceTask; onClose: () => void }) {
-  const { db, ix, update, toast, can } = useStore();
+  const { db, ix, update, toast, can, user } = useStore();
+  const office = user?.role === "admin" || user?.role === "manager";
   const me = useMe();
   const { t } = useTheme();
   const x = db.tasks.find((y) => y.id === task.id) ?? task;
@@ -455,8 +462,8 @@ export function TaskSheet({ task, onClose }: { task: MaintenanceTask; onClose: (
       title={x.title}
       subtitle={`${x.code} · ${x.berthId ? `Berth ${ix.berth(x.berthId)?.code}` : "Facility"}`}
       footer={
-        canEdit && x.status === "open" ? <Button variant="primary" size="lg" label="Start work" onPress={() => setStatus("in-progress")} />
-        : canEdit && x.status === "in-progress" ? <Button variant="primary" size="lg" icon={CircleCheck} label="Mark as done" onPress={() => { setStatus("done"); onClose(); }} />
+        canEdit && x.status === "open" && !office ? <Button variant="primary" size="lg" label="Start work" onPress={() => setStatus("in-progress")} />
+        : canEdit && x.status !== "done" ? <Button variant="primary" size="lg" icon={CircleCheck} label="Mark as done" onPress={() => { setStatus("done"); onClose(); }} />
         : <Button size="lg" label="Close" onPress={onClose} />
       }
     >
@@ -465,6 +472,28 @@ export function TaskSheet({ task, onClose }: { task: MaintenanceTask; onClose: (
         <PriorityBadge priority={x.priority} />
       </View>
       <Txt v="bodySm" color={t.text3} style={{ marginBottom: 16 }}>Due {fmtDate(x.due)} · {x.assigneeId ? `Assigned to ${ix.staffMember(x.assigneeId)?.name}` : "Unassigned"}</Txt>
+      {office && canEdit && x.status !== "done" && (
+        <View style={{ marginBottom: 16 }}>
+          <Field label="Assign to" hint="They see it under Mine in their app.">
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+              {db.staff.filter((s) => s.marinaId === x.marinaId && s.position !== "Marina Manager" && s.status === "active").map((s) => (
+                <Chip
+                  key={s.id}
+                  label={s.name}
+                  sub={s.position}
+                  on={x.assigneeId === s.id}
+                  onPress={() => {
+                    if (x.assigneeId === s.id) return;
+                    const before = db;
+                    update((d) => ({ ...d, tasks: d.tasks.map((y) => (y.id === x.id ? { ...y, assigneeId: s.id } : y)) }), log(`Assigned to ${s.name}: ${x.title}`));
+                    toast(`Assigned to ${s.name}`, before);
+                  }}
+                />
+              ))}
+            </ScrollView>
+          </Field>
+        </View>
+      )}
       {(x.photos?.length ?? 0) > 0 && (
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
           {x.photos!.map((p, i) => <Image key={i} source={{ uri: p }} style={{ width: 96, height: 96, borderRadius: 12 }} accessibilityLabel={`Task photo ${i + 1}`} />)}

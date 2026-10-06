@@ -1,4 +1,4 @@
-// Sign-in for staff. Same accounts as the web app; staff are created by their admin or manager.
+// Sign-in for everyone: staff, marina managers and admins. Same accounts as the web app.
 import { useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from "react-native";
 import { Redirect, router } from "expo-router";
@@ -35,7 +35,7 @@ export default function Login() {
         <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 24, justifyContent: "center", maxWidth: 440, width: "100%", alignSelf: "center" }} keyboardShouldPersistTaps="handled">
           <Logo size={24} />
           <Txt v="h1" style={{ marginTop: 40 }}>Sign in</Txt>
-          <Txt color={t.text2} style={{ marginTop: 4, marginBottom: 32 }}>Check boats in and out, see your shift and report repairs.</Txt>
+          <Txt color={t.text2} style={{ marginTop: 4, marginBottom: 32 }}>Run your marinas, berths and team from your phone.</Txt>
 
           <View style={{ gap: 16 }}>
             <Field label="Work email">
@@ -80,18 +80,23 @@ export default function Login() {
             )}
           </View>
 
-          {/* Prototype only: lets reviewers try the app. Remove before publishing to the stores. */}
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Use the demo staff account"
-            onPress={() => { setEmail("staff@marina.com"); setPassword("staff123"); setError(""); }}
-            style={({ pressed }) => ({ marginTop: 32, borderWidth: 1, borderColor: t.border, borderRadius: 12, padding: 12, backgroundColor: pressed ? t.sidebar : t.surface })}
-          >
-            <Txt v="caption" color={t.text3}>Demo account · tap to fill</Txt>
-            <Txt v="bodySm" weight="semibold">staff@marina.com</Txt>
-          </Pressable>
+          {/* Prototype only: lets reviewers try each role. Remove before publishing to the stores. */}
+          <View style={{ flexDirection: "row", gap: 8, marginTop: 32 }}>
+            {[["Admin", "admin@marina.com", "admin123"], ["Manager", "manager@marina.com", "manager123"], ["Staff", "staff@marina.com", "staff123"]].map(([role, mail, pw]) => (
+              <Pressable
+                key={role}
+                accessibilityRole="button"
+                accessibilityLabel={`Use the demo ${role.toLowerCase()} account`}
+                onPress={() => { setEmail(mail); setPassword(pw); setError(""); }}
+                style={({ pressed }) => ({ flex: 1, borderWidth: 1, borderColor: t.border, borderRadius: 12, padding: 10, backgroundColor: pressed ? t.sidebar : t.surface })}
+              >
+                <Txt v="caption" color={t.text3}>Demo</Txt>
+                <Txt v="bodySm" weight="semibold">{role}</Txt>
+              </Pressable>
+            ))}
+          </View>
 
-          <Txt v="caption" color={t.text3} style={{ textAlign: "center", marginTop: 32 }}>Marina Staff · version {Constants.expoConfig?.version ?? "1.0.0"}</Txt>
+          <Txt v="caption" color={t.text3} style={{ textAlign: "center", marginTop: 32 }}>Marina · version {Constants.expoConfig?.version ?? "1.0.0"}</Txt>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

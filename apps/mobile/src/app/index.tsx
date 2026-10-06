@@ -22,11 +22,10 @@ export default function Splash() {
   }, [fade, rise, user]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: palette.slate[800], alignItems: "center", justifyContent: "center" }} accessibilityLabel="Marina Staff">
+    <View style={{ flex: 1, backgroundColor: palette.slate[800], alignItems: "center", justifyContent: "center" }} accessibilityLabel="Marina">
       <Animated.View style={{ alignItems: "center", opacity: fade, transform: [{ translateY: rise }] }}>
         <Logomark size={72} color="#FFFFFF" />
         <Text style={{ fontFamily: fonts.medium, fontSize: 30, color: "#FFFFFF", marginTop: 20, letterSpacing: -0.3 }}>Marina</Text>
-        <Text style={{ fontFamily: fonts.regular, fontSize: 15, color: palette.teal[200], marginTop: 4 }}>Staff</Text>
       </Animated.View>
       <Text style={{ position: "absolute", bottom: 48, fontFamily: fonts.regular, fontSize: 12, color: palette.teal[300] }}>Marina Management System</Text>
     </View>

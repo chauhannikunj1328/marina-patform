@@ -7,11 +7,11 @@ import { EmptyState, Screen, Txt } from "@/components/ui";
 import { berthLabel } from "@/components/status";
 import { BerthSheet, ReportProblem } from "@/components/sheets";
 import { useOpenParam } from "@/lib/useOpenParam";
-import { useStore } from "@/store";
+import { ALL, useStore } from "@/store";
 import { useTheme } from "@/theme";
 
 export default function Berths() {
-  const { db, ix, marinaId } = useStore();
+  const { db, ix, ids, marinaId, setMarinaId } = useStore();
   const { t } = useTheme();
   const [filter, setFilter] = useState<"all" | BerthStatus>("all");
   const [openId, setOpenId] = useOpenParam();
@@ -23,7 +23,8 @@ export default function Berths() {
     available: { bg: t.surface, fg: t.text, border: t.borderStrong },
     maintenance: { bg: t.status.maintenance.bg, fg: t.status.maintenance.fg, border: t.status.maintenance.fg, dashed: true },
   };
-  const berths = db.berths.filter((b) => b.marinaId === marinaId).map((b) => ({ b, st: ix.berthStatus(b) }));
+  const berths = db.berths.filter((b) => ids.includes(b.marinaId)).map((b) => ({ b, st: ix.berthStatus(b) }));
+  const allMarinas = marinaId === ALL;
   const shown = berths.filter((x) => filter === "all" || x.st === filter);
   const docks = new Map<string, typeof shown>();
   shown.forEach((x) => docks.set(x.b.code.split("-")[0], [...(docks.get(x.b.code.split("-")[0]) ?? []), x]));
@@ -48,7 +49,40 @@ export default function Berths() {
           );
         })}
       </View>
-      {[...docks.entries()].map(([dock, list]) => (
+      {allMarinas && filter === "all" && (
+        <View style={{ borderWidth: 1, borderColor: t.border, borderRadius: 16, backgroundColor: t.surface, overflow: "hidden" }}>
+          {ids.map((id, i) => {
+            const here = berths.filter((x) => x.b.marinaId === id);
+            const n = (st: BerthStatus) => here.filter((x) => x.st === st).length;
+            return (
+              <Pressable key={id} accessibilityRole="button" accessibilityLabel={`${ix.marina(id)?.name}: open its dock map`} onPress={() => setMarinaId(id)} style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: 12, padding: 14, borderTopWidth: i ? 1 : 0, borderColor: t.border, backgroundColor: pressed ? t.sidebar : "transparent" })}>
+                <View style={{ flex: 1 }}>
+                  <Txt weight="medium" numberOfLines={1}>{ix.marina(id)?.name}</Txt>
+                  <Txt v="caption" num color={t.text3}>{n("available")} free · {n("occupied")} occupied · {n("reserved")} reserved{n("maintenance") ? ` · ${n("maintenance")} in repair` : ""}</Txt>
+                </View>
+                <Txt v="bodySm" weight="semibold" color={t.greenText}>Dock map</Txt>
+              </Pressable>
+            );
+          })}
+        </View>
+      )}
+      {allMarinas && filter !== "all" && (
+        <View style={{ gap: 16 }}>
+          {ids.filter((id) => shown.some((x) => x.b.marinaId === id)).map((id) => (
+            <View key={id} style={{ gap: 8 }}>
+              <Txt v="label">{ix.marina(id)?.name}</Txt>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                {shown.filter((x) => x.b.marinaId === id).map(({ b, st }) => (
+                  <Pressable key={b.id} accessibilityRole="button" accessibilityLabel={`Berth ${b.code} at ${ix.marina(id)?.name}, ${berthLabel[st]}`} onPress={() => setOpenId(b.id)} style={{ minWidth: 72, paddingHorizontal: 12, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: fill[st].bg, borderWidth: 1, borderColor: fill[st].border, borderStyle: fill[st].dashed ? "dashed" : "solid" }}>
+                    <Txt v="bodySm" weight="semibold" num color={fill[st].fg}>{b.code}</Txt>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
+      {!allMarinas && [...docks.entries()].map(([dock, list]) => (
         <View key={dock} style={{ marginBottom: 20 }}>
           <Txt v="label" style={{ marginBottom: 8 }}>Dock {dock}</Txt>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>

@@ -6,20 +6,20 @@ import { daysBetween, fmtShort, today } from "@marina/shared";
 import { Button, Card, EmptyState, Screen, SearchBox, Segmented, Txt } from "@/components/ui";
 import { BookingBadge } from "@/components/status";
 import { BookingSheet, WalkInSheet } from "@/components/sheets";
-import { useOpenParam } from "@/lib/useOpenParam";
+import { useOpenParam, useViewParam } from "@/lib/useOpenParam";
 import { useStore } from "@/store";
 import { useTheme } from "@/theme";
 
 export default function Bookings() {
-  const { db, ix, marinaId, can } = useStore();
+  const { db, ix, ids, can } = useStore();
   const { t } = useTheme();
-  const [view, setView] = useState<"today" | "upcoming" | "in">("today");
+  const [view, setView] = useViewParam(["today", "upcoming", "in"] as const, "today");
   const [q, setQ] = useState("");
   const [openId, setOpenId] = useOpenParam();
   const open = db.bookings.find((b) => b.id === openId);
   const [walkIn, setWalkIn] = useState(false);
   const now = today();
-  const all = ix.bookingsIn([marinaId]).filter((b) => b.status !== "cancelled");
+  const all = ix.bookingsIn(ids).filter((b) => b.status !== "cancelled");
   const lists = {
     today: all.filter((b) => (b.start === now || b.end === now) && b.status !== "completed").sort((a, b) => a.start.localeCompare(b.start)),
     upcoming: all.filter((b) => b.start > now && (b.status === "confirmed" || b.status === "pending")).sort((a, b) => a.start.localeCompare(b.start)),
@@ -54,7 +54,7 @@ export default function Bookings() {
               <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 12 }}>
                 <View style={{ flex: 1 }}>
                   <Txt weight="semibold" numberOfLines={1}>{ix.boat(b.boatId)?.name}</Txt>
-                  <Txt v="bodySm" color={t.text3} numberOfLines={1}>Berth {ix.berth(b.berthId)?.code} · {ix.ownerOfBooking(b)?.name}</Txt>
+                  <Txt v="bodySm" color={t.text3} numberOfLines={1}>Berth {ix.berth(b.berthId)?.code}{ids.length > 1 ? ` · ${ix.marinaOfBerth(b.berthId)?.name}` : ""} · {ix.ownerOfBooking(b)?.name}</Txt>
                 </View>
                 <BookingBadge status={b.status} />
               </View>

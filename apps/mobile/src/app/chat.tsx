@@ -1,7 +1,8 @@
-// Messages between a staff member and the managers of their home marina.
+// Messages between a staff member and the managers of their home marina. Staff see their own
+// conversation; managers and admins open one with ?staff=<id> (from the Team tab).
 import { useEffect, useRef, useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from "react-native";
-import { Redirect } from "expo-router";
+import { Redirect, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MessagesSquare, SendHorizontal } from "lucide-react-native";
 import { fmtShort, fmtTime, localDay, nextId, today } from "@marina/shared";
@@ -10,27 +11,34 @@ import { useMe, useStore } from "@/store";
 import { fonts, useTheme } from "@/theme";
 
 export default function Chat() {
-  const { db, ix, update, user } = useStore();
-  const me = useMe();
+  const { db, ix, update, user, scope } = useStore();
+  const self = useMe();
+  const params = useLocalSearchParams<{ staff?: string }>();
+  const office = user?.role === "admin" || user?.role === "manager";
+  const other = office ? db.staff.find((s) => s.id === params.staff && scope.includes(s.marinaId)) : undefined;
+  /** The staff member whose conversation this is. */
+  const me = office ? other : self;
   const { t } = useTheme();
   const insets = useSafeAreaInsets();
   const [text, setText] = useState("");
   const scroll = useRef<ScrollView>(null);
   const manager = me && db.staff.find((s) => s.marinaId === me.marinaId && s.position === "Marina Manager");
   const thread = me ? db.chat.filter((m) => m.staffId === me.id) : [];
-  const unread = thread.some((m) => !m.fromStaff && !m.read);
+  /** Messages from the other side, which this person is reading now. */
+  const theirs = (m: { fromStaff: boolean }) => (office ? m.fromStaff : !m.fromStaff);
+  const unread = thread.some((m) => theirs(m) && !m.read);
 
-  // Opening the conversation marks the manager's messages as read.
+  // Opening the conversation marks the other side's messages as read.
   useEffect(() => {
-    if (me && unread) update((d) => ({ ...d, chat: d.chat.map((m) => (m.staffId === me.id && !m.fromStaff ? { ...m, read: true } : m)) }));
-  }, [me, unread, update]);
+    if (me && unread) update((d) => ({ ...d, chat: d.chat.map((m) => (m.staffId === me.id && (office ? m.fromStaff : !m.fromStaff) ? { ...m, read: true } : m)) }));
+  }, [me, unread, update, office]);
 
   if (!user) return <Redirect href="/login" />;
 
   const send = () => {
     const body = text.trim();
     if (!body || !me) return;
-    update((d) => ({ ...d, chat: [...d.chat, { id: nextId("ch", d.chat), staffId: me.id, fromStaff: true, by: me.name, text: body, at: new Date().toISOString(), read: false }] }));
+    update((d) => ({ ...d, chat: [...d.chat, { id: nextId("ch", d.chat), staffId: me.id, fromStaff: !office, by: office ? user.name : me.name, text: body, at: new Date().toISOString(), read: false }] }));
     setText("");
   };
 
@@ -38,29 +46,33 @@ export default function Chat() {
     return (
       <View style={{ flex: 1, backgroundColor: t.bg }}>
         <StackHeader title="Messages" />
-        <EmptyState icon={MessagesSquare} title="No staff record linked" body="Ask your manager to add you to the staff list." />
+        <EmptyState icon={MessagesSquare} title={office ? "Choose someone to message" : "No staff record linked"} body={office ? "Open the Team tab and pick a team member." : "Ask your manager to add you to the staff list."} />
       </View>
     );
   }
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
-      <StackHeader title={`${ix.marina(me.marinaId)?.name} office`} subtitle={manager ? `${manager.name}, Marina Manager` : "Marina managers"} />
+      <StackHeader
+        title={office ? me.name : `${ix.marina(me.marinaId)?.name} office`}
+        subtitle={office ? `${me.position} · ${ix.marina(me.marinaId)?.name}` : manager ? `${manager.name}, Marina Manager` : "Marina managers"}
+      />
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
         <ScrollView ref={scroll} contentContainerStyle={{ padding: 16, gap: 8, flexGrow: 1, justifyContent: "flex-end" }} onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: false })}>
-          {thread.length === 0 && <EmptyState icon={MessagesSquare} title="No messages yet" body="Questions about shifts, boats or repairs go straight to your manager." />}
+          {thread.length === 0 && <EmptyState icon={MessagesSquare} title="No messages yet" body={office ? `Your message shows up in ${me.name.split(" ")[0]}'s app.` : "Questions about shifts, boats or repairs go straight to your manager."} />}
           {thread.map((m, i) => {
+            const mine = !theirs(m);
             const day = localDay(m.at);
             const newDay = i === 0 || localDay(thread[i - 1].at) !== day;
             return (
               <View key={m.id}>
                 {newDay && <Txt v="caption" color={t.text3} style={{ textAlign: "center", marginVertical: 8 }}>{day === today() ? "Today" : fmtShort(day)}</Txt>}
-                <View style={{ alignSelf: m.fromStaff ? "flex-end" : "flex-start", maxWidth: "82%" }}>
-                  <View style={{ backgroundColor: m.fromStaff ? t.primary : t.surface, borderWidth: m.fromStaff ? 0 : 1, borderColor: t.border, borderRadius: 18, borderBottomRightRadius: m.fromStaff ? 6 : 18, borderBottomLeftRadius: m.fromStaff ? 18 : 6, paddingHorizontal: 14, paddingVertical: 10 }}>
-                    <Txt color={m.fromStaff ? t.onPrimary : t.text}>{m.text}</Txt>
+                <View style={{ alignSelf: mine ? "flex-end" : "flex-start", maxWidth: "82%" }}>
+                  <View style={{ backgroundColor: mine ? t.primary : t.surface, borderWidth: mine ? 0 : 1, borderColor: t.border, borderRadius: 18, borderBottomRightRadius: mine ? 6 : 18, borderBottomLeftRadius: mine ? 18 : 6, paddingHorizontal: 14, paddingVertical: 10 }}>
+                    <Txt color={mine ? t.onPrimary : t.text}>{m.text}</Txt>
                   </View>
-                  <Txt v="caption" color={t.text3} style={{ marginTop: 2, textAlign: m.fromStaff ? "right" : "left" }}>
-                    {m.fromStaff ? "" : `${m.by.split(" ")[0]} · `}{fmtTime(m.at)}{m.fromStaff && m.read ? " · Seen" : ""}
+                  <Txt v="caption" color={t.text3} style={{ marginTop: 2, textAlign: mine ? "right" : "left" }}>
+                    {mine && !office ? "" : `${m.by.split(" ")[0]} · `}{fmtTime(m.at)}{mine && m.read ? " · Seen" : ""}
                   </Txt>
                 </View>
               </View>

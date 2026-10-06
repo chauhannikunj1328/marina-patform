@@ -32,6 +32,7 @@ function Shell() {
         <Stack.Screen name="inbox" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="chat" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="scan" options={{ animation: "slide_from_bottom" }} />
+        <Stack.Screen name="marina/[id]" options={{ animation: "slide_from_right" }} />
       </Stack>
       <Toasts />
     </View>

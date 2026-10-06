@@ -16,3 +16,20 @@ export function useOpenParam(): [string | undefined, (id?: string) => void] {
   }
   return [id, setId];
 }
+
+/**
+ * A screen's list choice (Segmented) that a link can set with `?view=<value>&at=<time>`.
+ * Falls back to `initial` when the link doesn't name a known view.
+ */
+export function useViewParam<T extends string>(views: readonly T[], initial: T): [T, (v: T) => void] {
+  const params = useLocalSearchParams<{ view?: string; at?: string }>();
+  const pick = (v?: string) => (views.includes(v as T) ? (v as T) : initial);
+  const key = `${params.view ?? ""}:${params.at ?? ""}`;
+  const [seen, setSeen] = useState(key);
+  const [view, setView] = useState<T>(() => pick(params.view));
+  if (key !== seen) {
+    setSeen(key);
+    setView(pick(params.view));
+  }
+  return [view, setView];
+}

@@ -1,49 +1,52 @@
-// Signed-in shell: header with the logomark and marina switcher, and the bottom tab bar.
-import { useMemo, useState } from "react";
+// Signed-in shell: header with the logomark and marina switcher, and a bottom tab bar that depends
+// on the role. Staff: Today, Bookings, Berths, Tasks, Me. Managers and admins: Overview, Approvals,
+// Bookings, Team, Me (Berths and Tasks stay reachable from the Overview).
+import { useState } from "react";
 import { Pressable, View, type ColorValue } from "react-native";
 import { Redirect, router, Tabs } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Bell, CalendarDays, Check, ChevronDown, ClipboardList, House, MessageSquare, ScanLine, UserRound, Warehouse, type LucideProps } from "lucide-react-native";
+import { Bell, CalendarCheck, CalendarDays, Check, ChevronDown, ClipboardList, House, LayoutDashboard, MessageSquare, ScanLine, UserRound, Users, Warehouse, type LucideProps } from "lucide-react-native";
 import type { ComponentType } from "react";
 import { IconButton, Logomark, OfflineBanner, Sheet, Txt } from "@/components/ui";
-import { buildInbox } from "@/lib/inbox";
-import { useMe, useStore } from "@/store";
+import { useInbox, useRole, useUnreadChat } from "@/lib/role";
+import { ALL, useStore } from "@/store";
 import { fonts, useTheme } from "@/theme";
 
 function Header() {
   const { t } = useTheme();
   const insets = useSafeAreaInsets();
   const { db, ix, scope, marinaId, setMarinaId } = useStore();
-  const me = useMe();
+  const { office } = useRole();
   const [open, setOpen] = useState(false);
   const many = scope.length > 1;
-  const unreadChat = me ? db.chat.filter((m) => m.staffId === me.id && !m.fromStaff && !m.read).length : 0;
-  const unreadInbox = useMemo(() => {
-    const read = new Set(db.readNotifications);
-    return buildInbox(db, ix, me, marinaId).filter((n) => !read.has(n.id)).length;
-  }, [db, ix, me, marinaId]);
+  const unreadChat = useUnreadChat();
+  const inbox = useInbox();
+  const read = new Set(db.readNotifications);
+  const unreadInbox = inbox.filter((n) => !read.has(n.id)).length;
+  const label = marinaId === ALL ? "All marinas" : ix.marina(marinaId)?.name;
+  const choices = office && many ? [ALL, ...scope] : scope;
   return (
     <View style={{ paddingTop: insets.top, backgroundColor: t.surface, borderBottomWidth: 1, borderColor: t.border }}>
       <View style={{ height: 56, flexDirection: "row", alignItems: "center", gap: 12, paddingLeft: 16, paddingRight: 8 }}>
         <Logomark size={20} />
         <Pressable
           accessibilityRole={many ? "button" : "text"}
-          accessibilityLabel={many ? `Marina: ${ix.marina(marinaId)?.name}. Change marina` : ix.marina(marinaId)?.name}
+          accessibilityLabel={many ? `Showing ${label}. Change marina` : label}
           disabled={!many}
           onPress={() => setOpen(true)}
           style={{ flexDirection: "row", alignItems: "center", gap: 4, flexShrink: 1 }}
         >
-          <Txt weight="semibold" numberOfLines={1} style={{ flexShrink: 1 }}>{ix.marina(marinaId)?.name}</Txt>
+          <Txt weight="semibold" numberOfLines={1} style={{ flexShrink: 1 }}>{label}</Txt>
           {many && <ChevronDown size={18} color={t.text} />}
         </Pressable>
         <View style={{ flex: 1 }} />
         <IconButton plain icon={ScanLine} label="Scan berth QR code" onPress={() => router.push("/scan")} />
-        <IconButton plain icon={MessageSquare} label="Messages" badge={unreadChat} onPress={() => router.push("/chat")} />
+        <IconButton plain icon={MessageSquare} label="Messages" badge={unreadChat} onPress={() => (office ? router.navigate({ pathname: "/team", params: { view: "messages", at: String(Date.now()) } }) : router.push("/chat"))} />
         <IconButton plain icon={Bell} label="Notifications" badge={unreadInbox} onPress={() => router.push("/inbox")} />
       </View>
       <OfflineBanner />
       <Sheet open={open} onClose={() => setOpen(false)} title="Choose marina">
-        {scope.map((id) => (
+        {choices.map((id) => (
           <Pressable
             key={id}
             accessibilityRole="radio"
@@ -52,8 +55,8 @@ function Header() {
             style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 14, borderBottomWidth: 1, borderColor: t.border, backgroundColor: pressed ? t.sidebar : "transparent" })}
           >
             <View>
-              <Txt weight="medium">{ix.marina(id)?.name}</Txt>
-              <Txt v="caption" color={t.text3}>{ix.city(ix.marina(id)?.cityId ?? "")?.name}</Txt>
+              <Txt weight="medium">{id === ALL ? "All marinas" : ix.marina(id)?.name}</Txt>
+              <Txt v="caption" color={t.text3}>{id === ALL ? `${scope.length} marinas together` : ix.city(ix.marina(id)?.cityId ?? "")?.name}</Txt>
             </View>
             {id === marinaId && <Check size={20} color={t.green} />}
           </Pressable>
@@ -76,9 +79,14 @@ const icon = (Cmp: ComponentType<LucideProps>) =>
 
 export default function TabsLayout() {
   const { t } = useTheme();
-  const { user, can } = useStore();
+  const { user, can, db, ix, ids } = useStore();
+  const { office } = useRole();
   if (!user) return <Redirect href="/login" />;
+  const team = new Set(db.staff.filter((s) => ids.includes(s.marinaId)).map((s) => s.id));
+  const waiting = office ? ix.bookingsIn(ids).filter((b) => b.status === "pending").length + db.requests.filter((r) => r.status === "pending" && team.has(r.staffId)).length : 0;
   const hidden = (area: Parameters<typeof can>[0]) => (can(area) === "none" ? { href: null } : {});
+  const staffOnly = office ? { href: null } : {};
+  const officeOnly = office ? {} : { href: null };
   return (
     <Tabs
       screenOptions={{
@@ -90,10 +98,12 @@ export default function TabsLayout() {
         sceneStyle: { backgroundColor: t.bg },
       }}
     >
-      <Tabs.Screen name="index" options={{ title: "Today", tabBarIcon: icon(House) }} />
+      <Tabs.Screen name="index" options={{ title: office ? "Overview" : "Today", tabBarIcon: icon(office ? LayoutDashboard : House) }} />
+      <Tabs.Screen name="approvals" options={{ title: "Approvals", tabBarIcon: icon(CalendarCheck), tabBarBadge: waiting ? (waiting > 99 ? "99+" : waiting) : undefined, tabBarBadgeStyle: { backgroundColor: t.error.base, fontFamily: fonts.numBold, fontSize: 10 }, ...officeOnly }} />
       <Tabs.Screen name="bookings" options={{ title: "Bookings", tabBarIcon: icon(CalendarDays), ...hidden("bookings") }} />
-      <Tabs.Screen name="berths" options={{ title: "Berths", tabBarIcon: icon(Warehouse), ...hidden("berths") }} />
-      <Tabs.Screen name="tasks" options={{ title: "Tasks", tabBarIcon: icon(ClipboardList), ...hidden("maintenance") }} />
+      <Tabs.Screen name="berths" options={{ title: "Berths", tabBarIcon: icon(Warehouse), ...staffOnly, ...hidden("berths") }} />
+      <Tabs.Screen name="tasks" options={{ title: "Tasks", tabBarIcon: icon(ClipboardList), ...staffOnly, ...hidden("maintenance") }} />
+      <Tabs.Screen name="team" options={{ title: "Team", tabBarIcon: icon(Users), ...officeOnly }} />
       <Tabs.Screen name="me" options={{ title: "Me", tabBarIcon: icon(UserRound) }} />
     </Tabs>
   );

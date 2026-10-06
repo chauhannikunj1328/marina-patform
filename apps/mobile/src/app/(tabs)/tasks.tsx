@@ -6,21 +6,25 @@ import { relative, today, type Priority } from "@marina/shared";
 import { Button, Card, EmptyState, Screen, Segmented, Txt } from "@/components/ui";
 import { PriorityBadge, TaskBadge } from "@/components/status";
 import { ReportProblem, TaskSheet } from "@/components/sheets";
-import { useOpenParam } from "@/lib/useOpenParam";
+import { useOpenParam, useViewParam } from "@/lib/useOpenParam";
+import { useRole } from "@/lib/role";
 import { useMe, useStore } from "@/store";
 import { useTheme } from "@/theme";
 
 export default function Tasks() {
-  const { db, ix, can, marinaId } = useStore();
+  const { db, ix, can, ids } = useStore();
+  const { office } = useRole();
   const me = useMe();
   const { t } = useTheme();
-  const [view, setView] = useState<"mine" | "open" | "done">("mine");
+  // Staff start with their own jobs; managers and admins with jobs nobody has picked up.
+  const [view, setView] = useViewParam(["mine", "unassigned", "open", "done"] as const, office ? "open" : "mine");
   const [reporting, setReporting] = useState(false);
   const [openId, setOpenId] = useOpenParam();
   const open = db.tasks.find((x) => x.id === openId);
-  const atMarina = db.tasks.filter((x) => x.marinaId === marinaId);
+  const atMarina = db.tasks.filter((x) => ids.includes(x.marinaId));
   const lists = {
     mine: db.tasks.filter((x) => x.assigneeId === me?.id && x.status !== "done"),
+    unassigned: atMarina.filter((x) => !x.assigneeId && x.status !== "done"),
     open: atMarina.filter((x) => x.status !== "done"),
     done: atMarina.filter((x) => x.status === "done").sort((a, b) => b.due.localeCompare(a.due)),
   };
@@ -29,18 +33,18 @@ export default function Tasks() {
   const now = today();
 
   return (
-    <Screen title="Tasks" right={can("maintenance") !== "view" ? <Button size="sm" variant="primary" icon={Plus} label="Report" onPress={() => setReporting(true)} /> : undefined}>
+    <Screen title={office ? "Work orders" : "Tasks"} right={can("maintenance") !== "view" ? <Button size="sm" variant="primary" icon={Plus} label="Report" onPress={() => setReporting(true)} /> : undefined}>
       <Segmented
         value={view}
         onChange={setView}
         items={[
-          { value: "mine", label: "Mine", count: lists.mine.length },
+          office ? { value: "unassigned" as const, label: "Unassigned", count: lists.unassigned.length } : { value: "mine" as const, label: "Mine", count: lists.mine.length },
           { value: "open", label: "Open", count: lists.open.length },
           { value: "done", label: "Done", count: lists.done.length },
         ]}
       />
       {rows.length === 0 ? (
-        <EmptyState icon={CircleCheck} title={view === "mine" ? "Nothing assigned to you" : view === "open" ? "No open work orders" : "Nothing finished yet"} body={view === "mine" ? "Open tasks you start are assigned to you." : undefined} />
+        <EmptyState icon={CircleCheck} title={view === "mine" ? "Nothing assigned to you" : view === "unassigned" ? "Every open job has someone on it" : view === "open" ? "No open work orders" : "Nothing finished yet"} body={view === "mine" ? "Open tasks you start are assigned to you." : undefined} />
       ) : (
         <View style={{ gap: 8 }}>
           {rows.map((x) => (
@@ -49,7 +53,7 @@ export default function Tasks() {
                 <View style={{ flex: 1 }}>
                   <Txt weight="semibold">{x.title}</Txt>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                    <Txt v="bodySm" color={t.text3}>{x.berthId ? `Berth ${ix.berth(x.berthId)?.code}` : "Facility"}{x.status !== "done" ? ` · due ${relative(x.due).toLowerCase()}` : ""}</Txt>
+                    <Txt v="bodySm" color={t.text3}>{ids.length > 1 ? `${ix.marina(x.marinaId)?.name} · ` : ""}{x.berthId ? `Berth ${ix.berth(x.berthId)?.code}` : "Facility"}{x.status !== "done" ? ` · due ${relative(x.due).toLowerCase()}` : ""}</Txt>
                     {(x.photos?.length ?? 0) > 0 && <ImageIcon size={14} color={t.text3} accessibilityLabel="Has photos" />}
                   </View>
                 </View>
