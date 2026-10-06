@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   Anchor, ArrowLeft, ArrowRight, Bell, Eye, Building, CalendarDays, ChartLine, CircleAlert, CircleCheck, EllipsisVertical, FileText, Globe, House, Info, Landmark,
-  Keyboard, LogOut, MapPin, Menu, Moon, Sparkles, Receipt, Search, Settings, ShieldCheck, Sun, TriangleAlert, UserCog, Users, Warehouse, Wrench, X,
+  Keyboard, LogOut, MapPin, Menu, Moon, Smartphone, Sparkles, Receipt, Search, Settings, ShieldCheck, Sun, TriangleAlert, UserCog, Users, Warehouse, Wrench, X,
   type LucideIcon,
 } from "lucide-react";
 import { useStore } from "@/data/store";
@@ -240,6 +240,9 @@ function UserCard({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: 
           </div>
           <button className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-ink-2 hover:bg-sidebar hover:text-ink cursor-pointer" onClick={() => go("/settings")}>
             <Settings className="size-5" aria-hidden /> Settings
+          </button>
+          <button className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-ink-2 hover:bg-sidebar hover:text-ink cursor-pointer" onClick={() => go("/app")}>
+            <Smartphone className="size-5" aria-hidden /> Open staff app
           </button>
           <button className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-ink-2 hover:bg-sidebar hover:text-ink cursor-pointer" onClick={() => { signOut(); navigate("/login"); }}>
             <LogOut className="size-5" aria-hidden /> Sign out

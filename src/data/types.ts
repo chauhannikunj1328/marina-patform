@@ -108,6 +108,8 @@ export interface MaintenanceTask {
   created: string;
   due: string;
   notes: { at: string; by: string; text: string }[];
+  /** Small compressed photos (data URLs) taken from the staff app. */
+  photos?: string[];
 }
 
 export type InvoiceStatus = "paid" | "due" | "overdue" | "void";

@@ -2,16 +2,15 @@ import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { CircleAlert, CircleCheck, Clock, Eye, Pencil, Plus, Trash, UserCheck, UserMinus, Users, Warehouse, Wrench } from "lucide-react";
 import { nextId, useStore } from "@/data/store";
+import { DAYS, SHIFT_HOURS } from "@/data/shifts";
 import type { MaintenanceTask, Priority, Shift, Staff, TaskStatus } from "@/data/types";
 import { addDays, fmtDate, fmtShort, fromISO, relative, today } from "@/lib/date";
 import { cx } from "@/lib/format";
 import { Avatar, Button, Card, ConfirmDialog, Field, IconButton, Input, Modal, PageHeader, SearchInput, Select, StatCard, Table, Tabs, Textarea, Toolbar, useDirty } from "@/components/ui";
 import { ActiveBadge, PriorityBadge, TaskBadge } from "@/components/status";
 
-const SHIFT_HOURS: Record<Shift, string> = { Morning: "6 AM – 2 PM", Day: "9 AM – 5 PM", Evening: "2 PM – 10 PM", Night: "10 PM – 6 AM" };
 const SHIFTS = Object.keys(SHIFT_HOURS) as Shift[];
 const DEPARTMENTS: Staff["department"][] = ["Operations", "Maintenance", "Front Desk", "Security"];
-const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 function StaffForm({ member, onClose }: { member?: Staff; onClose: () => void }) {
   const { db, scope, update, toast } = useStore();

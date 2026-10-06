@@ -17,6 +17,7 @@ Open http://localhost:5173 and sign in with a demo account (shown on the login p
 |---|---|---|
 | Admin (all marinas) | admin@marina.com | admin123 |
 | Marina manager (4 San Francisco Bay marinas) | manager@marina.com | manager123 |
+| Staff, dock hand (Golden Gate and Bay Harbor), opens the staff app | staff@marina.com | staff123 |
 
 Reviewers can also choose **Create an account** on the sign-in page. New accounts get admin access and are saved in that browser. On the deployed site, the owner (chauhan.nikunj1328@gmail.com) is emailed each time someone registers or signs in (name, email, company, role, time, browser; never the password) through [FormSubmit](https://formsubmit.co). FormSubmit asks the owner to confirm the address with the very first email. Edit `src/lib/notify.ts` to change the address.
 
@@ -41,6 +42,18 @@ Changes you make are saved in your browser until midnight; then fresh sample dat
 | Settings | `/settings` | Profile, notification preferences, company name, currency, invoice due days, monthly-rate threshold (all applied live) |
 
 The bell menu is built from live data: pending approvals, today's arrivals, overdue invoices, urgent work orders and unaccepted invites.
+
+## Staff app (`/app`)
+
+A phone-first app for dock hands and front desk, installable to the home screen. Staff are sent here after signing in; admins and managers can preview it from the account menu ("Open staff app").
+
+- **Today:** shift card, arrivals and departures with Check in / Check out, boats past their departure date, urgent repairs
+- **Bookings:** search, Today / Upcoming / In marina, booking details, call or email the owner
+- **Berths:** dock map, berth details, report a problem, take a berth out of service
+- **Tasks:** my and open work orders, start and finish with notes and camera photos, report a new problem
+- **Me:** weekly schedule, marinas, dark mode, install prompt, sign out
+
+What staff can do follows Access Control (e.g. View only hides check-in and edit actions).
 
 ## Roles
 

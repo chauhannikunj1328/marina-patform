@@ -105,10 +105,11 @@ export function Login() {
       {import.meta.env.DEV && (
         <div className="mt-8 border-t border-line pt-5 text-xs text-ink-3">
           <p className="mb-3 text-center">Demo accounts (development only)</p>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             {[
               ["Admin", "admin@marina.com", "admin123"],
               ["Manager", "manager@marina.com", "manager123"],
+              ["Staff", "staff@marina.com", "staff123"],
             ].map(([role, e, p]) => (
               <button
                 key={role}

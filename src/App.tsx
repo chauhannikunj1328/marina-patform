@@ -26,6 +26,13 @@ const Reports = page(() => import("@/pages/Insights"), "Reports");
 const Analytics = page(() => import("@/pages/Insights"), "Analytics");
 const AccessControl = page(() => import("@/pages/System"), "AccessControl");
 const Settings = page(() => import("@/pages/System"), "Settings");
+// Staff app (phone-first), loaded only when opened.
+const StaffLayout = lazy(() => import("@/staff/StaffLayout"));
+const StaffToday = page(() => import("@/staff/StaffPages"), "StaffToday");
+const StaffBookings = page(() => import("@/staff/StaffPages"), "StaffBookings");
+const StaffBerths = page(() => import("@/staff/StaffPages"), "StaffBerths");
+const StaffTasks = page(() => import("@/staff/StaffPages"), "StaffTasks");
+const StaffMe = page(() => import("@/staff/StaffPages"), "StaffMe");
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { user } = useStore();
@@ -33,6 +40,15 @@ function RequireAuth({ children }: { children: ReactNode }) {
   if (!user) return <Navigate to="/login" replace state={{ from: loc.pathname + loc.search }} />;
   return <>{children}</>;
 }
+
+/** Staff work in the phone-first staff app, not the office web app. */
+function OfficeOnly({ children }: { children: ReactNode }) {
+  const { user } = useStore();
+  if (user?.role === "staff") return <Navigate to="/app" replace />;
+  return <>{children}</>;
+}
+
+const staffPage = (node: ReactNode) => <Suspense fallback={<div className="space-y-3"><div className="skeleton h-8 w-40 rounded-[12px]" /><div className="skeleton h-24 rounded-[16px]" /><div className="skeleton h-16 rounded-[16px]" /></div>}>{node}</Suspense>;
 
 /** Blocks a page the signed-in role can't open (admin-only pages, or "No access" in Access Control). */
 function Guard({ area, admin, children }: { area?: Area; admin?: boolean; children: ReactNode }) {
@@ -61,7 +77,14 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/register" element={<Register />} />
-        <Route element={<RequireAuth><Layout /></RequireAuth>}>
+        <Route path="/app" element={<RequireAuth><Suspense fallback={null}><StaffLayout /></Suspense></RequireAuth>}>
+          <Route index element={staffPage(<StaffToday />)} />
+          <Route path="bookings" element={<Guard area="bookings">{staffPage(<StaffBookings />)}</Guard>} />
+          <Route path="berths" element={<Guard area="berths">{staffPage(<StaffBerths />)}</Guard>} />
+          <Route path="tasks" element={<Guard area="maintenance">{staffPage(<StaffTasks />)}</Guard>} />
+          <Route path="me" element={staffPage(<StaffMe />)} />
+        </Route>
+        <Route element={<RequireAuth><OfficeOnly><Layout /></OfficeOnly></RequireAuth>}>
           <Route index element={<Guard area="dashboards">{lazyPage(<GlobalOverview />)}</Guard>} />
           <Route path="county/:id?" element={<Guard area="dashboards">{lazyPage(<CountyDashboard />)}</Guard>} />
           <Route path="city/:id?" element={<Guard area="dashboards">{lazyPage(<CityDashboard />)}</Guard>} />

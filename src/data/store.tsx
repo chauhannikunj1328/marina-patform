@@ -51,6 +51,7 @@ interface Store {
 const PASSWORD_HASHES: Record<string, string> = {
   "admin@marina.com": "240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9",
   "manager@marina.com": "866485796cfa8d7c0cf7111640205b83076433547577511d81f8030ae99ecea5",
+  "staff@marina.com": "10176e7b7b24d317acfcf8d2064cfd2f24e154f7b5a96603077d5ef813d6a6b6",
   "chauhan.nikunj1328@gmail.com": "22b1ef6bfcd16329eb678346e6409561d2f3b46e9010a5226e552a4ddf3b1bba",
 };
 
@@ -94,7 +95,7 @@ async function sha256(text: string): Promise<string> {
 }
 
 const SESSION_KEY = "mms.session";
-const DATA_KEY = "mms.data.v5";
+const DATA_KEY = "mms.data.v6";
 
 // Changes are kept in the browser for the current day. Sample data is regenerated
 // each day so booking statuses (checked in, upcoming…) stay correct relative to today.

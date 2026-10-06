@@ -257,6 +257,13 @@ export function createSeed(): Db {
     "Inspect pilings", "Service fuel dock pump", "Repaint berth numbers", "Repair gangway hinge",
     "Replace dock lighting", "Clean pump-out station",
   ];
+  // Demo staff member who signs in to the staff app (staff@marina.com).
+  const priya: Staff = {
+    id: `s-${staff.length + 1}`, name: "Priya Shah", email: "staff@marina.com", phone: "(415) 555-2087",
+    position: "Dock Hand", department: "Operations", marinaId: "m-gg", status: "active", shift: "Day", daysOff: [0, 6], hired: addDays(now, -420),
+  };
+  staff.push(priya);
+
   const tasks: MaintenanceTask[] = [];
   let ti = 1;
   for (const b of berths.filter((x) => x.underMaintenance)) {
@@ -283,6 +290,9 @@ export function createSeed(): Db {
     ti++;
   }
 
+  // Give the demo staff member some open work orders at her marinas.
+  tasks.filter((t) => (t.marinaId === "m-gg" || t.marinaId === "m-bh") && t.status !== "done").slice(0, 3).forEach((t) => (t.assigneeId = priya.id));
+
   const users: SystemUser[] = [
     { id: "u-1", name: "Alex Morgan", email: "admin@marina.com", role: "admin", marinaIds: [], lastActive: now, status: "active" },
     ...staff
@@ -292,7 +302,7 @@ export function createSeed(): Db {
         // The demo manager runs the San Francisco Bay group; other managers run one marina each.
         marinaIds: i === 0 ? ["m-gg", "m-bh", "m-mb", "m-sau"] : [s.marinaId], lastActive: addDays(now, -(i % 7)), status: "active",
       })),
-    { id: "u-staff-1", name: "Priya Shah", email: "priya.shah@marinaops.com", role: "staff", marinaIds: ["m-gg", "m-bh"], lastActive: addDays(now, -3), status: "active" },
+    { id: "u-staff-1", name: "Priya Shah", email: "staff@marina.com", role: "staff", marinaIds: ["m-gg", "m-bh"], lastActive: addDays(now, -1), status: "active" },
     { id: "u-staff-2", name: "Tom Becker", email: "tom.becker@marinaops.com", role: "staff", marinaIds: ["m-sw"], lastActive: addDays(now, -20), status: "invited" },
   ];
 
