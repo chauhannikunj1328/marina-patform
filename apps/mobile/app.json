@@ -11,7 +11,7 @@
       "bundleIdentifier": "com.marina.staff",
       "supportsTablet": true,
       "infoPlist": {
-        "NSCameraUsageDescription": "Marina Staff uses the camera to add photos to repair reports.",
+        "NSCameraUsageDescription": "Marina Staff uses the camera to scan berth QR codes and add photos to repair reports.",
         "NSPhotoLibraryUsageDescription": "Marina Staff lets you attach photos to repair reports."
       }
     },
@@ -51,8 +51,16 @@
       [
         "expo-image-picker",
         {
-          "cameraPermission": "Marina Staff uses the camera to add photos to repair reports.",
+          "cameraPermission": "Marina Staff uses the camera to scan berth QR codes and add photos to repair reports.",
           "photosPermission": "Marina Staff lets you attach photos to repair reports."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Marina Staff uses the camera to scan berth QR codes and add photos to repair reports.",
+          "recordAudioAndroid": false,
+          "barcodeScannerEnabled": true
         }
       ],
       "expo-status-bar"

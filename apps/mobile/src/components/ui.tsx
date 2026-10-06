@@ -7,7 +7,8 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
-import { CircleAlert, CircleCheck, Eye, EyeOff, Search, TriangleAlert, X, type LucideProps } from "lucide-react-native";
+import { ArrowLeft, CircleAlert, Minus, Plus, CircleCheck, Eye, EyeOff, Search, TriangleAlert, WifiOff, X, type LucideProps } from "lucide-react-native";
+import { router } from "expo-router";
 import { LOGOMARK_PATHS, radius, type as typeScale } from "@marina/shared";
 import { fonts, useTheme } from "../theme";
 import { useStore } from "../store";
@@ -135,17 +136,18 @@ export function Button({
   );
 }
 
-export function IconButton({ icon: IconCmp, label, onPress }: { icon: Icon; label: string; onPress: () => void }) {
+export function IconButton({ icon: IconCmp, label, onPress, plain, badge = 0 }: { icon: Icon; label: string; onPress: () => void; plain?: boolean; badge?: number }) {
   const { t } = useTheme();
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={label}
+      accessibilityLabel={badge ? `${label}, ${badge} new` : label}
       onPress={onPress}
       hitSlop={6}
-      style={({ pressed }) => ({ width: 44, height: 44, borderRadius: 22, borderWidth: 1, borderColor: t.border, alignItems: "center", justifyContent: "center", backgroundColor: pressed ? t.sidebar : t.surface })}
+      style={({ pressed }) => ({ width: 44, height: 44, borderRadius: 22, borderWidth: plain ? 0 : 1, borderColor: t.border, alignItems: "center", justifyContent: "center", backgroundColor: pressed ? t.sidebar : plain ? "transparent" : t.surface })}
     >
-      <IconCmp size={20} color={t.text2} strokeWidth={1.5} />
+      <IconCmp size={plain ? 22 : 20} color={plain ? t.text : t.text2} strokeWidth={1.5} />
+      <Dot count={badge} />
     </Pressable>
   );
 }
@@ -165,6 +167,95 @@ export function Screen({ children, title, right }: { children: ReactNode; title?
       )}
       {children}
     </ScrollView>
+  );
+}
+
+/** Header for full-screen pages opened from the tabs (inbox, messages, scanner). */
+export function StackHeader({ title, subtitle, right }: { title: string; subtitle?: string; right?: ReactNode }) {
+  const { t } = useTheme();
+  const insets = useSafeAreaInsets();
+  return (
+    <View style={{ paddingTop: insets.top, backgroundColor: t.surface, borderBottomWidth: 1, borderColor: t.border }}>
+      <View style={{ minHeight: 56, flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 8 }}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+          hitSlop={4}
+          onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))}
+          style={({ pressed }) => ({ width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", backgroundColor: pressed ? t.sidebar : "transparent" })}
+        >
+          <ArrowLeft size={22} color={t.text} />
+        </Pressable>
+        <View style={{ flex: 1 }}>
+          <Txt weight="semibold" numberOfLines={1}>{title}</Txt>
+          {subtitle ? <Txt v="caption" color={t.text3} numberOfLines={1}>{subtitle}</Txt> : null}
+        </View>
+        {right}
+      </View>
+      <OfflineBanner />
+    </View>
+  );
+}
+
+/** Shown under the header while the phone has no connection. */
+export function OfflineBanner() {
+  const { online } = useStore();
+  const { t } = useTheme();
+  if (online) return null;
+  return (
+    <View accessibilityRole="alert" style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 16, paddingVertical: 8, backgroundColor: t.status.pending.bg }}>
+      <WifiOff size={16} color={t.status.pending.fg} />
+      <Txt v="caption" weight="medium" color={t.status.pending.fg} style={{ flex: 1 }}>{"You're offline. Keep working: changes are saved on this phone."}</Txt>
+    </View>
+  );
+}
+
+/** Small count bubble for header icons. */
+export function Dot({ count }: { count: number }) {
+  const { t } = useTheme();
+  if (!count) return null;
+  return (
+    <View style={{ position: "absolute", top: 4, right: 2, minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 4, backgroundColor: t.error.base, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: t.surface }}>
+      <Text style={{ fontFamily: fonts.numBold, fontSize: 10, lineHeight: 12, color: "#FFFFFF" }}>{count > 9 ? "9+" : count}</Text>
+    </View>
+  );
+}
+
+/** Pill choice used for small option sets (methods, types, colleagues). */
+export function Chip({ label, on, onPress, disabled, sub }: { label: string; on: boolean; onPress: () => void; disabled?: boolean; sub?: string }) {
+  const { t } = useTheme();
+  return (
+    <Pressable
+      accessibilityRole="radio"
+      accessibilityState={{ checked: on, disabled }}
+      disabled={disabled}
+      onPress={onPress}
+      style={{ minHeight: 40, paddingHorizontal: 14, paddingVertical: sub ? 6 : 0, borderRadius: sub ? radius.md : 20, justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: on ? t.primary : t.border, backgroundColor: on ? t.primary : t.surface, opacity: disabled ? 0.4 : 1 }}
+    >
+      <Txt v="bodySm" weight="semibold" num color={on ? t.onPrimary : t.text}>{label}</Txt>
+      {sub ? <Txt v="caption" num color={on ? t.onPrimary : t.text3}>{sub}</Txt> : null}
+    </Pressable>
+  );
+}
+
+/** − value + control for small whole numbers (nights, guests). */
+export function Stepper({ value, onChange, min = 1, max = 99, label, unit }: { value: number; onChange: (n: number) => void; min?: number; max?: number; label: string; unit?: string }) {
+  const { t } = useTheme();
+  const btn = (icon: Icon, next: number, name: string) => {
+    const IconCmp = icon;
+    const off = next < min || next > max;
+    return (
+      <Pressable accessibilityRole="button" accessibilityLabel={`${name} ${label}`} disabled={off} onPress={() => onChange(next)} style={({ pressed }) => ({ width: 44, height: 44, borderRadius: 22, borderWidth: 1, borderColor: t.border, alignItems: "center", justifyContent: "center", backgroundColor: pressed ? t.sidebar : t.surface, opacity: off ? 0.35 : 1 })}>
+        <IconCmp size={18} color={t.text} />
+      </Pressable>
+    );
+  };
+  return (
+    <View accessibilityRole="adjustable" accessibilityLabel={label} accessibilityValue={{ text: `${value}${unit ? ` ${unit}` : ""}` }} style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+      {btn(Minus, value - 1, "Fewer")}
+      <Txt v="h3" num weight="semibold" style={{ minWidth: 72, textAlign: "center" }}>{value}{unit ? <Txt v="bodySm" color={t.text3}> {unit}</Txt> : null}</Txt>
+      {btn(Plus, value + 1, "More")}
+    </View>
   );
 }
 
@@ -369,18 +460,20 @@ export function Sheet({ open, onClose, title, subtitle, children, footer }: { op
           {footer && <View style={{ paddingHorizontal: 24, paddingTop: 12, borderTopWidth: 1, borderColor: t.border, gap: 8 }}>{footer}</View>}
         </View>
       </KeyboardAvoidingView>
+      {/* Modals cover the app's own toasts, so confirmations show on top of the sheet too. */}
+      <Toasts top={insets.top + 12} />
     </Modal>
   );
 }
 
 // ---- Toasts (07: white card with border and a colored leading icon) -------------
 
-export function Toasts() {
+export function Toasts({ top }: { top?: number }) {
   const { toasts } = useStore();
   const { t } = useTheme();
   if (!toasts.length) return null;
   return (
-    <View pointerEvents="box-none" style={{ position: "absolute", left: 12, right: 12, bottom: 96, gap: 8 }} accessibilityLiveRegion="polite">
+    <View pointerEvents="box-none" style={[{ position: "absolute", left: 12, right: 12, gap: 8 }, top !== undefined ? { top } : { bottom: 96 }]} accessibilityLiveRegion="polite">
       {toasts.map((x) => {
         const IconCmp = x.kind === "warning" ? TriangleAlert : x.kind === "error" ? CircleAlert : CircleCheck;
         const color = x.kind === "warning" ? "#E0A11B" : x.kind === "error" ? t.error.base : t.green;

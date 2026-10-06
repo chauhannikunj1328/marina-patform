@@ -28,7 +28,11 @@ function Shell() {
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
       <StatusBar style={t.dark ? "light" : "dark"} />
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: t.bg }, animation: "fade" }} />
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: t.bg }, animation: "fade" }}>
+        <Stack.Screen name="inbox" options={{ animation: "slide_from_right" }} />
+        <Stack.Screen name="chat" options={{ animation: "slide_from_right" }} />
+        <Stack.Screen name="scan" options={{ animation: "slide_from_bottom" }} />
+      </Stack>
       <Toasts />
     </View>
   );

@@ -177,3 +177,44 @@ export interface Settings {
   notify: { pending: boolean; overdue: boolean; maintenance: boolean; digest: boolean };
   permissions: import("./permissions").Permissions;
 }
+
+/** A clock-in / clock-out pair from the staff app. `end` is empty while clocked in. */
+export interface TimeEntry {
+  id: ID;
+  staffId: ID;
+  marinaId: ID;
+  start: string; // ISO date-time
+  end?: string; // ISO date-time
+}
+
+export type RequestKind = "leave" | "swap";
+export type RequestStatus = "pending" | "approved" | "declined";
+
+/** Time off or a shift swap, sent from the staff app and decided by a manager. */
+export interface StaffRequest {
+  id: ID;
+  staffId: ID;
+  kind: RequestKind;
+  start: string; // ISO date
+  end: string; // ISO date, last day (inclusive). Same as start for a swap.
+  /** Colleague who covers the shift (swaps only). */
+  swapWithId?: ID;
+  reason: string;
+  status: RequestStatus;
+  createdAt: string; // ISO date-time
+  decidedBy?: string;
+  decidedAt?: string;
+}
+
+/** One message in the conversation between a staff member and their marina's managers. */
+export interface ChatMessage {
+  id: ID;
+  /** The staff member whose conversation this belongs to. */
+  staffId: ID;
+  fromStaff: boolean;
+  by: string;
+  text: string;
+  at: string; // ISO date-time
+  /** Read by the other side. */
+  read: boolean;
+}

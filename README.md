@@ -80,15 +80,27 @@ The bell menu is built from live data: pending approvals, today's arrivals, over
 
 ## Staff mobile app
 
-Opens with the brand splash screen, then sign-in, then five tabs. Staff assigned to more than one marina switch between them from the header.
+Opens with the brand splash screen, then sign-in, then five tabs. Staff assigned to more than one marina switch between them from the header. The header also has **Scan**, **Messages** and **Notifications**.
 
-- **Today:** shift card, arrivals and departures with Check in / Check out, boats past their departure date, urgent repairs
-- **Bookings:** search, Today / Upcoming / In marina, booking details, call or email the owner
+- **Today:** shift card with **Clock in / Clock out** and time on the clock, arrivals and departures with Check in / Check out, boats past their departure date, urgent repairs
+- **Bookings:** search, Today / Upcoming / In marina, booking details, call or email the owner, **Walk-in** booking for boats that arrive without one (find or add the boat, pick a free berth that fits, check in), **Take payment** at the dock (card reader, cash or check, full or part payment)
 - **Berths:** dock map with status filters, berth details, report a problem, take a berth out of service
 - **Tasks:** my, open and finished work orders; start and finish with notes and camera photos; report a new problem
-- **Me:** weekly schedule, marinas, light / dark / automatic appearance, sign out
+- **Me:** weekly schedule (with approved time off and swaps), hours worked and timesheet, **time off and shift swap requests**, edit profile, change password, appearance, sign out
+- **Scan:** point the camera at a berth's QR label (or type the berth number) to open it. Labels are printed from the web app (Berths → QR labels) and link to `marinastaff://berth/<id>`, so the phone camera opens the app too.
+- **Messages:** conversation with the marina's managers
+- **Notifications:** new and overdue work orders, manager messages, request decisions, colleagues asking you to cover, late departures, today's arrivals and tomorrow's shift
+- **Offline:** a banner shows when there's no connection. Everything keeps working and is saved on the phone; changes made offline are queued and cleared when the connection returns (they'll be sent to the server once there is one).
 
-What staff can do follows Access Control (e.g. View only hides check-in and edit actions). App name "Marina Staff", bundle ID `com.marina.staff` (`apps/mobile/app.json`).
+What staff can do follows Access Control (e.g. View only hides check-in and edit actions; billing set to No access hides Take payment). App name "Marina Staff", bundle ID `com.marina.staff` (`apps/mobile/app.json`).
+
+### Manager side (web app)
+
+- **Staff → Requests:** approve or decline time off and shift swaps. Approved ones update the weekly schedule and the staff member's app.
+- **Staff → Hours:** each person's clock-ins by day, weekly totals and who's on the clock now.
+- **Staff → Messages:** reply to staff conversations.
+- **Berths → QR labels:** printable labels for every berth post at a marina.
+- The bell shows new staff requests and unread staff messages.
 
 ## Roles
 
@@ -153,8 +165,9 @@ brand/          logo SVGs and the brand guide
 
 ## Not built yet
 
-- Real backend, database and authentication. Until then each app keeps its own copy of the sample data, so a check-in on the phone doesn't show up in the web app. Demo password hashes live in `packages/shared/src/accounts.ts`.
-- Push notifications for staff
+- Real backend, database and authentication. Until then each app keeps its own copy of the sample data, so a check-in, clock-in, request or message on the phone doesn't show up in the web app (and the other way round). A password changed in the staff app only works on that phone. Demo password hashes live in `packages/shared/src/accounts.ts`.
+- Push notifications for staff (notifications are in-app for now)
+- Card payments in the app (Stripe Terminal / Tap to Pay); staff record payments taken on the marina's card reader
 - Payments (Stripe) and real email/SMS delivery: reminders, invites and booking emails are recorded in the system and the audit log, but not actually sent
 - Public website and boat-owner booking portal (`apps/website`)
 - Map view with real map tiles

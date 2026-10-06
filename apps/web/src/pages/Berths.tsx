@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { CircleDashed, DollarSign, Droplets, Eye, Pencil, Plus, Sailboat, Trash, Wrench, Zap } from "lucide-react";
+import { CircleDashed, DollarSign, Droplets, Eye, Pencil, Plus, QrCode as QrIcon, Sailboat, Trash, Wrench, Zap } from "lucide-react";
 import { BerthDetail } from "@/components/BerthDetail";
+import { BerthLabels } from "@/components/BerthLabels";
 import { nextId, useStore } from "@/data/store";
 import type { Berth, BerthType } from "@marina/shared";
 import type { BerthStatus } from "@marina/shared";
@@ -93,6 +94,7 @@ export function Berths() {
   const [editing, setEditing] = useState<Berth | "new" | undefined>();
   const [deleting, setDeleting] = useState<Berth | undefined>();
   const [viewing, setViewing] = useState<Berth | undefined>();
+  const [labels, setLabels] = useState(false);
   const marinaId = params.get("marina") ?? "all";
   const marinas = db.marinas.filter((m) => scope.includes(m.id));
   const ids = marinaId === "all" ? scope : [marinaId];
@@ -145,7 +147,12 @@ export function Berths() {
       <PageHeader
         title="Berths"
         description="Dock spaces, sizes, pricing and today's availability"
-        actions={canEdit && <Button variant="primary" icon={Plus} onClick={() => setEditing("new")}>Add berth</Button>}
+        actions={
+          <>
+            <Button icon={QrIcon} onClick={() => setLabels(true)}>QR labels</Button>
+            {canEdit && <Button variant="primary" icon={Plus} onClick={() => setEditing("new")}>Add berth</Button>}
+          </>
+        }
       />
       <div className="mb-4 grid grid-cols-2 gap-4 min-[1400px]:grid-cols-4">
         <StatCard label="Available" icon={CircleDashed} value={m.available} sub={`of ${m.berths} berths`} active={status === "available"} onClick={() => { setStatus(status === "available" ? "all" : "available"); setPage(1); }} />
@@ -213,6 +220,7 @@ export function Berths() {
 
       {viewing && <BerthDetail berth={viewing} onClose={() => setViewing(undefined)} onEdit={() => { setEditing(viewing); setViewing(undefined); }} />}
       {editing && <BerthForm berth={editing === "new" ? undefined : editing} defaultMarina={marinaId === "all" ? scope[0] : marinaId} onClose={() => setEditing(undefined)} />}
+      {labels && <BerthLabels defaultMarina={marinaId} onClose={() => setLabels(false)} />}
       <ConfirmDialog
         open={!!deleting}
         onClose={() => setDeleting(undefined)}

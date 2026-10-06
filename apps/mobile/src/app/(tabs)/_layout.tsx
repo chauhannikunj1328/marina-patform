@@ -1,23 +1,30 @@
 // Signed-in shell: header with the logomark and marina switcher, and the bottom tab bar.
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Pressable, View, type ColorValue } from "react-native";
-import { Redirect, Tabs } from "expo-router";
+import { Redirect, router, Tabs } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { CalendarDays, Check, ChevronDown, ClipboardList, House, UserRound, Warehouse, type LucideProps } from "lucide-react-native";
+import { Bell, CalendarDays, Check, ChevronDown, ClipboardList, House, MessageSquare, ScanLine, UserRound, Warehouse, type LucideProps } from "lucide-react-native";
 import type { ComponentType } from "react";
-import { Logomark, Sheet, Txt } from "@/components/ui";
-import { useStore } from "@/store";
+import { IconButton, Logomark, OfflineBanner, Sheet, Txt } from "@/components/ui";
+import { buildInbox } from "@/lib/inbox";
+import { useMe, useStore } from "@/store";
 import { fonts, useTheme } from "@/theme";
 
 function Header() {
   const { t } = useTheme();
   const insets = useSafeAreaInsets();
-  const { ix, scope, marinaId, setMarinaId } = useStore();
+  const { db, ix, scope, marinaId, setMarinaId } = useStore();
+  const me = useMe();
   const [open, setOpen] = useState(false);
   const many = scope.length > 1;
+  const unreadChat = me ? db.chat.filter((m) => m.staffId === me.id && !m.fromStaff && !m.read).length : 0;
+  const unreadInbox = useMemo(() => {
+    const read = new Set(db.readNotifications);
+    return buildInbox(db, ix, me, marinaId).filter((n) => !read.has(n.id)).length;
+  }, [db, ix, me, marinaId]);
   return (
     <View style={{ paddingTop: insets.top, backgroundColor: t.surface, borderBottomWidth: 1, borderColor: t.border }}>
-      <View style={{ height: 56, flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16 }}>
+      <View style={{ height: 56, flexDirection: "row", alignItems: "center", gap: 12, paddingLeft: 16, paddingRight: 8 }}>
         <Logomark size={20} />
         <Pressable
           accessibilityRole={many ? "button" : "text"}
@@ -29,7 +36,12 @@ function Header() {
           <Txt weight="semibold" numberOfLines={1} style={{ flexShrink: 1 }}>{ix.marina(marinaId)?.name}</Txt>
           {many && <ChevronDown size={18} color={t.text} />}
         </Pressable>
+        <View style={{ flex: 1 }} />
+        <IconButton plain icon={ScanLine} label="Scan berth QR code" onPress={() => router.push("/scan")} />
+        <IconButton plain icon={MessageSquare} label="Messages" badge={unreadChat} onPress={() => router.push("/chat")} />
+        <IconButton plain icon={Bell} label="Notifications" badge={unreadInbox} onPress={() => router.push("/inbox")} />
       </View>
+      <OfflineBanner />
       <Sheet open={open} onClose={() => setOpen(false)} title="Choose marina">
         {scope.map((id) => (
           <Pressable

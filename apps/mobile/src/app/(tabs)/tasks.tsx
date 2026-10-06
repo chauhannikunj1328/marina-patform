@@ -1,12 +1,12 @@
 // Tasks: my work orders, open ones at the marina, and finished jobs; report a new problem.
 import { useState } from "react";
 import { View } from "react-native";
-import { useLocalSearchParams } from "expo-router";
 import { CircleCheck, Image as ImageIcon, Plus } from "lucide-react-native";
-import { relative, today, type MaintenanceTask, type Priority } from "@marina/shared";
+import { relative, today, type Priority } from "@marina/shared";
 import { Button, Card, EmptyState, Screen, Segmented, Txt } from "@/components/ui";
 import { PriorityBadge, TaskBadge } from "@/components/status";
 import { ReportProblem, TaskSheet } from "@/components/sheets";
+import { useOpenParam } from "@/lib/useOpenParam";
 import { useMe, useStore } from "@/store";
 import { useTheme } from "@/theme";
 
@@ -14,10 +14,10 @@ export default function Tasks() {
   const { db, ix, can, marinaId } = useStore();
   const me = useMe();
   const { t } = useTheme();
-  const params = useLocalSearchParams<{ open?: string }>();
   const [view, setView] = useState<"mine" | "open" | "done">("mine");
   const [reporting, setReporting] = useState(false);
-  const [open, setOpen] = useState<MaintenanceTask | undefined>(() => db.tasks.find((x) => x.id === params.open));
+  const [openId, setOpenId] = useOpenParam();
+  const open = db.tasks.find((x) => x.id === openId);
   const atMarina = db.tasks.filter((x) => x.marinaId === marinaId);
   const lists = {
     mine: db.tasks.filter((x) => x.assigneeId === me?.id && x.status !== "done"),
@@ -44,7 +44,7 @@ export default function Tasks() {
       ) : (
         <View style={{ gap: 8 }}>
           {rows.map((x) => (
-            <Card key={x.id} onPress={() => setOpen(x)}>
+            <Card key={x.id} onPress={() => setOpenId(x.id)}>
               <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 12 }}>
                 <View style={{ flex: 1 }}>
                   <Txt weight="semibold">{x.title}</Txt>
@@ -63,7 +63,7 @@ export default function Tasks() {
           ))}
         </View>
       )}
-      {open && <TaskSheet task={open} onClose={() => setOpen(undefined)} />}
+      {open && <TaskSheet task={open} onClose={() => setOpenId(undefined)} />}
       {reporting && <ReportProblem onClose={() => setReporting(false)} />}
     </Screen>
   );

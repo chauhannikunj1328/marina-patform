@@ -38,6 +38,16 @@ export function buildNotifications(db: Db, ix: Index, scope: string[], isAdmin: 
       out.push({ id: `tasks-${urgent.map((t) => t.id).join(".")}`, title: `${urgent.length} high priority work orders`, body: "Repairs that are blocking berths or facilities.", to: "/maintenance" });
     }
   }
+  // From the staff app: time off / swap requests and unread messages.
+  const staffIn = new Set(db.staff.filter((s) => inScope.has(s.marinaId)).map((s) => s.id));
+  const requests = (db.requests ?? []).filter((r) => r.status === "pending" && staffIn.has(r.staffId));
+  if (requests.length)
+    out.push({ id: `requests-${requests.map((r) => r.id).join(".")}`, title: `${requests.length} staff ${requests.length === 1 ? "request" : "requests"} to review`, body: "Time off and shift swaps sent from the staff app.", to: "/staff?tab=requests" });
+  const unread = (db.chat ?? []).filter((m) => m.fromStaff && !m.read && staffIn.has(m.staffId));
+  if (unread.length) {
+    const last = unread[unread.length - 1];
+    out.push({ id: `chat-${last.id}`, title: unread.length === 1 ? `Message from ${last.by}` : `${unread.length} unread staff messages`, body: last.text, to: "/staff?tab=messages" });
+  }
   if (isAdmin)
     for (const u of db.users.filter((u) => u.status === "invited"))
       out.push({ id: `invite-${u.id}`, title: "Invite not accepted yet", body: `${u.name} hasn't set up their account.`, to: "/users?tab=users" });

@@ -33,7 +33,7 @@ export const DEFAULT_PERMISSIONS: Permissions = {
   staff: { manager: "own", staff: "view" },
   maintenance: { manager: "own", staff: "own" },
   owners: { manager: "own", staff: "view" },
-  billing: { manager: "own", staff: "none" },
+  billing: { manager: "own", staff: "own" },
   reports: { manager: "own", staff: "none" },
 };
 

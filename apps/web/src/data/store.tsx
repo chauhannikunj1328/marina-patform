@@ -109,6 +109,10 @@ function normalize(db: Db): Db {
     // Data saved before permissions existed gets the defaults.
     settings: { ...db.settings, permissions: { ...DEFAULT_PERMISSIONS, ...db.settings.permissions } },
     users: [...db.users, ...missing],
+    // Data saved before the staff app added these.
+    timeEntries: db.timeEntries ?? [],
+    requests: db.requests ?? [],
+    chat: db.chat ?? [],
     invoices: db.invoices.map((i) => {
       // Data saved before partial payments existed: rebuild the payment list from paidAt.
       const payments = i.payments ?? (i.status === "paid" && i.paidAt ? [{ date: i.paidAt, amount: i.amount, method: i.method ?? "Card" }] : []);

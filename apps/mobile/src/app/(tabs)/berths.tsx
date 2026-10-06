@@ -2,10 +2,11 @@
 import { useState } from "react";
 import { Pressable, View } from "react-native";
 import { Warehouse } from "lucide-react-native";
-import type { Berth, BerthStatus } from "@marina/shared";
+import type { BerthStatus } from "@marina/shared";
 import { EmptyState, Screen, Txt } from "@/components/ui";
 import { berthLabel } from "@/components/status";
 import { BerthSheet, ReportProblem } from "@/components/sheets";
+import { useOpenParam } from "@/lib/useOpenParam";
 import { useStore } from "@/store";
 import { useTheme } from "@/theme";
 
@@ -13,7 +14,8 @@ export default function Berths() {
   const { db, ix, marinaId } = useStore();
   const { t } = useTheme();
   const [filter, setFilter] = useState<"all" | BerthStatus>("all");
-  const [open, setOpen] = useState<Berth | undefined>();
+  const [openId, setOpenId] = useOpenParam();
+  const open = db.berths.find((b) => b.id === openId);
   const [reportFor, setReportFor] = useState<string | undefined>();
   const fill: Record<BerthStatus, { bg: string; fg: string; border: string; dashed?: boolean }> = {
     occupied: { bg: t.tealStrong, fg: t.onTealStrong, border: t.tealStrong },
@@ -57,7 +59,7 @@ export default function Berths() {
                   key={b.id}
                   accessibilityRole="button"
                   accessibilityLabel={`Berth ${b.code}, ${b.maxLength} feet, ${berthLabel[st]}`}
-                  onPress={() => setOpen(b)}
+                  onPress={() => setOpenId(b.id)}
                   style={({ pressed }) => ({ width: "23%", height: 64, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: f.bg, borderWidth: 1, borderColor: f.border, borderStyle: f.dashed ? "dashed" : "solid", transform: [{ scale: pressed ? 0.95 : 1 }] })}
                 >
                   <Txt weight="semibold" num color={f.fg}>{b.code.split("-")[1]}</Txt>
@@ -69,7 +71,7 @@ export default function Berths() {
         </View>
       ))}
       {shown.length === 0 && <EmptyState icon={Warehouse} title="No berths with this status" />}
-      {open && <BerthSheet berth={open} onClose={() => setOpen(undefined)} onReport={() => { setReportFor(open.id); setOpen(undefined); }} />}
+      {open && <BerthSheet berth={open} onClose={() => setOpenId(undefined)} onReport={() => { setReportFor(open.id); setOpenId(undefined); }} />}
       {reportFor && <ReportProblem berthId={reportFor} onClose={() => setReportFor(undefined)} />}
     </Screen>
   );

@@ -1,20 +1,23 @@
 // Bookings: search and the Today / Upcoming / In marina lists.
 import { useState } from "react";
 import { View } from "react-native";
-import { CalendarClock, Search } from "lucide-react-native";
-import { daysBetween, fmtShort, today, type Booking } from "@marina/shared";
-import { Card, EmptyState, Screen, SearchBox, Segmented, Txt } from "@/components/ui";
+import { CalendarClock, Plus, Search } from "lucide-react-native";
+import { daysBetween, fmtShort, today } from "@marina/shared";
+import { Button, Card, EmptyState, Screen, SearchBox, Segmented, Txt } from "@/components/ui";
 import { BookingBadge } from "@/components/status";
-import { BookingSheet } from "@/components/sheets";
+import { BookingSheet, WalkInSheet } from "@/components/sheets";
+import { useOpenParam } from "@/lib/useOpenParam";
 import { useStore } from "@/store";
 import { useTheme } from "@/theme";
 
 export default function Bookings() {
-  const { ix, marinaId } = useStore();
+  const { db, ix, marinaId, can } = useStore();
   const { t } = useTheme();
   const [view, setView] = useState<"today" | "upcoming" | "in">("today");
   const [q, setQ] = useState("");
-  const [open, setOpen] = useState<Booking | undefined>();
+  const [openId, setOpenId] = useOpenParam();
+  const open = db.bookings.find((b) => b.id === openId);
+  const [walkIn, setWalkIn] = useState(false);
   const now = today();
   const all = ix.bookingsIn([marinaId]).filter((b) => b.status !== "cancelled");
   const lists = {
@@ -29,7 +32,7 @@ export default function Bookings() {
   ).slice(0, 60);
 
   return (
-    <Screen title="Bookings">
+    <Screen title="Bookings" right={can("bookings") !== "view" ? <Button size="sm" variant="primary" icon={Plus} label="Walk-in" onPress={() => setWalkIn(true)} /> : undefined}>
       <SearchBox value={q} onChange={setQ} placeholder="Boat, owner, berth or code" />
       {!s && (
         <Segmented
@@ -47,7 +50,7 @@ export default function Bookings() {
       ) : (
         <View style={{ gap: 8 }}>
           {rows.map((b) => (
-            <Card key={b.id} onPress={() => setOpen(b)}>
+            <Card key={b.id} onPress={() => setOpenId(b.id)}>
               <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 12 }}>
                 <View style={{ flex: 1 }}>
                   <Txt weight="semibold" numberOfLines={1}>{ix.boat(b.boatId)?.name}</Txt>
@@ -55,12 +58,13 @@ export default function Bookings() {
                 </View>
                 <BookingBadge status={b.status} />
               </View>
-              <Txt v="bodySm" num color={t.text2} style={{ marginTop: 8 }}>{fmtShort(b.start)} – {fmtShort(b.end)} · {daysBetween(b.start, b.end)} nights</Txt>
+              <Txt v="bodySm" num color={t.text2} style={{ marginTop: 8 }}>{fmtShort(b.start)} – {fmtShort(b.end)} · {daysBetween(b.start, b.end)} {daysBetween(b.start, b.end) === 1 ? "night" : "nights"}</Txt>
             </Card>
           ))}
         </View>
       )}
-      {open && <BookingSheet booking={open} onClose={() => setOpen(undefined)} />}
+      {open && <BookingSheet booking={open} onClose={() => setOpenId(undefined)} />}
+      {walkIn && <WalkInSheet onClose={() => setWalkIn(false)} onDone={(id) => { setWalkIn(false); setOpenId(id); }} />}
     </Screen>
   );
 }

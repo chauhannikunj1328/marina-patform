@@ -2,9 +2,9 @@
 // and dates are generated relative to today so the data never looks stale.
 import type {
   Berth, BerthType, Boat, BoatOwner, BoatType, Booking, BookingStatus, City, County,
-  Activity, Invoice, MaintenanceTask, Marina, Message, Settings, Shift, Staff, SystemUser,
+  Activity, ChatMessage, Invoice, MaintenanceTask, Marina, Message, Settings, Shift, Staff, StaffRequest, SystemUser, TimeEntry,
 } from "./types";
-import { addDays, daysBetween, today } from "./date";
+import { addDays, daysBetween, fromISO, today } from "./date";
 import { bookingAmount } from "./pricing";
 import { DEFAULT_PERMISSIONS } from "./permissions";
 
@@ -22,6 +22,12 @@ export interface Db {
   users: SystemUser[];
   activity: Activity[];
   messages: Message[];
+  /** Clock-ins from the staff app */
+  timeEntries: TimeEntry[];
+  /** Time off and shift swap requests */
+  requests: StaffRequest[];
+  /** Staff ↔ manager conversations */
+  chat: ChatMessage[];
   settings: Settings;
   /** Notification ids the user has dismissed or read */
   readNotifications: string[];
@@ -333,5 +339,35 @@ export function createSeed(): Db {
     }));
   const messages: Message[] = [];
 
-  return { counties, cities, marinas, berths, owners, boats, bookings, staff, tasks, invoices, users, activity, messages, settings, readNotifications: [] };
+  // Priya's clock-ins for the days she has already worked this week.
+  const at = (day: string, h: number, m: number) => new Date(fromISO(day).getTime() + (h * 60 + m) * 60_000).toISOString();
+  const timeEntries: TimeEntry[] = [];
+  const weekStart = addDays(now, -fromISO(now).getDay());
+  for (let d = weekStart; d < now; d = addDays(d, 1)) {
+    if (priya.daysOff.includes(fromISO(d).getDay())) continue;
+    const n = timeEntries.length;
+    timeEntries.push({ id: `te-${n + 1}`, staffId: priya.id, marinaId: priya.marinaId, start: at(d, 8, 52 + (n % 3) * 3), end: at(d, 17, 4 + (n % 4) * 6) });
+  }
+
+  // A few requests: Priya's approved day off, and colleagues' requests waiting for the Golden Gate manager.
+  const gg = staff.filter((s) => s.marinaId === "m-gg" && s.id !== priya.id && s.position !== "Marina Manager");
+  const ggManager = staff.find((s) => s.marinaId === "m-gg" && s.position === "Marina Manager")!;
+  // A day Priya is off and her colleague works, so she can cover the swap.
+  const offDay = (s: Staff, d: string) => s.daysOff.includes(fromISO(d).getDay());
+  let swapDay = addDays(now, 3);
+  for (let i = 0; i < 14 && (!offDay(priya, swapDay) || offDay(gg[1], swapDay)); i++) swapDay = addDays(swapDay, 1);
+  const created = (daysAgo: number) => new Date(Date.now() - daysAgo * 86_400_000).toISOString();
+  const requests: StaffRequest[] = [
+    { id: "rq-1", staffId: priya.id, kind: "leave", start: addDays(now, 17), end: addDays(now, 18), reason: "Family wedding", status: "approved", createdAt: created(6), decidedBy: ggManager.name, decidedAt: created(5) },
+    { id: "rq-2", staffId: gg[0].id, kind: "leave", start: addDays(now, 9), end: addDays(now, 11), reason: "Dentist and a long weekend", status: "pending", createdAt: created(1) },
+    { id: "rq-3", staffId: gg[1].id, kind: "swap", start: swapDay, end: swapDay, swapWithId: priya.id, reason: "Kid's school event", status: "pending", createdAt: created(0.2) },
+  ];
+
+  const chat: ChatMessage[] = [
+    { id: "ch-1", staffId: priya.id, fromStaff: false, by: ggManager.name, text: "Thanks for sorting out the cleat on A-04 so quickly yesterday.", at: created(1.2), read: true },
+    { id: "ch-2", staffId: priya.id, fromStaff: true, by: priya.name, text: "No problem. The new one needs a final check once the epoxy sets.", at: created(1.15), read: true },
+    { id: "ch-3", staffId: priya.id, fromStaff: false, by: ggManager.name, text: "Morning Priya. The fuel dock pump is playing up again. Can you take a look when you have a minute?", at: created(0.06), read: false },
+  ];
+
+  return { counties, cities, marinas, berths, owners, boats, bookings, staff, tasks, invoices, users, activity, messages, timeEntries, requests, chat, settings, readNotifications: [] };
 }

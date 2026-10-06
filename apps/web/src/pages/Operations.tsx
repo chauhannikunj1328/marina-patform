@@ -2,7 +2,8 @@ import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { CircleAlert, CircleCheck, Clock, Eye, Pencil, Plus, Trash, UserCheck, UserMinus, Users, Warehouse, Wrench } from "lucide-react";
 import { nextId, useStore } from "@/data/store";
-import { DAYS, SHIFT_HOURS } from "@marina/shared";
+import { DAYS, planFor, SHIFT_HOURS } from "@marina/shared";
+import { HoursPanel, MessagesPanel, RequestsPanel } from "./StaffExtras";
 import type { MaintenanceTask, Priority, Shift, Staff, TaskStatus } from "@marina/shared";
 import { addDays, fmtDate, fmtShort, fromISO, relative, today } from "@marina/shared";
 import { cx } from "@marina/shared";
@@ -68,11 +69,12 @@ function StaffForm({ member, onClose }: { member?: Staff; onClose: () => void })
 }
 
 function WeekSchedule({ staff }: { staff: Staff[] }) {
-  const { ix } = useStore();
+  const { db, ix } = useStore();
   const [offset, setOffset] = useState(0);
   const start = addDays(today(), -fromISO(today()).getDay() + offset * 7);
   const days = Array.from({ length: 7 }, (_, i) => addDays(start, i));
-  const working = (s: Staff, i: number) => s.status === "active" && !s.daysOff.includes(i);
+  // Approved time off and shift swaps from the staff app change who works each day.
+  const working = (s: Staff, i: number) => planFor(s, days[i], db.requests).working;
   const sorted = [...staff].sort((a, b) => SHIFTS.indexOf(a.shift) - SHIFTS.indexOf(b.shift) || a.name.localeCompare(b.name));
   return (
     <div>
@@ -98,17 +100,20 @@ function WeekSchedule({ staff }: { staff: Staff[] }) {
             {sorted.map((s) => (
               <tr key={s.id} className="border-b border-line">
                 <td className="px-4 py-2"><span className="font-medium">{s.name}</span><span className="block text-xs text-ink-3">{s.position} · {ix.marina(s.marinaId)?.name}</span></td>
-                {days.map((d, i) => (
-                  <td key={d} className="px-1 py-1.5 text-center">
-                    {s.status !== "active" ? (
-                      <span className="block rounded-full bg-st-neutral-bg py-1.5 text-xs font-medium text-st-neutral-fg">Leave</span>
-                    ) : working(s, i) ? (
-                      <span className="block rounded-full bg-teal-strong py-1.5 text-xs font-semibold text-on-teal-strong" title={SHIFT_HOURS[s.shift]}>{s.shift}</span>
-                    ) : (
-                      <span className="block rounded-full border border-dashed border-line-strong py-1.5 text-xs text-ink-3">Off</span>
-                    )}
-                  </td>
-                ))}
+                {days.map((d) => {
+                  const plan = planFor(s, d, db.requests);
+                  return (
+                    <td key={d} className="px-1 py-1.5 text-center">
+                      {!plan.working && plan.why === "leave" ? (
+                        <span className="block rounded-full bg-st-neutral-bg py-1.5 text-xs font-medium text-st-neutral-fg">Leave</span>
+                      ) : plan.working ? (
+                        <span className="block rounded-full bg-teal-strong py-1.5 text-xs font-semibold text-on-teal-strong" title={plan.covering ? `Covering for ${ix.staffMember(plan.covering.staffId)?.name}` : SHIFT_HOURS[s.shift]}>{plan.covering ? `${ix.staffMember(plan.covering.staffId)?.shift} · cover` : s.shift}</span>
+                      ) : (
+                        <span className="block rounded-full border border-dashed border-line-strong py-1.5 text-xs text-ink-3" title={plan.why === "swapped" ? `${ix.staffMember(plan.request?.swapWithId)?.name} covers` : undefined}>{plan.why === "swapped" ? "Swapped" : "Off"}</span>
+                      )}
+                    </td>
+                  );
+                })}
               </tr>
             ))}
           </tbody>
@@ -137,7 +142,8 @@ export function StaffPage() {
   const { db, ix, scope, update, toast, can } = useStore();
   const canEditStaff = can("staff") !== "view";
   const [params] = useSearchParams();
-  const [tab, setTab] = useState<"directory" | "schedule" | "shifts">("directory");
+  type StaffTab = "directory" | "schedule" | "shifts" | "requests" | "hours" | "messages";
+  const [tab, setTab] = useState<StaffTab>(() => (["requests", "hours", "messages", "schedule"].includes(params.get("tab") ?? "") ? (params.get("tab") as StaffTab) : "directory"));
   const [q, setQ] = useState(params.get("q") ?? "");
   const [marinaId, setMarinaId] = useState("all");
   const [editing, setEditing] = useState<Staff | "new" | undefined>();
@@ -152,7 +158,10 @@ export function StaffPage() {
   const active = staff.filter((s) => s.status === "active");
   const filters = (q ? 1 : 0) + (marinaId !== "all" ? 1 : 0) + (leaveOnly ? 1 : 0);
   const todayIdx = fromISO(today()).getDay();
-  const onToday = active.filter((s) => !s.daysOff.includes(todayIdx));
+  const onToday = active.filter((s) => planFor(s, today(), db.requests).working);
+  const ids = new Set(staff.map((s) => s.id));
+  const pendingRequests = db.requests.filter((r) => r.status === "pending" && ids.has(r.staffId)).length;
+  const unreadMessages = db.chat.filter((m) => m.fromStaff && !m.read && ids.has(m.staffId)).length;
 
   return (
     <>
@@ -163,7 +172,18 @@ export function StaffPage() {
         <StatCard label="On leave" icon={UserMinus} value={staff.length - active.length} active={tab === "directory" && leaveOnly} onClick={() => { setTab("directory"); setLeaveOnly(!leaveOnly); }} />
         <StatCard active={tab === "shifts"} onClick={() => setTab("shifts")} label="Shifts covered today" icon={Clock} value={`${new Set(onToday.map((s) => s.shift)).size} / 4`} sub="Morning, Day, Evening, Night" />
       </div>
-      <Tabs value={tab} onChange={setTab} items={[{ value: "directory", label: "Directory" }, { value: "schedule", label: "Weekly schedule" }, { value: "shifts", label: "Shift coverage" }]} />
+      <Tabs
+        value={tab}
+        onChange={setTab}
+        items={[
+          { value: "directory", label: "Directory" },
+          { value: "schedule", label: "Weekly schedule" },
+          { value: "shifts", label: "Shift coverage" },
+          { value: "requests", label: "Requests", count: pendingRequests || undefined },
+          { value: "hours", label: "Hours" },
+          { value: "messages", label: "Messages", count: unreadMessages || undefined },
+        ]}
+      />
       <Card>
         <Toolbar active={filters} onClear={() => { setQ(""); setMarinaId("all"); setLeaveOnly(false); }}>
           {tab === "directory" && <SearchInput value={q} onChange={setQ} placeholder="Search by name, email or role" />}
@@ -200,6 +220,9 @@ export function StaffPage() {
           </Table>
         )}
         {tab === "schedule" && <WeekSchedule staff={staff} />}
+        {tab === "requests" && <RequestsPanel staff={staff} canEdit={canEditStaff} />}
+        {tab === "hours" && <HoursPanel staff={staff} />}
+        {tab === "messages" && <MessagesPanel key={marinaId} staff={staff} />}
         {tab === "shifts" && (
           <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-2 xl:grid-cols-4">
             {SHIFTS.map((sh) => {
