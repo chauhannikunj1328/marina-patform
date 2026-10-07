@@ -425,6 +425,7 @@ export const ar: Record<string, Entry> = {
   "Confirm booking": "تأكيد الحجز",
   "Confirm new password": "تأكيد كلمة المرور الجديدة",
   "Confirmed": "مؤكد",
+  "confirmed": "مؤكد",
   "Confirmed (send invoice)": "مؤكد (إرسال الفاتورة)",
   "confirmed and pending": "المؤكدة والمعلقة",
   "Confirms the boat's condition and the marina rules.": "يؤكد حالة القارب وقواعد المارينا.",

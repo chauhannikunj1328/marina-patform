@@ -84,3 +84,10 @@ describe.each([["Spanish", es], ["Arabic", ar]] as const)("%s translations", (_,
     expect(wrong).toEqual([]);
   });
 });
+
+describe("phone app", () => {
+  it("ships Spanish and Arabic inside the app (Metro's dev server can't fetch them from packages/shared)", () => {
+    const src = readFileSync(join(ROOT, "apps/mobile/src/lib/i18n.tsx"), "utf8");
+    expect(src).toContain('import "@marina/shared/i18n/bundled";');
+  });
+});

@@ -135,7 +135,7 @@ export function StaffSheet({ staff, onClose }: { staff: Staff; onClose: () => vo
       <View style={{ flexDirection: "row", gap: 8, marginBottom: 16 }}>
         {entry ? <Badge tone="success" label={tr("On the clock since {start}", { start: fmtTime(entry.start) })} /> : s.status === "on-leave" ? <Badge tone="neutral" label={tr("On leave")} /> : planFor(s, today(), db.requests).working ? <Badge tone="pending" label={tr("Not clocked in")} /> : <Badge tone="outline" label={tr("Off today")} />}
       </View>
-      <Row label={tr("Shift")} value={`${s.shift} · ${SHIFT_HOURS[s.shift]}`} sub={s.department} />
+      <Row label={tr("Shift")} value={`${tr(s.shift)} · ${tr(SHIFT_HOURS[s.shift])}`} sub={s.department} />
       <Row label={tr("This week")} value={tr("{time} worked", { time: fmtDuration(minutesWorked(db.timeEntries, s.id, start, addDays(start, 7))) })} sub={week.map((d, i) => (planFor(s, d, db.requests).working ? DAYS[i] : null)).filter(Boolean).join(", ") || tr("Not working")} />
       <Row label={tr("Open work orders")} value={tasks.length ? String(tasks.length) : "None"} sub={tasks.slice(0, 3).map((x) => x.title).join(", ") || undefined} />
       <View style={{ flexDirection: "row", gap: 8 }}>

@@ -78,7 +78,7 @@ export default function Me() {
             {week.map((d, i) => {
               const plan = planFor(me, d, db.requests);
               const isToday = d === today();
-              const tag = plan.working ? (plan.covering ? tr("Cover") : me.shift) : plan.why === "leave" ? tr("Leave") : plan.why === "swapped" ? tr("Swap") : tr("Off");
+              const tag = plan.working ? (plan.covering ? tr("Cover") : tr(me.shift)) : plan.why === "leave" ? tr("Leave") : plan.why === "swapped" ? tr("Swap") : tr("Off");
               return (
                 <View key={d} accessibilityLabel={`${weekday(i)} ${fmtShort(d)}: ${plan.working ? tr("{shift} shift", { shift: tr(me.shift) }) : tag}`} style={{ flex: 1, alignItems: "center", paddingVertical: 8, borderRadius: 12, borderWidth: isToday ? 2 : 1, borderColor: isToday ? t.primary : t.border, backgroundColor: plan.working ? t.tealStrong : t.surface }}>
                   <Txt v="label" color={plan.working ? t.onTealStrong : t.text3}>{weekday(i)}</Txt>
@@ -121,7 +121,7 @@ export default function Me() {
           {askedToCover.map((r) => (
             <View key={r.id} style={{ borderWidth: 1, borderColor: t.border, borderRadius: 16, padding: 12, backgroundColor: t.accentSoft }}>
               <Txt v="bodySm" weight="semibold">{tr("Covering for {name}", { name: ix.staffMember(r.staffId)?.name })}</Txt>
-              <Txt v="bodySm" color={t.text2}>{fmtShort(r.start)} · {tr(ix.staffMember(r.staffId)?.shift)} {tr("shift ·")} {r.status === "approved" ? "confirmed" : tr("waiting for your manager")}</Txt>
+              <Txt v="bodySm" color={t.text2}>{fmtShort(r.start)} · {tr(ix.staffMember(r.staffId)?.shift)} {tr("shift ·")} {r.status === "approved" ? tr("confirmed") : tr("waiting for your manager")}</Txt>
             </View>
           ))}
           {mine.map((r) => (

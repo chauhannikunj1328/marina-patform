@@ -8,6 +8,9 @@
       ],
       "@marina/shared": [
         "../../packages/shared/src/index.ts"
+      ],
+      "@marina/shared/*": [
+        "../../packages/shared/src/*"
       ]
     }
   },

@@ -20,11 +20,16 @@ const EMPTY: Table = {};
 /** The current language's table (empty for English, or while it's still loading). */
 const table = (): Table => (lang === "en" ? EMPTY : TABLES[lang] ?? EMPTY);
 
+/** Makes a language's translations available (see bundled.ts for apps that ship them all). */
+export function addLang(l: Exclude<Lang, "en">, t: Table) {
+  TABLES[l] = t;
+  compiled = undefined;
+}
+
 /** Fetches a language's translations (English needs none). Safe to call again. */
 export async function loadLang(l: Lang): Promise<void> {
   if (l === "en" || TABLES[l]) return;
-  TABLES[l] = l === "es" ? (await import("./es")).es : (await import("./ar")).ar;
-  compiled = undefined;
+  addLang(l, l === "es" ? (await import("./es")).es : (await import("./ar")).ar);
 }
 
 let lang: Lang = "en";

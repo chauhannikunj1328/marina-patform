@@ -424,6 +424,7 @@ export const es: Record<string, Entry> = {
   "Confirm booking": "Confirmar reserva",
   "Confirm new password": "Confirma la nueva contraseña",
   "Confirmed": "Confirmada",
+  "confirmed": "confirmado",
   "Confirmed (send invoice)": "Confirmada (enviar factura)",
   "confirmed and pending": "confirmadas y pendientes",
   "Confirms the boat's condition and the marina rules.": "Confirma el estado de la embarcación y las normas de la marina.",

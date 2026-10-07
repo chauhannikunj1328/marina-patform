@@ -109,7 +109,7 @@ function WeekSchedule({ staff }: { staff: Staff[] }) {
                       {!plan.working && plan.why === "leave" ? (
                         <span className="block rounded-full bg-st-neutral-bg py-1.5 text-xs font-medium text-st-neutral-fg">{t("Leave")}</span>
                       ) : plan.working ? (
-                        <span className="block rounded-full bg-teal-strong py-1.5 text-xs font-semibold text-on-teal-strong" title={plan.covering ? t("Covering for {name}", { name: ix.staffMember(plan.covering.staffId)?.name }) : SHIFT_HOURS[s.shift]}>{plan.covering ? t("{shift} · cover", { shift: ix.staffMember(plan.covering.staffId)?.shift }) : t(s.shift)}</span>
+                        <span className="block rounded-full bg-teal-strong py-1.5 text-xs font-semibold text-on-teal-strong" title={plan.covering ? t("Covering for {name}", { name: ix.staffMember(plan.covering.staffId)?.name }) : t(SHIFT_HOURS[s.shift])}>{plan.covering ? t("{shift} · cover", { shift: t(ix.staffMember(plan.covering.staffId)?.shift) }) : t(s.shift)}</span>
                       ) : (
                         <span className="block rounded-full border border-dashed border-line-strong py-1.5 text-xs text-ink-3" title={plan.why === "swapped" ? `${ix.staffMember(plan.request?.swapWithId)?.name} covers` : undefined}>{plan.why === "swapped" ? t("Swapped") : t("Off")}</span>
                       )}

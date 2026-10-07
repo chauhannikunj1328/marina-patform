@@ -5,6 +5,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { I18nManager, Platform, View } from "react-native";
 import { isRtl, loadLang, setLang as setSharedLang, t, type Lang } from "@marina/shared";
+// Spanish and Arabic ship inside the app (no download; loadLang below then resolves at once).
+import "@marina/shared/i18n/bundled";
 import { load, save } from "./storage";
 import { setArabicFonts } from "@/theme";
 

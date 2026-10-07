@@ -103,7 +103,7 @@ function CoverSheet({ marinaId, day, shift, onClose }: { marinaId: string; day: 
     toast(tr("Asked {v}. Their reply shows in Messages.", { v: s.name.split(" ")[0] }));
   };
   return (
-    <Sheet open onClose={onClose} title={tr("Cover {shift} · {date}", { shift: shift, date: fmtShort(day) })} subtitle={`${ix.marina(marinaId)?.name} · ${SHIFT_HOURS[shift]}`}>
+    <Sheet open onClose={onClose} title={tr("Cover {shift} · {date}", { shift: tr(shift), date: fmtShort(day) })} subtitle={`${ix.marina(marinaId)?.name} · ${tr(SHIFT_HOURS[shift])}`}>
       {candidates.length === 0 ? (
         <Txt v="bodySm" color={t.text3}>{tr("Everyone at this marina is already working that day, or on leave.")}</Txt>
       ) : (
@@ -143,7 +143,7 @@ export function EditScheduleSheet({ staff, onClose }: { staff: Staff; onClose: (
       <View style={{ gap: 16 }}>
         <Field label={tr("Regular shift")}>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-            {SHIFTS.map((sh) => <Chip key={sh} label={sh} sub={SHIFT_HOURS[sh]} on={shift === sh} onPress={() => setShift(sh)} />)}
+            {SHIFTS.map((sh) => <Chip key={sh} label={tr(sh)} sub={tr(SHIFT_HOURS[sh])} on={shift === sh} onPress={() => setShift(sh)} />)}
           </View>
         </Field>
         <Field label={tr("Days off")} hint={daysOff.length > 3 ? tr("That's more than 3 days off a week.") : undefined}>
