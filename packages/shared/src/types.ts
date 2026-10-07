@@ -75,6 +75,23 @@ export interface Booking {
   createdAt: string;
   /** Berth checks done before arrival (staff app). */
   prep?: { done: string[]; by: string; at: string };
+  /** Check-in record: boat condition, photos and the owner's signature (staff app). */
+  arrival?: ArrivalRecord;
+}
+
+export type BoatCondition = "good" | "marks" | "damage";
+
+export interface ArrivalRecord {
+  condition: BoatCondition;
+  notes: string;
+  photos: string[];
+  /** Signature strokes as an SVG path, drawn in a box of w × h points. */
+  signature?: { d: string; w: number; h: number };
+  signedBy?: string;
+  /** Owner wasn't there to sign. */
+  unsigned?: boolean;
+  by: string;
+  at: string;
 }
 
 export type StaffStatus = "active" | "on-leave";

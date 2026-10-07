@@ -5,7 +5,7 @@ import { CalendarClock, Plus, Search } from "lucide-react-native";
 import { daysBetween, fmtShort, today } from "@marina/shared";
 import { Button, Card, EmptyState, Screen, SearchBox, Segmented, Txt } from "@/components/ui";
 import { BookingBadge } from "@/components/status";
-import { BookingSheet, NewBookingSheet } from "@/components/sheets";
+import { BookingSheet, CheckInSheet, NewBookingSheet } from "@/components/sheets";
 import { useOpenParam, useViewParam } from "@/lib/useOpenParam";
 import { useStore } from "@/store";
 import { useTheme } from "@/theme";
@@ -18,6 +18,7 @@ export default function Bookings() {
   const [openId, setOpenId] = useOpenParam();
   const open = db.bookings.find((b) => b.id === openId);
   const [creating, setCreating] = useState(false);
+  const [checkingIn, setCheckingIn] = useState<string | undefined>();
   const now = today();
   const all = ix.bookingsIn(ids).filter((b) => b.status !== "cancelled");
   const lists = {
@@ -64,7 +65,8 @@ export default function Bookings() {
         </View>
       )}
       {open && <BookingSheet booking={open} onClose={() => setOpenId(undefined)} />}
-      {creating && <NewBookingSheet onClose={() => setCreating(false)} onDone={(id) => { setCreating(false); setOpenId(id); }} />}
+      {creating && <NewBookingSheet onClose={() => setCreating(false)} onDone={(id, checkIn) => { setCreating(false); if (checkIn) setCheckingIn(id); else setOpenId(id); }} />}
+      {checkingIn && db.bookings.find((b) => b.id === checkingIn) && <CheckInSheet booking={db.bookings.find((b) => b.id === checkingIn)!} onClose={() => setCheckingIn(undefined)} />}
     </Screen>
   );
 }

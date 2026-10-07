@@ -1,10 +1,11 @@
 // Staff home (Today tab): shift, arrivals and departures with one-tap check in / check out, urgent repairs.
+import { useState } from "react";
 import { Pressable, View } from "react-native";
 import { router } from "expo-router";
 import { ChevronRight, Clock, LogIn, LogOut, Sailboat, Wrench } from "lucide-react-native";
 import { fmtDate, fmtDuration, fmtTime, planFor, prepChecklist, relative, SHIFT_HOURS, today, type Booking } from "@marina/shared";
 import { Badge, Button, Card, EmptyState, Screen, Section, Txt } from "@/components/ui";
-import { BookingSheet, useBookingStatus } from "@/components/sheets";
+import { BookingSheet, CheckInSheet, useBookingStatus } from "@/components/sheets";
 import { useClock, useNow } from "@/lib/clock";
 import { useOpenParam } from "@/lib/useOpenParam";
 import { useStore } from "@/store";
@@ -37,6 +38,7 @@ export function StaffToday() {
   const setStatus = useBookingStatus();
   const [openId, setOpenId] = useOpenParam();
   const open = db.bookings.find((b) => b.id === openId);
+  const [checkingIn, setCheckingIn] = useState<Booking | undefined>();
   const now = today();
   const all = ix.bookingsIn([marinaId]);
   const arrivals = all.filter((b) => b.start === now && (b.status === "confirmed" || b.status === "pending" || b.status === "checked-in"));
@@ -119,7 +121,7 @@ export function StaffToday() {
                 : canBook ? (
                   <View style={{ alignItems: "flex-end", gap: 4 }}>
                     {prepChecklist(ix.berth(b.berthId)).every((i) => b.prep?.done.includes(i.id)) && <Badge tone="success" label="Berth ready" />}
-                    <Button size="sm" variant="primary" label="Check in" onPress={() => setStatus(b, "checked-in")} />
+                    <Button size="sm" variant="primary" label="Check in" onPress={() => setCheckingIn(b)} />
                   </View>
                 ) : undefined
               }
@@ -157,6 +159,7 @@ export function StaffToday() {
 
       <Txt v="caption" color={t.text3} style={{ textAlign: "center" }}>{m.occupied} of {m.berths} berths occupied · {m.available} free</Txt>
       {open && <BookingSheet booking={open} onClose={() => setOpenId(undefined)} />}
+      {checkingIn && <CheckInSheet booking={checkingIn} onClose={() => setCheckingIn(undefined)} />}
     </Screen>
   );
 }

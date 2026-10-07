@@ -4,11 +4,12 @@ import { Image, Linking, Pressable, ScrollView, View } from "react-native";
 import { ArrowRightLeft, Banknote, CalendarCog, Camera, CircleCheck, CircleX, ImagePlus, LogIn, LogOut, Mail, Phone, Search, TriangleAlert, X } from "lucide-react-native";
 import {
   addDays, bookingAmount, daysBetween, fmtDate, fmtShort, money2, nextId, prepChecklist, relative, today, withInvoice,
-  type Berth, type Booking, type BookingStatus, type BoatType, type Invoice, type MaintenanceTask, type PaymentMethod, type Priority,
+  type ArrivalRecord, type Berth, type BoatCondition, type Booking, type BookingStatus, type BoatType, type Invoice, type MaintenanceTask, type PaymentMethod, type Priority,
 } from "@marina/shared";
 import { ALL, useMe, useStore } from "../store";
 import { MarinaPicker } from "./office";
 import { OwnerSheet } from "./owner";
+import { SignaturePad, SignatureView, type Signature } from "./signature";
 import { useTheme } from "../theme";
 import { pickPhoto, takePhoto } from "../lib/photos";
 import { BerthBadge, BookingBadge, PriorityBadge, TaskBadge } from "./status";
@@ -34,6 +35,7 @@ export function BookingSheet({ booking, onClose }: { booking: Booking; onClose: 
   const [changing, setChanging] = useState(false);
   const [ownerOpen, setOwnerOpen] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [checkingIn, setCheckingIn] = useState(false);
   const { user, update, toast } = useStore();
   const office = user?.role === "admin" || user?.role === "manager";
   const b = db.bookings.find((x) => x.id === booking.id) ?? booking;
@@ -60,7 +62,7 @@ export function BookingSheet({ booking, onClose }: { booking: Booking; onClose: 
             }} />
           </View>
         )
-        : canCheckIn ? <Button variant="primary" size="lg" icon={LogIn} label="Check in" onPress={() => { setStatus(b, "checked-in"); onClose(); }} />
+        : canCheckIn ? <Button variant="primary" size="lg" icon={LogIn} label="Check in" onPress={() => setCheckingIn(true)} />
         : canCheckOut ? <Button variant="primary" size="lg" icon={LogOut} label="Check out" onPress={() => { setStatus(b, "completed"); onClose(); }} />
         : <Button size="lg" label="Close" onPress={onClose} />
       }
@@ -82,6 +84,7 @@ export function BookingSheet({ booking, onClose }: { booking: Booking; onClose: 
         </View>
       )}
       {canEdit && b.status === "confirmed" && b.start <= addDays(today(), 2) && <PrepChecklist booking={b} />}
+      {b.arrival && <ArrivalSummary record={b.arrival} />}
       <InvoiceRow bookingId={b.id} onPay={setPaying} />
       {owner && (
         <View style={{ flexDirection: "row", gap: 8, marginTop: 4 }}>
@@ -98,6 +101,7 @@ export function BookingSheet({ booking, onClose }: { booking: Booking; onClose: 
       {paying && <PaymentSheet invoice={paying} onClose={() => setPaying(undefined)} />}
       {changing && <ChangeBookingSheet booking={b} onClose={() => setChanging(false)} />}
       {ownerOpen && owner && <OwnerSheet owner={owner} onClose={() => setOwnerOpen(false)} />}
+      {checkingIn && <CheckInSheet booking={b} onClose={() => setCheckingIn(false)} />}
       {cancelling && <CancelBookingSheet booking={b} decline={b.status === "pending"} onClose={() => setCancelling(false)} />}
     </Sheet>
   );
@@ -176,7 +180,7 @@ const BOAT_TYPES: BoatType[] = ["Sailboat", "Motor Yacht", "Catamaran", "Center 
  * New booking: pick or add the boat, choose the arrival day and a free berth that fits.
  * Arriving today covers walk-ins, with the option to check the boat in straight away.
  */
-export function NewBookingSheet({ onClose, onDone }: { onClose: () => void; onDone: (bookingId: string) => void }) {
+export function NewBookingSheet({ onClose, onDone }: { onClose: () => void; onDone: (bookingId: string, checkIn: boolean) => void }) {
   const { db, ix, update, toast, marinaId: current, scope } = useStore();
   const { t } = useTheme();
   const [marinaId, setMarina] = useState(current === ALL ? scope.find((m) => ix.marina(m)?.status !== "inactive") ?? scope[0] : current);
@@ -224,7 +228,8 @@ export function NewBookingSheet({ onClose, onDone }: { onClose: () => void; onDo
     setErrors(e);
     if (Object.keys(e).length || !berth) return;
     const id = nextId("bk", db.bookings);
-    const status: BookingStatus = checkIn ? "checked-in" : "confirmed";
+    // Checking in goes through the check-in sheet next (condition, photos, signature).
+    const status: BookingStatus = "confirmed";
     const name = mode === "existing" ? boat!.name : f.boat.trim();
     update((d) => {
       let owners = d.owners, boats = d.boats, bId = boatId;
@@ -236,13 +241,13 @@ export function NewBookingSheet({ onClose, onDone }: { onClose: () => void; onDo
       }
       const booking: Booking = { id, code: `BK-${String(Number(id.split("-")[1])).padStart(4, "0")}`, boatId: bId, berthId: berth.id, start: now, end, guests, status, createdAt: today() };
       return withInvoice({ ...d, owners, boats, bookings: [...d.bookings, booking] }, id, price);
-    }, { text: `${arrivingToday ? "Walk-in booking" : "New booking"} for ${name} at berth ${berth.code}, ${fmtShort(now)}, ${nights} ${nights === 1 ? "night" : "nights"}${checkIn ? ", checked in" : ""}`, marinaId });
-    toast(checkIn ? `${name} booked and checked in` : `${name} booked for ${fmtShort(now)} and invoiced`);
-    onDone(id);
+    }, { text: `${arrivingToday ? "Walk-in booking" : "New booking"} for ${name} at berth ${berth.code}, ${fmtShort(now)}, ${nights} ${nights === 1 ? "night" : "nights"}`, marinaId });
+    toast(checkIn ? `${name} booked. Now check them in.` : `${name} booked for ${fmtShort(now)} and invoiced`);
+    onDone(id, checkIn);
   };
 
   return (
-    <Sheet open onClose={onClose} title="New booking" subtitle={arrivingToday ? "Arriving today, or pick a later day" : `Arriving ${fmtShort(start)}`} footer={<Button variant="primary" size="lg" icon={checkIn ? LogIn : undefined} label={berth ? `${checkIn ? "Book and check in" : "Book"} · ${money2(price)}` : "Book"} onPress={save} />}>
+    <Sheet open onClose={onClose} title="New booking" subtitle={arrivingToday ? "Arriving today, or pick a later day" : `Arriving ${fmtShort(start)}`} footer={<Button variant="primary" size="lg" icon={checkIn ? LogIn : undefined} label={berth ? `${checkIn ? "Book, then check in" : "Book"} · ${money2(price)}` : "Book"} onPress={save} />}>
       <View style={{ gap: 16 }}>
         {current === ALL && <MarinaPicker openOnly value={marinaId} onChange={(id) => { setMarina(id); setBerthId(""); }} />}
         {closed && (
@@ -686,7 +691,7 @@ export function CancelBookingSheet({ booking: b, decline, onClose }: { booking: 
 
 /** Berth ready check before an arrival. Ticks are saved on the booking; a failed item can go straight to a repair report. */
 export function PrepChecklist({ booking: b }: { booking: Booking }) {
-  const { db, ix, update } = useStore();
+  const { db, ix, update, user } = useStore();
   const me = useMe();
   const { t } = useTheme();
   const [reporting, setReporting] = useState(false);
@@ -698,7 +703,7 @@ export function PrepChecklist({ booking: b }: { booking: Booking }) {
   const toggle = (id: string) =>
     update((d) => ({
       ...d,
-      bookings: d.bookings.map((x) => (x.id === b.id ? { ...x, prep: { done: done.includes(id) ? done.filter((y) => y !== id) : [...done, id], by: me?.name ?? "Staff", at: new Date().toISOString() } } : x)),
+      bookings: d.bookings.map((x) => (x.id === b.id ? { ...x, prep: { done: done.includes(id) ? done.filter((y) => y !== id) : [...done, id], by: me?.name ?? user?.name ?? "Staff", at: new Date().toISOString() } } : x)),
     }), items.every((i) => i.id === id || done.includes(i.id)) && !done.includes(id) ? { text: `Berth ${berth?.code} ready for ${ix.boat(b.boatId)?.name}`, marinaId: berth?.marinaId } : undefined);
   return (
     <View style={{ borderWidth: 1, borderColor: ready ? t.success.fg : t.border, borderRadius: 16, padding: 12, marginBottom: 12, gap: 4 }}>
@@ -720,6 +725,91 @@ export function PrepChecklist({ booking: b }: { booking: Booking }) {
       {live.prep && <Txt v="caption" color={t.text3}>Last checked by {live.prep.by}, {fmtShort(live.prep.at.slice(0, 10))}</Txt>}
       {!ready && <Button size="sm" icon={TriangleAlert} label="Something's wrong: report it" onPress={() => setReporting(true)} style={{ alignSelf: "flex-start", marginTop: 4 }} />}
       {reporting && <ReportProblem berthId={b.berthId} onClose={() => setReporting(false)} />}
+    </View>
+  );
+}
+
+const CONDITIONS: { id: BoatCondition; label: string }[] = [
+  { id: "good", label: "Good" },
+  { id: "marks", label: "Minor marks" },
+  { id: "damage", label: "Damage" },
+];
+
+/** Check a boat in with a condition record, photos and the owner's signature. */
+export function CheckInSheet({ booking: b, onClose }: { booking: Booking; onClose: () => void }) {
+  const { db, ix, update, toast, user } = useStore();
+  const me = useMe();
+  const { t } = useTheme();
+  const owner = ix.ownerOfBooking(b);
+  const [condition, setCondition] = useState<BoatCondition>("good");
+  const [notes, setNotes] = useState("");
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [signature, setSignature] = useState<Signature | undefined>();
+  const [absent, setAbsent] = useState(false);
+  const [error, setError] = useState("");
+  const boat = ix.boat(b.boatId);
+  const save = () => {
+    if (condition !== "good" && !notes.trim() && photos.length === 0) return setError("Describe the marks or damage, or add a photo.");
+    if (!signature && !absent) return setError("Ask the owner to sign, or tick that they aren't here.");
+    const before = db;
+    const record: ArrivalRecord = { condition, notes: notes.trim(), photos, signature: absent ? undefined : signature, signedBy: absent ? undefined : owner?.name, unsigned: absent || undefined, by: me?.name ?? user?.name ?? "Staff", at: new Date().toISOString() };
+    update(
+      (d) => ({ ...d, bookings: d.bookings.map((x) => (x.id === b.id ? { ...x, status: "checked-in" as const, arrival: record } : x)) }),
+      { text: `${boat?.name} checked in (${b.code})${condition !== "good" ? `, ${condition === "damage" ? "damage" : "minor marks"} noted` : ""}${absent ? ", not signed" : ", signed by owner"}`, to: `/bookings?q=${b.code}`, marinaId: ix.berth(b.berthId)?.marinaId },
+    );
+    toast(`${boat?.name} checked in`, before);
+    onClose();
+  };
+  return (
+    <Sheet open onClose={onClose} title={`Check in ${boat?.name}`} subtitle={`Berth ${ix.berth(b.berthId)?.code} · ${owner?.name}`} footer={<Button variant="primary" size="lg" icon={LogIn} label="Check in" onPress={save} />}>
+      <View style={{ gap: 16 }}>
+        <Field label="Boat condition on arrival">
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            {CONDITIONS.map((c) => <Chip key={c.id} label={c.label} on={condition === c.id} onPress={() => { setCondition(c.id); setError(""); }} />)}
+          </View>
+        </Field>
+        {condition !== "good" && (
+          <Field label="What did you see?">
+            <Input multiline value={notes} onChangeText={(v) => { setNotes(v); setError(""); }} placeholder="e.g. Scratch on the port bow, about 30 cm" />
+          </Field>
+        )}
+        <PhotoPicker photos={photos} onChange={setPhotos} max={4} />
+        <Field label={`${owner?.name ?? "Owner"}'s signature`} hint="Confirms the boat's condition and the marina rules.">
+          {absent ? (
+            <Txt v="bodySm" color={t.text3}>Owner not here. The check-in is recorded without a signature.</Txt>
+          ) : (
+            <SignaturePad label={`${owner?.name ?? "Owner"}'s signature`} value={signature} onChange={(s) => { setSignature(s); setError(""); }} />
+          )}
+        </Field>
+        <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: absent }} onPress={() => { setAbsent(!absent); setError(""); }} style={{ flexDirection: "row", alignItems: "center", gap: 12, borderWidth: 1, borderColor: t.border, borderRadius: 12, padding: 12 }}>
+          <View style={{ width: 22, height: 22, borderRadius: 6, borderWidth: 1.5, borderColor: t.primary, backgroundColor: absent ? t.primary : "transparent", alignItems: "center", justifyContent: "center" }}>
+            {absent && <CircleCheck size={14} color={t.onPrimary} />}
+          </View>
+          <Txt v="bodySm">The owner isn&apos;t here to sign</Txt>
+        </Pressable>
+        {error ? <Txt v="bodySm" weight="medium" color={t.error.fg}>{error}</Txt> : null}
+      </View>
+    </Sheet>
+  );
+}
+
+/** The saved check-in record on a booking. */
+function ArrivalSummary({ record }: { record: ArrivalRecord }) {
+  const { t } = useTheme();
+  return (
+    <View style={{ borderWidth: 1, borderColor: t.border, borderRadius: 16, padding: 12, marginBottom: 12, gap: 8 }}>
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+        <Txt v="bodySm" weight="semibold">Arrival record</Txt>
+        <Badge tone={record.condition === "good" ? "success" : record.condition === "marks" ? "pending" : "maintenance"} label={CONDITIONS.find((c) => c.id === record.condition)?.label ?? ""} />
+      </View>
+      {record.notes ? <Txt v="bodySm">{record.notes}</Txt> : null}
+      {record.photos.length > 0 && (
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+          {record.photos.map((p, i) => <Image key={i} source={{ uri: p }} style={{ width: 72, height: 72, borderRadius: 10 }} accessibilityLabel={`Arrival photo ${i + 1}`} />)}
+        </View>
+      )}
+      {record.signature ? <SignatureView value={record.signature} /> : <Txt v="caption" color={t.text3}>Not signed: owner wasn&apos;t there.</Txt>}
+      <Txt v="caption" color={t.text3}>{record.signedBy ? `Signed by ${record.signedBy} · ` : ""}Checked in by {record.by}, {fmtShort(record.at.slice(0, 10))}</Txt>
     </View>
   );
 }
