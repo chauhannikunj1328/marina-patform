@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Check, Minus } from "lucide-react";
+import { Check, Minus, Plus, Trash } from "lucide-react";
 import { useStore } from "@/data/store";
 import type { Role } from "@marina/shared";
 import { ADMIN_ONLY, AREAS, DEFAULT_PERMISSIONS, LEVEL_LABEL, type Area, type Level } from "@marina/shared";
-import { Button, Card, CardHeader, ConfirmDialog, Field, Input, Modal, PageHeader, Pagination, paginate, SearchInput, Select, Table, Toolbar } from "@/components/ui";
-import { fmtDate, fmtDateTime, nowInZone, today } from "@marina/shared";
-import { money, pct } from "@marina/shared";
+import { Button, Card, CardHeader, ConfirmDialog, Field, IconButton, Input, Modal, PageHeader, Pagination, paginate, SearchInput, Select, Table, Toolbar, useDirty } from "@/components/ui";
+import { addDays, fmtDate, fmtDateTime, fmtShort, fromISO, nowInZone, today } from "@marina/shared";
+import { bookingAmount, DEFAULT_PRICING, priceNote, type PricingRules } from "@marina/shared";
+import { money, money2, pct } from "@marina/shared";
 import { ROLE_LABEL } from "./People";
 
 function LevelCell({ level }: { level: Level }) {
@@ -179,6 +180,98 @@ function DailySummary({ onClose }: { onClose: () => void }) {
   );
 }
 
+
+/** Admin pricing rules: weekend surcharge, long-stay discount and seasons. They apply to bookings made from now on. */
+function PricingCard() {
+  const { db, update, toast } = useStore();
+  const saved = db.settings.pricing ?? DEFAULT_PRICING;
+  const [f, setF] = useState(() => ({ weekend: String(saved.weekendPct), longPct: String(saved.longStayPct), longNights: String(saved.longStayNights), seasons: saved.seasons }));
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const dirty = useDirty(f);
+  const rules: PricingRules = { weekendPct: Number(f.weekend) || 0, longStayPct: Number(f.longPct) || 0, longStayNights: Number(f.longNights) || 7, seasons: f.seasons };
+  const sample = db.berths.find((b) => b.dailyRate >= 50) ?? db.berths[0];
+  const previews = [
+    { label: "2 weeknights", start: nextWeekday(1), nights: 2 },
+    { label: "Weekend (Fri–Sun)", start: nextWeekday(5), nights: 2 },
+    { label: `${rules.longStayNights} nights`, start: nextWeekday(1), nights: rules.longStayNights },
+  ];
+  const setSeason = (i: number, patch: Partial<PricingRules["seasons"][number]>) => setF({ ...f, seasons: f.seasons.map((x, j) => (j === i ? { ...x, ...patch } : x)) });
+  const save = () => {
+    const e: Record<string, string> = {};
+    const pct = (v: string, min: number, max: number) => v.trim() !== "" && Number.isFinite(Number(v)) && Number(v) >= min && Number(v) <= max;
+    if (!pct(f.weekend, -50, 100)) e.weekend = "Use −50 to 100.";
+    if (!pct(f.longPct, 0, 50)) e.longPct = "Use 0 to 50.";
+    if (!(Number.isInteger(Number(f.longNights)) && Number(f.longNights) >= 2 && Number(f.longNights) < db.settings.monthlyFromNights)) e.longNights = `Use 2 to ${db.settings.monthlyFromNights - 1} nights (monthly rate starts at ${db.settings.monthlyFromNights}).`;
+    f.seasons.forEach((x, i) => {
+      if (!x.name.trim()) e[`s${i}`] = "Name the season.";
+      else if (!/^\d{2}-\d{2}$/.test(x.from) || !/^\d{2}-\d{2}$/.test(x.to)) e[`s${i}`] = "Dates as MM-DD, e.g. 06-15.";
+      else if (!pct(String(x.pct), -50, 100)) e[`s${i}`] = "Adjustment −50 to 100%.";
+    });
+    setErrors(e);
+    if (Object.keys(e).length) return;
+    const before = db;
+    update((d) => ({ ...d, settings: { ...d.settings, pricing: rules } }), "Updated pricing rules");
+    toast("Pricing saved. New bookings use it; existing bookings keep their price.", before);
+  };
+  return (
+    <Card className="xl:col-span-2">
+      <CardHeader title="Pricing" description="Seasonal rates, weekend surcharge and long-stay discount for nightly stays. Bookings already made keep their price." />
+      <div className="grid grid-cols-1 gap-6 p-5 lg:grid-cols-[1fr_320px]">
+        <div className="space-y-5">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <Field label="Weekend surcharge (%)" hint="Friday and Saturday nights" error={errors.weekend}>{(id) => <Input id={id} type="number" value={f.weekend} onChange={(e) => setF({ ...f, weekend: e.target.value })} />}</Field>
+            <Field label="Long-stay discount (%)" hint="0 turns it off" error={errors.longPct}>{(id) => <Input id={id} type="number" min={0} value={f.longPct} onChange={(e) => setF({ ...f, longPct: e.target.value })} />}</Field>
+            <Field label="Long stay from (nights)" error={errors.longNights}>{(id) => <Input id={id} type="number" min={2} value={f.longNights} onChange={(e) => setF({ ...f, longNights: e.target.value })} />}</Field>
+          </div>
+          <div>
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-[13px] font-medium">Seasons</p>
+              <Button size="sm" icon={Plus} onClick={() => setF({ ...f, seasons: [...f.seasons, { id: `se-${Date.now()}`, name: "", from: "06-15", to: "09-15", pct: 20 }] })}>Add season</Button>
+            </div>
+            {f.seasons.length === 0 && <p className="text-[13px] text-ink-3">No seasons. Every night uses the berth&apos;s daily rate.</p>}
+            <div className="space-y-3">
+              {f.seasons.map((x, i) => (
+                <div key={x.id} className="grid grid-cols-2 items-end gap-3 rounded-md border border-line p-3 sm:grid-cols-[1fr_110px_110px_110px_auto]">
+                  <Field label="Name" error={errors[`s${i}`]}>{(id) => <Input id={id} value={x.name} placeholder="Summer" onChange={(e) => setSeason(i, { name: e.target.value })} />}</Field>
+                  <Field label="From (MM-DD)">{(id) => <Input id={id} value={x.from} onChange={(e) => setSeason(i, { from: e.target.value })} />}</Field>
+                  <Field label="To (MM-DD)">{(id) => <Input id={id} value={x.to} onChange={(e) => setSeason(i, { to: e.target.value })} />}</Field>
+                  <Field label="Rate change (%)">{(id) => <Input id={id} type="number" value={String(x.pct)} onChange={(e) => setSeason(i, { pct: Number(e.target.value) })} />}</Field>
+                  <IconButton icon={Trash} label={`Remove ${x.name || "season"}`} onClick={() => setF({ ...f, seasons: f.seasons.filter((_, j) => j !== i) })} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="rounded-md bg-surface-2 p-4 text-[13px]">
+          <p className="mb-1 font-semibold">Preview</p>
+          <p className="mb-3 text-xs text-ink-3">Berth {sample?.code} at {money2(sample?.dailyRate ?? 0)} a night</p>
+          {sample && previews.map((p) => {
+            const end = addDays(p.start, p.nights);
+            const now = bookingAmount(p.start, end, sample, db.settings.monthlyFromNights, rules);
+            const base = p.nights * sample.dailyRate;
+            return (
+              <div key={p.label} className="flex items-baseline justify-between border-b border-line py-2 last:border-0">
+                <span>{p.label}<span className="block text-xs text-ink-3">{fmtShort(p.start)} · {priceNote(p.start, end, db.settings.monthlyFromNights, rules)}</span></span>
+                <span className="num text-right font-semibold">{money2(now)}{now !== base && <span className="block text-xs font-normal text-ink-3 line-through">{money2(base)}</span>}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <div className="flex justify-end border-t border-line px-5 py-3">
+        <Button variant="primary" disabled={!dirty} onClick={save}>Save pricing</Button>
+      </div>
+    </Card>
+  );
+}
+
+/** Next date (from tomorrow) falling on a weekday, 0 = Sunday. */
+function nextWeekday(day: number): string {
+  let d = addDays(today(), 1);
+  while (fromISO(d).getDay() !== day) d = addDays(d, 1);
+  return d;
+}
+
 export function Settings() {
   const { db, user, update, toast, resetData } = useStore();
   const [confirmReset, setConfirmReset] = useState(false);
@@ -263,6 +356,8 @@ export function Settings() {
             </div>
           </Card>
         )}
+
+        {isAdmin && <PricingCard />}
 
         <Card className="xl:col-span-2">
           <CardHeader title="Demo data" description="This prototype keeps your changes in this browser until midnight." />

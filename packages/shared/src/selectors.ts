@@ -37,6 +37,7 @@ export class Index {
 
   amount = (bk: Booking) => {
     const b = this.berth(bk.berthId);
+    if (bk.price !== undefined) return bk.price;
     return b ? bookingAmount(bk.start, bk.end, b, this.db.settings.monthlyFromNights) : 0;
   };
 

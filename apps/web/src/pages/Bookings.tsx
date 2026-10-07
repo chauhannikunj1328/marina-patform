@@ -364,7 +364,7 @@ function BookingDetail({ booking: b, onClose }: { booking: Booking; onClose: () 
         <Detail label="Boat" value={`${boat?.name}`} sub={`${boat?.type} · ${boat?.length} ft · ${boat?.registration}`} />
         <Detail label="Marina" value={ix.marinaOfBerth(b.berthId)?.name} sub={`Berth ${berth?.code} · up to ${berth?.maxLength} ft`} />
         <Detail label="Dates" value={`${fmtDate(b.start)} – ${fmtDate(b.end)}`} sub={`${daysBetween(b.start, b.end)} nights · ${b.guests} guests`} />
-        <Detail label="Amount" value={money(ix.amount(b))} sub={priceNote(b.start, b.end, db.settings.monthlyFromNights)} />
+        <Detail label="Amount" value={money(ix.amount(b))} sub={b.price !== undefined ? "Price agreed when booked" : priceNote(b.start, b.end, db.settings.monthlyFromNights)} />
         <div>
           <dt className="text-xs text-ink-3">Invoice</dt>
           {invoice ? (
@@ -419,7 +419,7 @@ function EditBooking({ booking: b, onDone }: { booking: Booking; onDone: () => v
     .filter((x) => nights > 0 && ix.isFree(x.id, f.start, f.end, b.id))
     .sort((x, y) => x.code.localeCompare(y.code));
   const berth = ix.berth(f.berthId);
-  const amount = berth && nights > 0 ? bookingAmount(f.start, f.end, berth, db.settings.monthlyFromNights) : 0;
+  const amount = berth && nights > 0 ? bookingAmount(f.start, f.end, berth, db.settings.monthlyFromNights, db.settings.pricing) : 0;
   const invoice = db.invoices.find((i) => i.bookingId === b.id && i.status !== "void");
 
   const save = () => {
@@ -428,7 +428,7 @@ function EditBooking({ booking: b, onDone }: { booking: Booking; onDone: () => v
     if (!options.some((x) => x.id === f.berthId)) return setError("The chosen berth isn't free for these dates. Pick another berth.");
     const before = db;
     update((d) => {
-      const bookings = d.bookings.map((x) => (x.id === b.id ? { ...x, start: f.start, end: f.end, berthId: f.berthId, guests: Number(f.guests) || x.guests } : x));
+      const bookings = d.bookings.map((x) => (x.id === b.id ? { ...x, start: f.start, end: f.end, berthId: f.berthId, guests: Number(f.guests) || x.guests, price: amount } : x));
       // Unpaid invoices follow the new price; paid ones are left as issued.
       const invoices = d.invoices.map((i) => (i.bookingId === b.id && (i.status === "due" || i.status === "overdue") ? { ...i, amount: amount + linesTotal(i) } : i));
       return { ...d, bookings, invoices };
@@ -460,7 +460,7 @@ function EditBooking({ booking: b, onDone }: { booking: Booking; onDone: () => v
         <Field label="Guests">{(id) => <Input id={id} type="number" min={1} value={f.guests} onChange={(e) => setF({ ...f, guests: e.target.value })} />}</Field>
       </div>
       <div className="mt-4 flex items-center justify-between rounded-md bg-surface-2 px-4 py-3 text-[13px]">
-        <span>New total <span className="block text-xs text-ink-3">{nights > 0 ? priceNote(f.start, f.end, db.settings.monthlyFromNights) : "—"}</span></span>
+        <span>New total <span className="block text-xs text-ink-3">{nights > 0 ? priceNote(f.start, f.end, db.settings.monthlyFromNights, db.settings.pricing) : "—"}</span></span>
         <span className="text-lg font-semibold num">{money(amount)}</span>
       </div>
       {invoice?.status === "paid" && <p className="mt-2 text-xs text-ink-3">The invoice is already paid. Adjust any difference in Billing.</p>}
@@ -517,7 +517,7 @@ function BookingForm({ onClose, defaultMarina, defaultBerth }: { onClose: () => 
   // A berth chosen from the berth page is preselected as soon as it fits the boat and dates.
   const berthId = f.berthId || (defaultBerth && free.some((b) => b.id === defaultBerth) ? defaultBerth : "");
   const berth = ix.berth(berthId);
-  const price = berth && nights > 0 ? bookingAmount(f.start, f.end, berth, db.settings.monthlyFromNights) : 0;
+  const price = berth && nights > 0 ? bookingAmount(f.start, f.end, berth, db.settings.monthlyFromNights, db.settings.pricing) : 0;
 
   const save = () => {
     const e: Record<string, string> = {};
@@ -547,7 +547,7 @@ function BookingForm({ onClose, defaultMarina, defaultBerth }: { onClose: () => 
       }
       const id = nextId("bk", d.bookings);
       const seq = Number(id.split("-")[1]);
-      const booking: Booking = { id, code: `BK-${String(seq).padStart(4, "0")}`, boatId, berthId, start: f.start, end: f.end, guests: Number(f.guests), status: f.status, createdAt: now };
+      const booking: Booking = { id, code: `BK-${String(seq).padStart(4, "0")}`, boatId, berthId, start: f.start, end: f.end, guests: Number(f.guests), status: f.status, createdAt: now, price };
       const next = { ...d, owners, boats, bookings: [...d.bookings, booking] };
       return f.status === "confirmed" ? withInvoice(next, id, price) : next;
     }, { text: `New ${f.status} booking for ${ownerMode === "new" ? f.newBoat : ix.boat(f.boatId)?.name} at ${ix.marina(f.marinaId)?.name}, berth ${berth?.code}`, marinaId: f.marinaId });

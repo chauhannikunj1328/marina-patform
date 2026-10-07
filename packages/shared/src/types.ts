@@ -73,6 +73,8 @@ export interface Booking {
   guests: number;
   status: BookingStatus;
   createdAt: string;
+  /** Price agreed when booked (with the pricing rules in force then). Older bookings work it out from the berth's rates. */
+  price?: number;
   /** Berth checks done before arrival (staff app). */
   prep?: { done: string[]; by: string; at: string };
   /** Check-in record: boat condition, photos and the owner's signature (staff app). */
@@ -209,6 +211,7 @@ export interface Settings {
   monthlyFromNights: number;
   notify: { pending: boolean; overdue: boolean; maintenance: boolean; digest: boolean };
   permissions: import("./permissions").Permissions;
+  pricing?: import("./pricing").PricingRules;
 }
 
 /** A clock-in / clock-out pair from the staff app. `end` is empty while clocked in. */

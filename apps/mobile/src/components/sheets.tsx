@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Image, Linking, Pressable, ScrollView, View } from "react-native";
 import { ArrowRightLeft, Banknote, Fuel, CalendarCog, Camera, CircleCheck, CircleX, ImagePlus, LogIn, LogOut, Mail, Phone, Search, TriangleAlert, X } from "lucide-react-native";
 import {
-  addDays, bookingAmount, daysBetween, fmtDate, fmtShort, linesTotal, money2, nextId, prepChecklist, relative, SERVICES, today, withInvoice, withServiceCharge,
+  addDays, bookingAmount, daysBetween, priceNote, fmtDate, fmtShort, linesTotal, money2, nextId, prepChecklist, relative, SERVICES, today, withInvoice, withServiceCharge,
   type ArrivalRecord, type Berth, type BoatCondition, type Booking, type BookingStatus, type BoatType, type Invoice, type MaintenanceTask, type PaymentMethod, type Priority,
 } from "@marina/shared";
 import { ALL, useMe, useStore } from "../store";
@@ -221,7 +221,7 @@ export function NewBookingSheet({ onClose, onDone }: { onClose: () => void; onDo
     .filter((b) => b.marinaId === marinaId && !b.underMaintenance && b.maxLength >= length && ix.isFree(b.id, now, end))
     .sort((a, b) => a.maxLength - b.maxLength || a.code.localeCompare(b.code));
   const berth = free.find((b) => b.id === berthId);
-  const price = berth ? bookingAmount(now, end, berth, db.settings.monthlyFromNights) : 0;
+  const price = berth ? bookingAmount(now, end, berth, db.settings.monthlyFromNights, db.settings.pricing) : 0;
   const set = (k: keyof typeof f, v: string) => { setF({ ...f, [k]: v }); setErrors({}); };
 
   const save = () => {
@@ -253,7 +253,7 @@ export function NewBookingSheet({ onClose, onDone }: { onClose: () => void; onDo
         owners = [...owners, { id: ownerId, name: f.owner.trim(), email: f.email.trim(), phone: f.phone.trim(), since: today() }];
         boats = [...boats, { id: bId, ownerId, name, type: f.type, length: Number(f.length), registration: "Pending" }];
       }
-      const booking: Booking = { id, code: `BK-${String(Number(id.split("-")[1])).padStart(4, "0")}`, boatId: bId, berthId: berth.id, start: now, end, guests, status, createdAt: today() };
+      const booking: Booking = { id, code: `BK-${String(Number(id.split("-")[1])).padStart(4, "0")}`, boatId: bId, berthId: berth.id, start: now, end, guests, status, createdAt: today(), price };
       return withInvoice({ ...d, owners, boats, bookings: [...d.bookings, booking] }, id, price);
     }, { text: `${arrivingToday ? "Walk-in booking" : "New booking"} for ${name} at berth ${berth.code}, ${fmtShort(now)}, ${nights} ${nights === 1 ? "night" : "nights"}`, marinaId });
     toast(checkIn ? `${name} booked. Now check them in.` : `${name} booked for ${fmtShort(now)} and invoiced`);
@@ -329,7 +329,7 @@ export function NewBookingSheet({ onClose, onDone }: { onClose: () => void; onDo
             </View>
           )}
         </Field>
-        {berth && <Row label={tr("Price")} value={money2(price)} sub={nights >= db.settings.monthlyFromNights ? "Monthly rate, prorated" : `${nights} × ${money2(berth.dailyRate)} a night`} />}
+        {berth && <Row label={tr("Price")} value={money2(price)} sub={priceNote(now, end, db.settings.monthlyFromNights, db.settings.pricing)} />}
         {arrivingToday && <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: checkIn }} onPress={() => setCheckIn(!checkIn)} style={{ flexDirection: "row", alignItems: "center", gap: 12, borderWidth: 1, borderColor: t.border, borderRadius: 12, padding: 12 }}>
           <View style={{ width: 22, height: 22, borderRadius: 6, borderWidth: 1.5, borderColor: t.primary, backgroundColor: checkIn ? t.primary : "transparent", alignItems: "center", justifyContent: "center" }}>
             {checkIn && <CircleCheck size={14} color={t.onPrimary} />}
@@ -634,7 +634,7 @@ export function ChangeBookingSheet({ booking: b, onClose }: { booking: Booking; 
     .sort((x, y) => x.maxLength - y.maxLength || x.code.localeCompare(y.code));
   const berth = ix.berth(berthId);
   const fits = free.some((x) => x.id === berthId);
-  const amount = berth ? bookingAmount(start, end, berth, db.settings.monthlyFromNights) : 0;
+  const amount = berth ? bookingAmount(start, end, berth, db.settings.monthlyFromNights, db.settings.pricing) : 0;
   const invoice = db.invoices.find((i) => i.bookingId === b.id && i.status !== "void");
   const changed = start !== b.start || end !== b.end || berthId !== b.berthId || guests !== b.guests;
   const days = Array.from({ length: 120 }, (_, i) => addDays(now, i));
@@ -645,7 +645,7 @@ export function ChangeBookingSheet({ booking: b, onClose }: { booking: Booking; 
     update(
       (d) => ({
         ...d,
-        bookings: d.bookings.map((x) => (x.id === b.id ? { ...x, start, end, berthId, guests } : x)),
+        bookings: d.bookings.map((x) => (x.id === b.id ? { ...x, start, end, berthId, guests, price: amount } : x)),
         // Unpaid invoices follow the new price; paid ones are left as issued.
         invoices: d.invoices.map((i) => (i.bookingId === b.id && (i.status === "due" || i.status === "overdue") ? { ...i, amount: amount + linesTotal(i) } : i)),
       }),
