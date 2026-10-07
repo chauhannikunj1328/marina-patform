@@ -1,6 +1,6 @@
 // Small helpers shared by pages that change data, so every page creates records the same way.
 import type { Db } from "./seed";
-import type { Contract, Invoice, InvoiceLine, Message } from "./types";
+import type { Contract, Invoice, InvoiceLine, MeterKind, MeterReading, Message } from "./types";
 import { nextId } from "./util";
 import { addDays, daysBetween, today } from "./date";
 
@@ -61,4 +61,30 @@ export const RENEWAL_NOTICE_DAYS: Record<Contract["term"], number> = { monthly: 
 export function renewalsDue(contracts: Contract[], now: string): Contract[] {
   const renewed = new Set(contracts.map((c) => c.renewedFromId).filter(Boolean));
   return contracts.filter((c) => c.status === "active" && c.end > now && !renewed.has(c.id) && daysBetween(now, c.end) <= RENEWAL_NOTICE_DAYS[c.term]);
+}
+
+export const DEFAULT_UTILITIES = { powerPerKwh: 0.35, waterPerGallon: 0.02 };
+export const METER_UNIT: Record<MeterKind, string> = { power: "kWh", water: "gal" };
+
+/** Latest reading on a berth's meter. */
+export const lastReading = (d: Db, berthId: string, kind: MeterKind): MeterReading | undefined =>
+  (d.meterReadings ?? []).filter((r) => r.berthId === berthId && r.kind === kind).sort((a, b) => b.at.localeCompare(a.at))[0];
+
+/**
+ * Record a meter reading. When a boat is in the berth, the usage since the last reading is added to
+ * its invoice as a line (at the company's utility rates).
+ */
+export function withMeterReading(d: Db, reading: Omit<MeterReading, "id" | "charged" | "bookingId">, booking: { id: string; amount: number } | undefined): { db: Db; usage: number; charge: number } {
+  const prev = lastReading(d, reading.berthId, reading.kind);
+  const usage = prev ? Math.max(0, reading.value - prev.value) : 0;
+  const rates = d.settings.utilities ?? DEFAULT_UTILITIES;
+  const charge = Math.round(usage * (reading.kind === "power" ? rates.powerPerKwh : rates.waterPerGallon) * 100) / 100;
+  const id = nextId("mr", d.meterReadings ?? []);
+  let next: Db = { ...d, meterReadings: [...(d.meterReadings ?? []), { ...reading, id, charged: booking && charge > 0 ? charge : undefined, bookingId: booking && charge > 0 ? booking.id : undefined }] };
+  if (booking && charge > 0) {
+    next = withServiceCharge(next, booking.id, booking.amount, {
+      label: reading.kind === "power" ? "Electricity" : "Water", qty: usage, unit: METER_UNIT[reading.kind], unitPrice: reading.kind === "power" ? rates.powerPerKwh : rates.waterPerGallon, amount: charge, at: reading.at, by: reading.by,
+    });
+  }
+  return { db: next, usage, charge };
 }

@@ -1,10 +1,10 @@
 // Detail sheets and actions shared by the staff tabs: bookings, berths, tasks, problem reports.
 import { useState } from "react";
 import { Image, Linking, Pressable, ScrollView, View } from "react-native";
-import { ArrowRightLeft, Banknote, Fuel, CalendarCog, Camera, CircleCheck, CircleX, ImagePlus, LogIn, LogOut, Mail, Phone, Search, TriangleAlert, X } from "lucide-react-native";
+import { ArrowRightLeft, Banknote, Fuel, Gauge, CalendarCog, Camera, CircleCheck, CircleX, ImagePlus, LogIn, LogOut, Mail, Phone, Search, TriangleAlert, X } from "lucide-react-native";
 import {
-  addDays, bookingAmount, daysBetween, priceNote, fmtDate, fmtShort, linesTotal, money2, nextId, prepChecklist, relative, SERVICES, today, withInvoice, withServiceCharge,
-  type ArrivalRecord, type Berth, type BoatCondition, type Booking, type BookingStatus, type BoatType, type Invoice, type MaintenanceTask, type PaymentMethod, type Priority,
+  addDays, bookingAmount, daysBetween, DEFAULT_UTILITIES, lastReading, METER_UNIT, priceNote, withMeterReading, fmtDate, fmtShort, linesTotal, money2, nextId, prepChecklist, relative, SERVICES, today, withInvoice, withServiceCharge,
+  type ArrivalRecord, type Berth, type MeterKind, type BoatCondition, type Booking, type BookingStatus, type BoatType, type Invoice, type MaintenanceTask, type PaymentMethod, type Priority,
 } from "@marina/shared";
 import { ALL, useMe, useStore } from "../store";
 import { MarinaPicker } from "./office";
@@ -345,6 +345,7 @@ export function BerthSheet({ berth, onClose, onReport }: { berth: Berth; onClose
   const tr = useTr();
   const { db, ix, update, toast, can } = useStore();
   const [moving, setMoving] = useState(false);
+  const [metering, setMetering] = useState(false);
   const b = db.berths.find((x) => x.id === berth.id) ?? berth;
   const status = ix.berthStatus(b);
   const current = ix.currentBooking(b.id);
@@ -376,7 +377,9 @@ export function BerthSheet({ berth, onClose, onReport }: { berth: Berth; onClose
       {current && can("bookings") !== "view" && (
         <Button icon={ArrowRightLeft} label={`Move ${ix.boat(current.boatId)?.name} to another berth`} onPress={() => setMoving(true)} />
       )}
+      {(b.power || b.water) && can("berths") !== "view" && <Button icon={Gauge} label="Read meters" onPress={() => setMetering(true)} style={{ marginTop: 8 }} />}
       {moving && current && <ChangeBookingSheet booking={current} onClose={() => setMoving(false)} />}
+      {metering && <MeterSheet berth={b} onClose={() => setMetering(false)} />}
     </Sheet>
   );
 }
@@ -873,6 +876,61 @@ export function ServiceSheet({ booking: b, onClose }: { booking: Booking; onClos
         </Field>
         <Row label={tr("Charge")} value={money2(amount)} sub={`${qty} × ${money2(service.price)}`} />
         <Txt v="caption" color={t.text3}>Added to the stay&apos;s invoice. If it was already paid, the extra becomes due.</Txt>
+      </View>
+    </Sheet>
+  );
+}
+
+/** Read the power and water meters on a berth; usage since the last reading goes on the boat's invoice. */
+export function MeterSheet({ berth, onClose }: { berth: Berth; onClose: () => void }) {
+  const { db, ix, update, toast, user } = useStore();
+  const me = useMe();
+  const { t } = useTheme();
+  const kinds = (["power", "water"] as MeterKind[]).filter((k) => (k === "power" ? berth.power : berth.water));
+  const [values, setValues] = useState<Record<MeterKind, string>>({ power: "", water: "" });
+  const [error, setError] = useState("");
+  const cur = ix.currentBooking(berth.id);
+  const rates = db.settings.utilities ?? DEFAULT_UTILITIES;
+  const usageOf = (k: MeterKind) => {
+    const prev = lastReading(db, berth.id, k);
+    const v = Number(values[k]);
+    return values[k] && prev && v >= prev.value ? v - prev.value : undefined;
+  };
+  const save = () => {
+    for (const k of kinds) {
+      const prev = lastReading(db, berth.id, k);
+      if (values[k] && prev && Number(values[k]) < prev.value) return setError(`The ${k} reading is lower than last time (${prev.value.toLocaleString()}). Check the meter.`);
+    }
+    if (!kinds.some((k) => values[k])) return setError("Enter at least one reading.");
+    const before = db;
+    let total = 0;
+    update((d) => {
+      let next = d;
+      for (const k of kinds) {
+        if (!values[k]) continue;
+        const r = withMeterReading(next, { berthId: berth.id, kind: k, value: Number(values[k]), at: new Date().toISOString(), by: me?.name ?? user?.name ?? "Staff" }, cur ? { id: cur.id, amount: ix.amount(cur) } : undefined);
+        next = r.db;
+        total += r.charge;
+      }
+      return next;
+    }, { text: `Meter readings for berth ${berth.code}${cur ? `, billed to ${ix.boat(cur.boatId)?.name}` : ""}`, marinaId: berth.marinaId });
+    toast(cur && total > 0 ? `Saved. ${money2(total)} added to ${ix.boat(cur.boatId)?.name}'s invoice.` : "Readings saved", before);
+    onClose();
+  };
+  return (
+    <Sheet open onClose={onClose} title={`Meters · berth ${berth.code}`} subtitle={cur ? `Usage is billed to ${ix.boat(cur.boatId)?.name}` : "No boat here: this sets the starting point"} footer={<Button variant="primary" size="lg" icon={Gauge} label="Save readings" onPress={save} />}>
+      <View style={{ gap: 16 }}>
+        {kinds.map((k) => {
+          const prev = lastReading(db, berth.id, k);
+          const usage = usageOf(k);
+          const rate = k === "power" ? rates.powerPerKwh : rates.waterPerGallon;
+          return (
+            <Field key={k} label={`${k === "power" ? "Power" : "Water"} (${METER_UNIT[k]})`} hint={usage !== undefined ? `${usage.toLocaleString()} ${METER_UNIT[k]} used · ${money2(Math.round(usage * rate * 100) / 100)}` : prev ? `Last ${prev.value.toLocaleString()}, ${fmtShort(prev.at.slice(0, 10))}` : "First reading"}>
+              <Input value={values[k]} onChangeText={(v) => { setValues({ ...values, [k]: v.replace(/[^\d.]/g, "") }); setError(""); }} keyboardType="number-pad" placeholder={prev ? String(prev.value) : "0"} />
+            </Field>
+          );
+        })}
+        {error ? <Txt v="bodySm" weight="medium" color={t.error.fg}>{error}</Txt> : null}
       </View>
     </Sheet>
   );

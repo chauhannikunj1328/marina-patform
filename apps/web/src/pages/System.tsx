@@ -6,7 +6,7 @@ import type { Role } from "@marina/shared";
 import { ADMIN_ONLY, AREAS, DEFAULT_PERMISSIONS, LEVEL_LABEL, type Area, type Level } from "@marina/shared";
 import { Button, Card, CardHeader, ConfirmDialog, Field, IconButton, Input, Modal, PageHeader, Pagination, paginate, SearchInput, Select, Table, Toolbar, useDirty } from "@/components/ui";
 import { addDays, fmtDate, fmtDateTime, fmtShort, fromISO, nowInZone, today } from "@marina/shared";
-import { bookingAmount, DEFAULT_PRICING, priceNote, type PricingRules } from "@marina/shared";
+import { bookingAmount, DEFAULT_PRICING, DEFAULT_UTILITIES, priceNote, type PricingRules } from "@marina/shared";
 import { money, money2, pct } from "@marina/shared";
 import { ROLE_LABEL } from "./People";
 
@@ -185,7 +185,8 @@ function DailySummary({ onClose }: { onClose: () => void }) {
 function PricingCard() {
   const { db, update, toast } = useStore();
   const saved = db.settings.pricing ?? DEFAULT_PRICING;
-  const [f, setF] = useState(() => ({ weekend: String(saved.weekendPct), longPct: String(saved.longStayPct), longNights: String(saved.longStayNights), seasons: saved.seasons }));
+  const util = db.settings.utilities ?? DEFAULT_UTILITIES;
+  const [f, setF] = useState(() => ({ weekend: String(saved.weekendPct), longPct: String(saved.longStayPct), longNights: String(saved.longStayNights), seasons: saved.seasons, power: String(util.powerPerKwh), water: String(util.waterPerGallon) }));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const dirty = useDirty(f);
   const rules: PricingRules = { weekendPct: Number(f.weekend) || 0, longStayPct: Number(f.longPct) || 0, longStayNights: Number(f.longNights) || 7, seasons: f.seasons };
@@ -202,6 +203,8 @@ function PricingCard() {
     if (!pct(f.weekend, -50, 100)) e.weekend = "Use −50 to 100.";
     if (!pct(f.longPct, 0, 50)) e.longPct = "Use 0 to 50.";
     if (!(Number.isInteger(Number(f.longNights)) && Number(f.longNights) >= 2 && Number(f.longNights) < db.settings.monthlyFromNights)) e.longNights = `Use 2 to ${db.settings.monthlyFromNights - 1} nights (monthly rate starts at ${db.settings.monthlyFromNights}).`;
+    if (!(Number(f.power) >= 0 && Number(f.power) <= 5)) e.power = "Use 0 to 5.";
+    if (!(Number(f.water) >= 0 && Number(f.water) <= 1)) e.water = "Use 0 to 1.";
     f.seasons.forEach((x, i) => {
       if (!x.name.trim()) e[`s${i}`] = "Name the season.";
       else if (!/^\d{2}-\d{2}$/.test(x.from) || !/^\d{2}-\d{2}$/.test(x.to)) e[`s${i}`] = "Dates as MM-DD, e.g. 06-15.";
@@ -210,18 +213,22 @@ function PricingCard() {
     setErrors(e);
     if (Object.keys(e).length) return;
     const before = db;
-    update((d) => ({ ...d, settings: { ...d.settings, pricing: rules } }), "Updated pricing rules");
+    update((d) => ({ ...d, settings: { ...d.settings, pricing: rules, utilities: { powerPerKwh: Number(f.power), waterPerGallon: Number(f.water) } } }), "Updated pricing rules");
     toast("Pricing saved. New bookings use it; existing bookings keep their price.", before);
   };
   return (
     <Card className="xl:col-span-2">
-      <CardHeader title="Pricing" description="Seasonal rates, weekend surcharge and long-stay discount for nightly stays. Bookings already made keep their price." />
+      <CardHeader title="Pricing" description="Seasonal rates, weekend surcharge, long-stay discount and utility rates. Bookings already made keep their price." />
       <div className="grid grid-cols-1 gap-6 p-5 lg:grid-cols-[1fr_320px]">
         <div className="space-y-5">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <Field label="Weekend surcharge (%)" hint="Friday and Saturday nights" error={errors.weekend}>{(id) => <Input id={id} type="number" value={f.weekend} onChange={(e) => setF({ ...f, weekend: e.target.value })} />}</Field>
             <Field label="Long-stay discount (%)" hint="0 turns it off" error={errors.longPct}>{(id) => <Input id={id} type="number" min={0} value={f.longPct} onChange={(e) => setF({ ...f, longPct: e.target.value })} />}</Field>
             <Field label="Long stay from (nights)" error={errors.longNights}>{(id) => <Input id={id} type="number" min={2} value={f.longNights} onChange={(e) => setF({ ...f, longNights: e.target.value })} />}</Field>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <Field label="Electricity ($ per kWh)" hint="Billed from meter readings" error={errors.power}>{(id) => <Input id={id} type="number" step="0.01" min={0} value={f.power} onChange={(e) => setF({ ...f, power: e.target.value })} />}</Field>
+            <Field label="Water ($ per gallon)" hint="Billed from meter readings" error={errors.water}>{(id) => <Input id={id} type="number" step="0.001" min={0} value={f.water} onChange={(e) => setF({ ...f, water: e.target.value })} />}</Field>
           </div>
           <div>
             <div className="mb-2 flex items-center justify-between">

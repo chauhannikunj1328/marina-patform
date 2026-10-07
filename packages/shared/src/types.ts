@@ -212,6 +212,8 @@ export interface Settings {
   notify: { pending: boolean; overdue: boolean; maintenance: boolean; digest: boolean };
   permissions: import("./permissions").Permissions;
   pricing?: import("./pricing").PricingRules;
+  /** Utility rates for metered berths. */
+  utilities?: { powerPerKwh: number; waterPerGallon: number };
 }
 
 /** A clock-in / clock-out pair from the staff app. `end` is empty while clocked in. */
@@ -328,4 +330,20 @@ export interface Contract {
   createdAt: string;
   /** The contract this one renewed. */
   renewedFromId?: ID;
+}
+
+export type MeterKind = "power" | "water";
+
+/** A meter reading on a berth's pedestal. Usage since the last reading is billed to the boat there. */
+export interface MeterReading {
+  id: ID;
+  berthId: ID;
+  kind: MeterKind;
+  /** Meter value: kWh for power, gallons for water. */
+  value: number;
+  at: string; // ISO date-time
+  by: string;
+  /** Amount charged to the stay's invoice for this reading. */
+  charged?: number;
+  bookingId?: ID;
 }

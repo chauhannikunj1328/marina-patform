@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { CircleDashed, DollarSign, Droplets, Eye, Pencil, Plus, QrCode as QrIcon, Sailboat, Trash, Wrench, Zap } from "lucide-react";
 import { BerthDetail } from "@/components/BerthDetail";
 import { BerthLabels } from "@/components/BerthLabels";
+import { MetersPanel } from "./Meters";
 import { nextId, useStore } from "@/data/store";
 import type { Berth, BerthType } from "@marina/shared";
 import type { BerthStatus } from "@marina/shared";
@@ -87,7 +88,7 @@ export function Berths() {
   const { db, ix, scope, update, toast, can } = useStore();
   const canEdit = can("berths") !== "view";
   const [params, setParams] = useSearchParams();
-  const [tab, setTab] = useState<"list" | "map">("list");
+  const [tab, setTab] = useState<"list" | "map" | "meters">("list");
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<"all" | BerthStatus>(() => (params.get("status") as BerthStatus) ?? "all");
   const [page, setPage] = useState(1);
@@ -160,7 +161,7 @@ export function Berths() {
         <StatCard label="In maintenance" icon={Wrench} value={m.maintenance} active={status === "maintenance"} onClick={() => { setStatus(status === "maintenance" ? "all" : "maintenance"); setPage(1); }} />
         <StatCard label="Daily revenue capacity" icon={DollarSign} value={money(dailyPotential)} sub="If every working berth is filled" />
       </div>
-      <Tabs value={tab} onChange={setTab} items={[{ value: "list", label: "List" }, { value: "map", label: "Dock map" }]} />
+      <Tabs value={tab} onChange={setTab} items={[{ value: "list", label: "List" }, { value: "map", label: "Dock map" }, { value: "meters", label: "Meters" }]} />
       <Card>
         <Toolbar active={filters} onClear={clearFilters}>
           <SearchInput value={q} onChange={(v) => { setQ(v); setPage(1); }} placeholder="Search berth, boat or marina" />
@@ -213,8 +214,10 @@ export function Berths() {
             </Table>
             <Pagination page={pg.page} pages={pg.pages} total={rows.length} onPage={setPage} />
           </>
-        ) : (
+        ) : tab === "map" ? (
           <DockMap rows={rows} onOpen={setViewing} />
+        ) : (
+          <MetersPanel berths={rows.map((r) => r.b)} canEdit={canEdit} />
         )}
       </Card>
 
