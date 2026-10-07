@@ -193,6 +193,12 @@ export class Index {
     };
   }
 
+  /** Berths that are free for a waitlist entry's dates and fit the boat, smallest first. */
+  waitlistMatches = (w: { marinaId: string; start: string; end: string; boatLength: number }) =>
+    this.db.berths
+      .filter((b) => b.marinaId === w.marinaId && !b.underMaintenance && b.maxLength >= w.boatLength && this.isFree(b.id, w.start, w.end))
+      .sort((a, b) => a.maxLength - b.maxLength || a.code.localeCompare(b.code));
+
   marinaIdsInCity = (cityId: string) => this.db.marinas.filter((m) => m.cityId === cityId).map((m) => m.id);
   marinaIdsInCounty = (countyId: string) => {
     const cities = new Set(this.db.cities.filter((c) => c.countyId === countyId).map((c) => c.id));

@@ -199,7 +199,7 @@ export interface Message {
   at: string;
   to: string;
   subject: string;
-  kind: "reminder" | "invite" | "confirmation";
+  kind: "reminder" | "invite" | "confirmation" | "offer";
   ref?: ID;
 }
 
@@ -285,4 +285,25 @@ export interface Patrol {
   startedAt: string;
   endedAt?: string;
   checks: PatrolCheck[];
+}
+
+export type WaitlistStatus = "waiting" | "offered" | "booked" | "removed";
+
+/** A boat owner waiting for a berth at a full marina. */
+export interface WaitlistEntry {
+  id: ID;
+  marinaId: ID;
+  name: string;
+  email: string;
+  phone: string;
+  boatName: string;
+  boatLength: number;
+  start: string;
+  end: string;
+  note?: string;
+  status: WaitlistStatus;
+  createdAt: string;
+  /** Berth offered to them, when status is offered. */
+  offeredBerthId?: ID;
+  bookingId?: ID;
 }

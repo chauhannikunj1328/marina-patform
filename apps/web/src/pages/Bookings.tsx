@@ -4,6 +4,7 @@ import { CalendarCheck, CalendarPlus, ChevronLeft, ChevronRight, CircleCheck, Cl
 import { nextId, useStore } from "@/data/store";
 import type { Booking, BookingStatus, BoatType } from "@marina/shared";
 import { linesTotal, bookingAmount, priceNote } from "@marina/shared";
+import { WaitlistPanel } from "./Waitlist";
 import { withInvoice, withMessage } from "@marina/shared";
 import { addDays, daysBetween, fmtDate, fmtShort, fromISO, relative, toISO, today } from "@marina/shared";
 import { money } from "@marina/shared";
@@ -11,13 +12,13 @@ import { downloadCsv } from "@/lib/csv";
 import { Button, Card, CardHeader, ConfirmDialog, EmptyState, Field, IconButton, Input, Modal, PageHeader, Pagination, paginate, SearchInput, Select, StatCard, Table, Tabs, Toolbar, useDirty, useSort, type SortState } from "@/components/ui";
 import { BookingBadge, bookingLabel, InvoiceBadge } from "@/components/status";
 
-type Tab = "list" | "today" | "calendar" | "conflicts";
+type Tab = "list" | "today" | "calendar" | "conflicts" | "waitlist";
 
 export function Bookings() {
   const { db, ix, scope, update, toast, can } = useStore();
   const canEdit = can("bookings") !== "view";
   const [params, setParams] = useSearchParams();
-  const [tab, setTab] = useState<Tab>(params.get("view") === "today" ? "today" : params.get("view") === "conflicts" ? "conflicts" : "list");
+  const [tab, setTab] = useState<Tab>(params.get("view") === "today" ? "today" : params.get("view") === "conflicts" ? "conflicts" : params.get("view") === "waitlist" ? "waitlist" : "list");
   const [bulkApprove, setBulkApprove] = useState(false);
   const [q, setQ] = useState(params.get("q") ?? "");
   const [status, setStatus] = useState<"all" | BookingStatus>((params.get("status") as BookingStatus) ?? "all");
@@ -103,6 +104,7 @@ export function Bookings() {
           { value: "today", label: "Today", count: m.arrivalsToday + m.departuresToday },
           { value: "calendar", label: "Calendar" },
           { value: "conflicts", label: "Conflicts", count: conflicts.length + outOfService.length },
+          { value: "waitlist", label: "Waitlist", count: (db.waitlist ?? []).filter((w) => ids.includes(w.marinaId) && (w.status === "waiting" || w.status === "offered")).length || undefined },
         ]}
       />
       <Card>
@@ -138,6 +140,7 @@ export function Bookings() {
             <Pagination page={pg.page} pages={pg.pages} total={rows.length} onPage={setPage} />
           </>
         )}
+        {tab === "waitlist" && <WaitlistPanel ids={ids} canEdit={canEdit} />}
         {tab === "today" && <TodayView all={all} onOpen={setOpen} />}
         {tab === "calendar" && <CalendarView all={all} onOpen={setOpen} />}
         {tab === "conflicts" && outOfService.length > 0 && (

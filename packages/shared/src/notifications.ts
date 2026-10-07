@@ -38,6 +38,9 @@ export function buildNotifications(db: Db, ix: Index, scope: string[], isAdmin: 
       out.push({ id: `tasks-${urgent.map((t) => t.id).join(".")}`, title: `${urgent.length} high priority work orders`, body: "Repairs that are blocking berths or facilities.", to: "/maintenance" });
     }
   }
+  const matched = (db.waitlist ?? []).filter((w) => w.status === "waiting" && inScope.has(w.marinaId) && ix.waitlistMatches(w).length > 0);
+  if (matched.length)
+    out.push({ id: `waitlist-${matched.map((w) => w.id).join(".")}`, title: `${matched.length} waitlist ${matched.length === 1 ? "match" : "matches"}`, body: "A berth has opened up for someone on the waitlist.", to: "/bookings?view=waitlist" });
   // From the staff app: time off / swap requests and unread messages.
   const staffIn = new Set(db.staff.filter((s) => inScope.has(s.marinaId)).map((s) => s.id));
   const requests = (db.requests ?? []).filter((r) => r.status === "pending" && staffIn.has(r.staffId));

@@ -2,7 +2,7 @@
 // and dates are generated relative to today so the data never looks stale.
 import type {
   Berth, BerthType, Boat, BoatOwner, BoatType, Booking, BookingStatus, City, County,
-  Activity, ChatMessage, Handover, Invoice, Patrol, MaintenanceTask, Marina, Message, Settings, Shift, Staff, StaffRequest, SystemUser, TimeEntry,
+  Activity, ChatMessage, Handover, Invoice, Patrol, WaitlistEntry, MaintenanceTask, Marina, Message, Settings, Shift, Staff, StaffRequest, SystemUser, TimeEntry,
 } from "./types";
 import { addDays, daysBetween, fromISO, today } from "./date";
 import { bookingAmount } from "./pricing";
@@ -32,6 +32,8 @@ export interface Db {
   handovers: Handover[];
   /** Dock patrol rounds */
   patrols: Patrol[];
+  /** Boat owners waiting for a berth */
+  waitlist: WaitlistEntry[];
   settings: Settings;
   /** Notification ids the user has dismissed or read */
   readNotifications: string[];
@@ -380,6 +382,11 @@ export function createSeed(): Db {
   ];
 
   const patrols: Patrol[] = [];
+  const waitlist: WaitlistEntry[] = [
+    { id: "wl-1", marinaId: "m-gg", name: "Grace Lindqvist", email: "grace.lindqvist@email.com", phone: "(415) 555-0144", boatName: "Northwind", boatLength: 32, start: addDays(now, 3), end: addDays(now, 7), note: "Flexible by a day either side.", status: "waiting", createdAt: addDays(now, -2) },
+    { id: "wl-2", marinaId: "m-gg", name: "Omar Haddad", email: "omar.haddad@email.com", phone: "(650) 555-0190", boatName: "Blue Lantern", boatLength: 44, start: addDays(now, 10), end: addDays(now, 24), status: "waiting", createdAt: addDays(now, -5) },
+    { id: "wl-3", marinaId: "m-bh", name: "Keiko Tanaka", email: "keiko.tanaka@email.com", phone: "(510) 555-0117", boatName: "Sakura", boatLength: 28, start: addDays(now, 1), end: addDays(now, 4), status: "waiting", createdAt: addDays(now, -1) },
+  ];
 
-  return { counties, cities, marinas, berths, owners, boats, bookings, staff, tasks, invoices, users, activity, messages, timeEntries, requests, chat, handovers, patrols, settings, readNotifications: [] };
+  return { counties, cities, marinas, berths, owners, boats, bookings, staff, tasks, invoices, users, activity, messages, timeEntries, requests, chat, handovers, patrols, waitlist, settings, readNotifications: [] };
 }
