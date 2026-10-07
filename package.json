@@ -8,6 +8,7 @@
     "dev:mobile": "npm --prefix apps/mobile run start",
     "web:mobile": "npm --prefix apps/mobile run web",
     "build:mobile-web": "npm --prefix apps/mobile run export:web",
-    "test": "npm --prefix packages/shared test"
+    "test": "npm --prefix packages/shared test",
+    "lint": "npm --prefix apps/web run lint && npm --prefix apps/mobile run lint"
   }
 }

@@ -422,8 +422,8 @@ export function useSort<T>(rows: T[], accessors: Record<string, (r: T) => string
 
 /** Changes made to a form since it opened, for the unsaved-changes warning. */
 export function useDirty<T>(current: T): boolean {
-  const initial = useRef(JSON.stringify(current));
-  return JSON.stringify(current) !== initial.current;
+  const [initial] = useState(() => JSON.stringify(current));
+  return JSON.stringify(current) !== initial;
 }
 
 // ---- Table (07: thin row lines, no zebra, #F8FAFC header; 05: 52 px rows) ----
@@ -537,7 +537,9 @@ export function Modal({
   const ref = useRef<HTMLDivElement>(null);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const requestClose = useRef(onClose);
-  requestClose.current = () => (dirty ? setConfirmDiscard(true) : onClose());
+  useLayoutEffect(() => {
+    requestClose.current = () => (dirty ? setConfirmDiscard(true) : onClose());
+  });
 
   useEffect(() => {
     if (!open) return;

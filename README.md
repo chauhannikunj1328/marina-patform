@@ -195,6 +195,8 @@ Icons are from [Lucide](https://lucide.dev) (`lucide-react` on the web, `lucide-
 
 Run `npm test` from the project root (the first time, run `npm install` in `packages/shared`). The tests in `packages/shared/test` cover pricing, dates, permissions, map helpers, recurring maintenance, contract renewals, overtime pay and the dashboard numbers (each marina's figures add up to the totals). They also fail if any text in either app is missing its Spanish or Arabic translation, or if a translation drops a `{placeholder}`.
 
+`npm run lint` checks both apps: Oxlint for the web app (TypeScript 7 isn't supported by typescript-eslint yet) and `expo lint` for the phone app. Both must finish with no warnings.
+
 ## Project structure
 
 ```

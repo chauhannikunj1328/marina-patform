@@ -28,7 +28,7 @@ export function Bookings() {
   const [open, setOpen] = useState<Booking | undefined>();
   const creating = params.get("new") === "1";
   const now = today();
-  const ids = marinaId === "all" ? scope : [marinaId];
+  const ids = useMemo(() => (marinaId === "all" ? scope : [marinaId]), [marinaId, scope]);
 
   const all = useMemo(() => ix.bookingsIn(ids), [ix, ids]);
   const rows = useMemo(() => {

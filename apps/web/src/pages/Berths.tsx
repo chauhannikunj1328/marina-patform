@@ -98,7 +98,7 @@ export function Berths() {
   const [labels, setLabels] = useState(false);
   const marinaId = params.get("marina") ?? "all";
   const marinas = db.marinas.filter((m) => scope.includes(m.id));
-  const ids = marinaId === "all" ? scope : [marinaId];
+  const ids = useMemo(() => (marinaId === "all" ? scope : [marinaId]), [marinaId, scope]);
 
   const rows = useMemo(() => {
     const s = q.trim().toLowerCase();

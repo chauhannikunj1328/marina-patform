@@ -118,13 +118,15 @@ export function RingChart({ segments, center, size = 220 }: { segments: { label:
   const r = (size - stroke) / 2 - 10;
   const c = 2 * Math.PI * r;
   const gap = segments.filter((s) => s.value > 0).length > 1 ? 10 : 0;
-  let offset = 0;
+  // Where each segment starts along the ring.
+  const starts = segments.map((_, i) => segments.slice(0, i).reduce((t, s) => t + (s.value / total) * c, 0));
   return (
     <div className="relative mx-auto" style={{ width: size, height: size }}>
       <svg viewBox={`0 0 ${size} ${size}`} className="-rotate-90" role="img" aria-label={segments.map((s) => `${s.label} ${Math.round((s.value / total) * 100)}%`).join(", ")}>
         <circle cx={size / 2} cy={size / 2} r={r + stroke / 2 + 6} fill="none" stroke="var(--border)" strokeWidth={1} />
-        {segments.map((s) => {
+        {segments.map((s, i) => {
           const len = (s.value / total) * c;
+          const offset = starts[i];
           const dash = Math.max(0, len - gap);
           const el = s.value > 0 && (
             <circle
@@ -141,7 +143,6 @@ export function RingChart({ segments, center, size = 220 }: { segments: { label:
               style={{ transition: "stroke-dasharray 300ms ease-out" }}
             />
           );
-          offset += len;
           return el;
         })}
       </svg>

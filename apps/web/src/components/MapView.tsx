@@ -3,7 +3,7 @@
 // Tiles: OpenStreetMap's standard tiles (no key; dark mode tints them with a CSS filter). They're
 // meant for light use, so for production set VITE_MAP_TILES (and optionally VITE_MAP_TILES_DARK and
 // VITE_MAP_ATTRIBUTION) to a provider you have an account with (MapTiler, Stadia, Mapbox…).
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { MapContainer, Marker, Popup, TileLayer, ZoomControl, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -97,12 +97,14 @@ const GROUP_PX = 34;
  */
 function Pins({ markers, selectedId, onSelect }: { markers: MapMarker[]; selectedId?: string; onSelect?: (id: string) => void }) {
   const map = useMap();
-  const [zoom, setZoom] = useState(map.getZoom());
-  useMapEvents({ zoomend: () => setZoom(map.getZoom()) });
-  // The first fit can happen before the listener above is attached; catch up after rendering.
-  useEffect(() => {
-    if (map.getZoom() !== zoom) setZoom(map.getZoom());
-  });
+  // Read straight from the map, so it's right even when the first fit happens before rendering.
+  const zoom = useSyncExternalStore(
+    useCallback((changed: () => void) => {
+      map.on("zoomend", changed);
+      return () => { map.off("zoomend", changed); };
+    }, [map]),
+    () => map.getZoom(),
+  );
   const groups = useMemo(() => {
     const out: { items: MapMarker[]; x: number; y: number }[] = [];
     for (const m of markers) {

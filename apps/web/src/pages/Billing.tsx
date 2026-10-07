@@ -225,7 +225,7 @@ export function Billing() {
   const [page, setPage] = useState(1);
   const [paying, setPaying] = useState<Invoice | undefined>();
   const now = today();
-  const ids = marinaId === "all" ? scope : [marinaId];
+  const ids = useMemo(() => (marinaId === "all" ? scope : [marinaId]), [marinaId, scope]);
   const openId = params.get("open");
   const opened = openId ? db.invoices.find((i) => i.id === openId && scope.includes(ix.marinaOfInvoice(i) ?? "")) : undefined;
 

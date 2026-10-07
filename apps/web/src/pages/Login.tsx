@@ -7,11 +7,13 @@ import { Button, Field, Input } from "@/components/ui";
 import { t } from "@marina/shared";
 
 /** 14 Login and sign-up: canvas gradient background, centered white card (radius 20), logo top, Slate pill button. */
+const YEAR = new Date().getFullYear();
+
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="bg-canvas flex min-h-full flex-col items-center justify-center px-4 py-10">
       <div className="w-full max-w-md rounded-[20px] bg-surface p-8 shadow-e3 sm:p-10">{children}</div>
-      <p className="mt-6 text-xs text-ink-2">© {new Date().getFullYear()} {t("Marina Management System")}</p>
+      <p className="mt-6 text-xs text-ink-2">© {YEAR} {t("Marina Management System")}</p>
     </div>
   );
 }
