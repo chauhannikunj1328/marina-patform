@@ -73,6 +73,8 @@ export interface Booking {
   guests: number;
   status: BookingStatus;
   createdAt: string;
+  /** Berth checks done before arrival (staff app). */
+  prep?: { done: string[]; by: string; at: string };
 }
 
 export type StaffStatus = "active" | "on-leave";

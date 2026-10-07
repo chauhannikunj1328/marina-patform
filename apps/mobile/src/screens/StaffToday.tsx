@@ -2,7 +2,7 @@
 import { Pressable, View } from "react-native";
 import { router } from "expo-router";
 import { ChevronRight, Clock, LogIn, LogOut, Sailboat, Wrench } from "lucide-react-native";
-import { fmtDate, fmtDuration, fmtTime, planFor, relative, SHIFT_HOURS, today, type Booking } from "@marina/shared";
+import { fmtDate, fmtDuration, fmtTime, planFor, prepChecklist, relative, SHIFT_HOURS, today, type Booking } from "@marina/shared";
 import { Badge, Button, Card, EmptyState, Screen, Section, Txt } from "@/components/ui";
 import { BookingSheet, useBookingStatus } from "@/components/sheets";
 import { useClock, useNow } from "@/lib/clock";
@@ -116,7 +116,12 @@ export function StaffToday() {
               action={
                 b.status === "checked-in" ? <Badge tone="success" label="In" />
                 : b.status === "pending" ? <Badge tone="pending" label="Pending" />
-                : canBook ? <Button size="sm" variant="primary" label="Check in" onPress={() => setStatus(b, "checked-in")} /> : undefined
+                : canBook ? (
+                  <View style={{ alignItems: "flex-end", gap: 4 }}>
+                    {prepChecklist(ix.berth(b.berthId)).every((i) => b.prep?.done.includes(i.id)) && <Badge tone="success" label="Berth ready" />}
+                    <Button size="sm" variant="primary" label="Check in" onPress={() => setStatus(b, "checked-in")} />
+                  </View>
+                ) : undefined
               }
             />
           ))

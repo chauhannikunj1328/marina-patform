@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Image, Linking, Pressable, ScrollView, View } from "react-native";
 import { ArrowRightLeft, Banknote, CalendarCog, Camera, CircleCheck, CircleX, ImagePlus, LogIn, LogOut, Mail, Phone, Search, TriangleAlert, X } from "lucide-react-native";
 import {
-  addDays, bookingAmount, daysBetween, fmtDate, fmtShort, money2, nextId, relative, today, withInvoice,
+  addDays, bookingAmount, daysBetween, fmtDate, fmtShort, money2, nextId, prepChecklist, relative, today, withInvoice,
   type Berth, type Booking, type BookingStatus, type BoatType, type Invoice, type MaintenanceTask, type PaymentMethod, type Priority,
 } from "@marina/shared";
 import { ALL, useMe, useStore } from "../store";
@@ -81,6 +81,7 @@ export function BookingSheet({ booking, onClose }: { booking: Booking; onClose: 
           <Txt v="bodySm" color={t.status.pending.fg}>Waiting for a manager to approve this booking.</Txt>
         </View>
       )}
+      {canEdit && b.status === "confirmed" && b.start <= addDays(today(), 2) && <PrepChecklist booking={b} />}
       <InvoiceRow bookingId={b.id} onPay={setPaying} />
       {owner && (
         <View style={{ flexDirection: "row", gap: 8, marginTop: 4 }}>
@@ -91,7 +92,7 @@ export function BookingSheet({ booking, onClose }: { booking: Booking; onClose: 
       {canEdit && (b.status === "pending" || b.status === "confirmed" || b.status === "checked-in") && (
         <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
           <Button style={{ flex: 1 }} size="sm" icon={CalendarCog} label={b.status === "checked-in" ? "Extend or move" : "Change"} onPress={() => setChanging(true)} />
-          {b.status !== "checked-in" && <Button style={{ flex: 1 }} size="sm" icon={CircleX} label="Cancel booking" onPress={() => setCancelling(true)} />}
+          {b.status !== "checked-in" && <Button style={{ flex: 1 }} size="sm" icon={CircleX} label="Cancel" onPress={() => setCancelling(true)} />}
         </View>
       )}
       {paying && <PaymentSheet invoice={paying} onClose={() => setPaying(undefined)} />}
@@ -680,5 +681,45 @@ export function CancelBookingSheet({ booking: b, decline, onClose }: { booking: 
       </Txt>
       {paid && <Txt v="bodySm" color={t.error.fg} style={{ marginTop: 12 }}>{owner?.name} has already paid {money2(ix.paidSoFar(paid))}. Refund it from Billing in the web app.</Txt>}
     </Sheet>
+  );
+}
+
+/** Berth ready check before an arrival. Ticks are saved on the booking; a failed item can go straight to a repair report. */
+export function PrepChecklist({ booking: b }: { booking: Booking }) {
+  const { db, ix, update } = useStore();
+  const me = useMe();
+  const { t } = useTheme();
+  const [reporting, setReporting] = useState(false);
+  const live = db.bookings.find((x) => x.id === b.id) ?? b;
+  const berth = ix.berth(b.berthId);
+  const items = prepChecklist(berth);
+  const done = live.prep?.done ?? [];
+  const ready = items.every((i) => done.includes(i.id));
+  const toggle = (id: string) =>
+    update((d) => ({
+      ...d,
+      bookings: d.bookings.map((x) => (x.id === b.id ? { ...x, prep: { done: done.includes(id) ? done.filter((y) => y !== id) : [...done, id], by: me?.name ?? "Staff", at: new Date().toISOString() } } : x)),
+    }), items.every((i) => i.id === id || done.includes(i.id)) && !done.includes(id) ? { text: `Berth ${berth?.code} ready for ${ix.boat(b.boatId)?.name}`, marinaId: berth?.marinaId } : undefined);
+  return (
+    <View style={{ borderWidth: 1, borderColor: ready ? t.success.fg : t.border, borderRadius: 16, padding: 12, marginBottom: 12, gap: 4 }}>
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+        <Txt v="bodySm" weight="semibold">Berth {berth?.code} ready check</Txt>
+        {ready ? <Badge tone="success" icon={CircleCheck} label="Ready" /> : <Txt v="caption" num color={t.text3}>{done.filter((d) => items.some((i) => i.id === d)).length} of {items.length}</Txt>}
+      </View>
+      {items.map((i) => {
+        const on = done.includes(i.id);
+        return (
+          <Pressable key={i.id} accessibilityRole="checkbox" accessibilityState={{ checked: on }} onPress={() => toggle(i.id)} style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 8 }}>
+            <View style={{ width: 22, height: 22, borderRadius: 6, borderWidth: 1.5, borderColor: on ? t.primary : t.borderStrong, backgroundColor: on ? t.primary : "transparent", alignItems: "center", justifyContent: "center" }}>
+              {on && <CircleCheck size={14} color={t.onPrimary} />}
+            </View>
+            <Txt v="bodySm" style={{ flex: 1 }}>{i.label}</Txt>
+          </Pressable>
+        );
+      })}
+      {live.prep && <Txt v="caption" color={t.text3}>Last checked by {live.prep.by}, {fmtShort(live.prep.at.slice(0, 10))}</Txt>}
+      {!ready && <Button size="sm" icon={TriangleAlert} label="Something's wrong: report it" onPress={() => setReporting(true)} style={{ alignSelf: "flex-start", marginTop: 4 }} />}
+      {reporting && <ReportProblem berthId={b.berthId} onClose={() => setReporting(false)} />}
+    </View>
   );
 }

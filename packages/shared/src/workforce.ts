@@ -53,3 +53,15 @@ export function shiftOn(s: Staff, day: string, requests: StaffRequest[], staff: 
   if (!p.working) return undefined;
   return p.covering ? staff.find((x) => x.id === p.covering?.staffId)?.shift ?? s.shift : s.shift;
 }
+
+/** Checks before a boat arrives. Power and water only apply when the berth has them. */
+export function prepChecklist(berth: { power: boolean; water: boolean } | undefined): { id: string; label: string }[] {
+  return [
+    { id: "clear", label: "Berth clear of debris and other boats" },
+    { id: "cleats", label: "Cleats and dock lines in good shape" },
+    ...(berth?.power ? [{ id: "power", label: "Power pedestal works" }] : []),
+    ...(berth?.water ? [{ id: "water", label: "Water tap works" }] : []),
+    { id: "fenders", label: "Fenders in place" },
+    { id: "number", label: "Berth number visible" },
+  ];
+}
