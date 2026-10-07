@@ -12,6 +12,7 @@ import { router } from "expo-router";
 import { DAYS, fmtShort, fromISO, LOGOMARK_PATHS, radius, type as typeScale } from "@marina/shared";
 import { fonts, useTheme } from "../theme";
 import { useStore } from "../store";
+import { useTr } from "../lib/i18n";
 
 export type Icon = ComponentType<LucideProps>;
 
@@ -200,12 +201,13 @@ export function StackHeader({ title, subtitle, right }: { title: string; subtitl
 /** Shown under the header while the phone has no connection. */
 export function OfflineBanner() {
   const { online } = useStore();
+  const tr = useTr();
   const { t } = useTheme();
   if (online) return null;
   return (
     <View accessibilityRole="alert" style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 16, paddingVertical: 8, backgroundColor: t.status.pending.bg }}>
       <WifiOff size={16} color={t.status.pending.fg} />
-      <Txt v="caption" weight="medium" color={t.status.pending.fg} style={{ flex: 1 }}>{"You're offline. Keep working: changes are saved on this phone."}</Txt>
+      <Txt v="caption" weight="medium" color={t.status.pending.fg} style={{ flex: 1 }}>{tr("You're offline. Keep working: changes are saved on this phone.")}</Txt>
     </View>
   );
 }

@@ -9,10 +9,12 @@ import { BookingSheet, CheckInSheet, NewBookingSheet } from "@/components/sheets
 import { useOpenParam, useViewParam } from "@/lib/useOpenParam";
 import { useStore } from "@/store";
 import { useTheme } from "@/theme";
+import { useTr } from "@/lib/i18n";
 
 export default function Bookings() {
   const { db, ix, ids, can } = useStore();
   const { t } = useTheme();
+  const tr = useTr();
   const [view, setView] = useViewParam(["today", "upcoming", "in"] as const, "today");
   const [q, setQ] = useState("");
   const [openId, setOpenId] = useOpenParam();
@@ -33,21 +35,21 @@ export default function Bookings() {
   ).slice(0, 60);
 
   return (
-    <Screen title="Bookings" right={can("bookings") !== "view" ? <Button size="sm" variant="primary" icon={Plus} label="New booking" onPress={() => setCreating(true)} /> : undefined}>
-      <SearchBox value={q} onChange={setQ} placeholder="Boat, owner, berth or code" />
+    <Screen title={tr("Bookings")} right={can("bookings") !== "view" ? <Button size="sm" variant="primary" icon={Plus} label={tr("New booking")} onPress={() => setCreating(true)} /> : undefined}>
+      <SearchBox value={q} onChange={setQ} placeholder={tr("Boat, owner, berth or code")} />
       {!s && (
         <Segmented
           value={view}
           onChange={setView}
           items={[
-            { value: "today", label: "Today", count: lists.today.length },
-            { value: "upcoming", label: "Upcoming", count: lists.upcoming.length },
-            { value: "in", label: "In marina", count: lists.in.length },
+            { value: "today", label: tr("Today"), count: lists.today.length },
+            { value: "upcoming", label: tr("Upcoming"), count: lists.upcoming.length },
+            { value: "in", label: tr("In marina"), count: lists.in.length },
           ]}
         />
       )}
       {rows.length === 0 ? (
-        <EmptyState icon={s ? Search : CalendarClock} title={s ? `Nothing matches “${q}”` : "Nothing here"} body={s ? "Try a boat name, owner or berth number." : undefined} />
+        <EmptyState icon={s ? Search : CalendarClock} title={s ? `Nothing matches “${q}”` : tr("Nothing here")} body={s ? tr("Try a boat name, owner or berth number.") : undefined} />
       ) : (
         <View style={{ gap: 8 }}>
           {rows.map((b) => (

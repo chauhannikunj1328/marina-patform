@@ -12,11 +12,13 @@ import { allowNotifications, remindersSupported } from "@/lib/reminders";
 import { biometricInfo, biometricUnlock } from "@/lib/biometrics";
 import { useMe, useStore } from "@/store";
 import { useTheme, type ThemeMode } from "@/theme";
+import { useLang, useTr } from "@/lib/i18n";
 
 function RequestBadge({ r }: { r: StaffRequest }) {
-  if (r.status === "approved") return <Badge tone="success" label="Approved" />;
-  if (r.status === "declined") return <Badge tone="cancelled" label="Declined" />;
-  return <Badge tone="pending" label="Waiting" />;
+  const tr = useTr();
+  if (r.status === "approved") return <Badge tone="success" label={tr("Approved")} />;
+  if (r.status === "declined") return <Badge tone="cancelled" label={tr("Declined")} />;
+  return <Badge tone="pending" label={tr("Waiting")} />;
 }
 
 function ListRow({ icon: IconCmp, label, onPress }: { icon: Icon; label: string; onPress: () => void }) {
@@ -38,7 +40,9 @@ export default function Me() {
   }, []);
   const me = useMe();
   const { t, mode, setMode } = useTheme();
+  const tr = useTr();
   const { office, isAdmin } = useRole();
+  const { lang, setLang } = useLang();
   const now = useNow();
   const [sheet, setSheet] = useState<"request" | "profile" | "password" | undefined>();
   const start = addDays(today(), -fromISO(today()).getDay());
@@ -51,7 +55,7 @@ export default function Me() {
   const withdraw = (r: StaffRequest) => {
     const before = db;
     update((d) => ({ ...d, requests: d.requests.filter((x) => x.id !== r.id) }), { text: `${me?.name} withdrew a ${r.kind === "leave" ? "time off" : "shift swap"} request`, marinaId: me?.marinaId });
-    toast("Request withdrawn", before);
+    toast(tr("Request withdrawn"), before);
   };
 
   return (
@@ -60,17 +64,17 @@ export default function Me() {
         <Avatar name={user?.name ?? ""} size={56} dot />
         <View style={{ flex: 1 }}>
           <Txt v="h2" numberOfLines={1}>{user?.name}</Txt>
-          <Txt v="bodySm" color={t.text3} numberOfLines={1}>{isAdmin ? "Admin" : user?.role === "manager" ? "Marina manager" : me?.position ?? "Staff"} · {office ? user?.email : me?.phone ?? user?.email}</Txt>
+          <Txt v="bodySm" color={t.text3} numberOfLines={1}>{isAdmin ? tr("Admin") : user?.role === "manager" ? tr("Marina manager") : me?.position ?? tr("Staff")} · {office ? user?.email : me?.phone ?? user?.email}</Txt>
         </View>
       </View>
 
       {me && !office && (
-        <Section title="My week">
+        <Section title={tr("My week")}>
           <View style={{ flexDirection: "row", gap: 6 }}>
             {week.map((d, i) => {
               const plan = planFor(me, d, db.requests);
               const isToday = d === today();
-              const tag = plan.working ? (plan.covering ? "Cover" : me.shift) : plan.why === "leave" ? "Leave" : plan.why === "swapped" ? "Swap" : "Off";
+              const tag = plan.working ? (plan.covering ? tr("Cover") : me.shift) : plan.why === "leave" ? tr("Leave") : plan.why === "swapped" ? tr("Swap") : tr("Off");
               return (
                 <View key={d} accessibilityLabel={`${DAYS[i]} ${fmtShort(d)}: ${plan.working ? `${me.shift} shift` : tag}`} style={{ flex: 1, alignItems: "center", paddingVertical: 8, borderRadius: 12, borderWidth: isToday ? 2 : 1, borderColor: isToday ? t.primary : t.border, backgroundColor: plan.working ? t.tealStrong : t.surface }}>
                   <Txt v="label" color={plan.working ? t.onTealStrong : t.text3}>{DAYS[i]}</Txt>
@@ -88,11 +92,11 @@ export default function Me() {
       )}
 
       {entries.length > 0 && !office && (
-        <Section title="Timesheet">
+        <Section title={tr("Timesheet")}>
           <View style={{ borderWidth: 1, borderColor: t.border, borderRadius: 16, backgroundColor: t.surface }}>
             {entries.map((e, i) => (
               <View key={e.id} style={{ flexDirection: "row", alignItems: "center", padding: 12, paddingHorizontal: 16, borderTopWidth: i ? 1 : 0, borderColor: t.border }}>
-                <Txt v="bodySm" style={{ width: 92 }}>{localDay(e.start) === today() ? "Today" : `${DAYS[new Date(e.start).getDay()]} ${fmtShort(localDay(e.start))}`}</Txt>
+                <Txt v="bodySm" style={{ width: 92 }}>{localDay(e.start) === today() ? tr("Today") : `${DAYS[new Date(e.start).getDay()]} ${fmtShort(localDay(e.start))}`}</Txt>
                 <Txt v="bodySm" num color={t.text2} style={{ flex: 1 }}>{fmtTime(e.start)} – {e.end ? fmtTime(e.end) : "now"}</Txt>
                 <Txt v="bodySm" num weight="medium">{fmtDuration(((e.end ? Date.parse(e.end) : now) - Date.parse(e.start)) / 60_000)}</Txt>
               </View>
@@ -102,8 +106,8 @@ export default function Me() {
       )}
 
       {me && !office && (
-        <Section title="Time off and swaps" action={<Button size="sm" icon={Plus} label="Request" onPress={() => setSheet("request")} />}>
-          {mine.length === 0 && askedToCover.length === 0 && <Txt v="bodySm" color={t.text3}>Ask for time off or swap a shift with a colleague. Your manager approves it.</Txt>}
+        <Section title={tr("Time off and swaps")} action={<Button size="sm" icon={Plus} label={tr("Request")} onPress={() => setSheet("request")} />}>
+          {mine.length === 0 && askedToCover.length === 0 && <Txt v="bodySm" color={t.text3}>{tr("Ask for time off or swap a shift with a colleague. Your manager approves it.")}</Txt>}
           {askedToCover.map((r) => (
             <View key={r.id} style={{ borderWidth: 1, borderColor: t.border, borderRadius: 16, padding: 12, backgroundColor: t.accentSoft }}>
               <Txt v="bodySm" weight="semibold">Covering for {ix.staffMember(r.staffId)?.name}</Txt>
@@ -121,7 +125,7 @@ export default function Me() {
               <Txt v="caption" color={t.text3}>{r.reason}{r.decidedBy ? ` · ${r.status} by ${r.decidedBy}` : ""}</Txt>
               {r.status === "pending" && (
                 <Pressable accessibilityRole="button" onPress={() => withdraw(r)} hitSlop={8} style={{ alignSelf: "flex-start" }}>
-                  <Txt v="caption" weight="semibold" color={t.error.fg}>Withdraw</Txt>
+                  <Txt v="caption" weight="semibold" color={t.error.fg}>{tr("Withdraw")}</Txt>
                 </Pressable>
               )}
             </View>
@@ -147,42 +151,52 @@ export default function Me() {
       </Section>
 
       {me && !office && (
-        <Section title="Notifications">
+        <Section title={tr("Notifications")}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 12, borderWidth: 1, borderColor: t.border, borderRadius: 16, padding: 16, backgroundColor: t.surface }}>
             <View style={{ flex: 1 }}>
-              <Txt>Shift reminders</Txt>
-              <Txt v="caption" color={t.text3}>{remindersSupported ? "A notification 30 minutes before each shift." : "Available in the phone app."}</Txt>
+              <Txt>{tr("Shift reminders")}</Txt>
+              <Txt v="caption" color={t.text3}>{remindersSupported ? tr("A notification 30 minutes before each shift.") : tr("Available in the phone app.")}</Txt>
             </View>
             <Switch
-              accessibilityLabel="Shift reminders"
+              accessibilityLabel={tr("Shift reminders")}
               disabled={!remindersSupported}
               value={reminders && remindersSupported}
               trackColor={{ true: t.tealStrong, false: t.surface3 }}
               onValueChange={async (on) => {
-                if (on && !(await allowNotifications())) return toast("Turn on notifications for Marina in your phone's Settings.", undefined, "warning");
+                if (on && !(await allowNotifications())) return toast(tr("Turn on notifications for Marina in your phone's Settings."), undefined, "warning");
                 setReminders(on);
-                toast(on ? "Reminders on for your next 2 weeks of shifts" : "Shift reminders off");
+                toast(on ? tr("Reminders on for your next 2 weeks of shifts") : tr("Shift reminders off"));
               }}
             />
           </View>
         </Section>
       )}
 
-      <Section title="Appearance">
+      <Section title={tr("Appearance")}>
         <View style={{ flexDirection: "row", backgroundColor: t.surface3, borderRadius: 9999, padding: 4, gap: 4 }}>
           {(["system", "light", "dark"] as ThemeMode[]).map((m) => (
             <Pressable key={m} accessibilityRole="radio" accessibilityState={{ checked: mode === m }} onPress={() => setMode(m)} style={{ flex: 1, height: 40, borderRadius: 9999, alignItems: "center", justifyContent: "center", backgroundColor: mode === m ? t.surface : "transparent" }}>
-              <Txt v="bodySm" weight="semibold" color={mode === m ? t.text : t.text3}>{m === "system" ? "Automatic" : m === "light" ? "Light" : "Dark"}</Txt>
+              <Txt v="bodySm" weight="semibold" color={mode === m ? t.text : t.text3}>{m === "system" ? tr("Automatic") : m === "light" ? tr("Light") : tr("Dark")}</Txt>
             </Pressable>
           ))}
         </View>
       </Section>
 
-      <Section title="Security">
+      <Section title={tr("Language")}>
+        <View style={{ flexDirection: "row", backgroundColor: t.surface3, borderRadius: 9999, padding: 4, gap: 4 }}>
+          {([["en", "English"], ["es", "Español"]] as const).map(([code, name]) => (
+            <Pressable key={code} accessibilityRole="radio" accessibilityState={{ checked: lang === code }} onPress={() => setLang(code)} style={{ flex: 1, height: 40, borderRadius: 9999, alignItems: "center", justifyContent: "center", backgroundColor: lang === code ? t.surface : "transparent" }}>
+              <Txt v="bodySm" weight="semibold" color={lang === code ? t.text : t.text3}>{name}</Txt>
+            </Pressable>
+          ))}
+        </View>
+      </Section>
+
+      <Section title={tr("Security")}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 12, borderWidth: 1, borderColor: t.border, borderRadius: 16, padding: 16, backgroundColor: t.surface }}>
           <View style={{ flex: 1 }}>
             <Txt>Unlock with {bio.label}</Txt>
-            <Txt v="caption" color={t.text3}>{bio.available ? "Asked when you open the app or come back after a minute." : "Set up Face ID or a fingerprint on this phone first. Not available in the web preview."}</Txt>
+            <Txt v="caption" color={t.text3}>{bio.available ? tr("Asked when you open the app or come back after a minute.") : tr("Set up Face ID or a fingerprint on this phone first. Not available in the web preview.")}</Txt>
           </View>
           <Switch
             accessibilityLabel={`Unlock with ${bio.label}`}
@@ -198,15 +212,15 @@ export default function Me() {
         </View>
       </Section>
 
-      <Section title="Account">
+      <Section title={tr("Account")}>
         <View style={{ borderWidth: 1, borderColor: t.border, borderRadius: 16, backgroundColor: t.surface, overflow: "hidden" }}>
-          {me && !office && <ListRow icon={UserRoundPen} label="Edit profile" onPress={() => setSheet("profile")} />}
+          {me && !office && <ListRow icon={UserRoundPen} label={tr("Edit profile")} onPress={() => setSheet("profile")} />}
           {me && !office && <View style={{ height: 1, backgroundColor: t.border }} />}
-          <ListRow icon={KeyRound} label="Change password" onPress={() => setSheet("password")} />
+          <ListRow icon={KeyRound} label={tr("Change password")} onPress={() => setSheet("password")} />
           {office && (
             <>
               <View style={{ height: 1, backgroundColor: t.border }} />
-              <ListRow icon={ExternalLink} label="Open the web app" onPress={() => Linking.openURL("https://marina-patform.vercel.app")} />
+              <ListRow icon={ExternalLink} label={tr("Open the web app")} onPress={() => Linking.openURL("https://marina-patform.vercel.app")} />
             </>
           )}
         </View>
@@ -218,7 +232,7 @@ export default function Me() {
         )}
       </Section>
 
-      <Button size="lg" icon={LogOut} label="Sign out" onPress={() => { signOut(); router.replace("/login"); }} />
+      <Button size="lg" icon={LogOut} label={tr("Sign out")} onPress={() => { signOut(); router.replace("/login"); }} />
 
       {sheet === "request" && <RequestSheet onClose={() => setSheet(undefined)} />}
       {sheet === "profile" && <ProfileSheet onClose={() => setSheet(undefined)} />}

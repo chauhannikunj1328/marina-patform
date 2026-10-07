@@ -7,6 +7,7 @@ import { Camera } from "lucide-react-native";
 import { Button, Field, Input, StackHeader, Txt } from "@/components/ui";
 import { ALL, useMe, useStore } from "@/store";
 import { useTheme } from "@/theme";
+import { useTr } from "@/lib/i18n";
 
 /** Berth id from a label: "marinastaff://berth/<id>", a web link ending in /berth/<id>, or a bare id. */
 function berthIdFromCode(data: string): string {
@@ -18,6 +19,7 @@ export default function Scan() {
   const me = useMe();
   const params = useLocalSearchParams<{ patrol?: string }>();
   const { t } = useTheme();
+  const tr = useTr();
   const [permission, requestPermission] = useCameraPermissions();
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
@@ -52,7 +54,7 @@ export default function Scan() {
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
-      <StackHeader title="Scan berth" subtitle="Point the camera at the QR label on the berth post" />
+      <StackHeader title={tr("Scan berth")} subtitle={tr("Point the camera at the QR label on the berth post")} />
       <View style={{ flex: 1, padding: 16, gap: 16 }}>
         <View style={{ flex: 1, borderRadius: 20, overflow: "hidden", backgroundColor: "#000", alignItems: "center", justifyContent: "center" }}>
           {permission?.granted ? (
@@ -71,16 +73,16 @@ export default function Scan() {
               <Txt color="#FFFFFF" style={{ textAlign: "center" }}>
                 {permission && !permission.canAskAgain ? "Camera access is off. Turn it on for Marina in Settings." : "Allow the camera to scan berth labels."}
               </Txt>
-              {(!permission || permission.canAskAgain) && <Button variant="secondary" label="Allow camera" onPress={() => void requestPermission()} />}
+              {(!permission || permission.canAskAgain) && <Button variant="secondary" label={tr("Allow camera")} onPress={() => void requestPermission()} />}
             </View>
           )}
         </View>
-        <Field label="Or type the berth number" error={error} hint={Platform.OS === "web" ? "Scanning works best in the phone app." : undefined}>
+        <Field label={tr("Or type the berth number")} error={error} hint={Platform.OS === "web" ? "Scanning works best in the phone app." : undefined}>
           <View style={{ flexDirection: "row", gap: 8 }}>
             <View style={{ flex: 1 }}>
-              <Input value={code} onChangeText={(v) => { setCode(v); setError(""); }} placeholder="e.g. A-04" autoCapitalize="characters" returnKeyType="go" onSubmitEditing={typed} invalid={!!error} />
+              <Input value={code} onChangeText={(v) => { setCode(v); setError(""); }} placeholder={tr("e.g. A-04")} autoCapitalize="characters" returnKeyType="go" onSubmitEditing={typed} invalid={!!error} />
             </View>
-            <Button variant="primary" label="Open" onPress={typed} disabled={!code.trim()} />
+            <Button variant="primary" label={tr("Open")} onPress={typed} disabled={!code.trim()} />
           </View>
         </Field>
       </View>

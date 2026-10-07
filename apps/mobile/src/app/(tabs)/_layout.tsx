@@ -9,6 +9,7 @@ import { Bell, CalendarCheck, CalendarDays, Check, ChevronDown, ClipboardList, H
 import type { ComponentType } from "react";
 import { IconButton, Logomark, OfflineBanner, Sheet, Txt } from "@/components/ui";
 import { useInbox, useRole, useUnreadChat } from "@/lib/role";
+import { useTr } from "@/lib/i18n";
 import { syncShiftReminders } from "@/lib/reminders";
 import { ALL, useMe, useStore } from "@/store";
 import { fonts, useTheme } from "@/theme";
@@ -24,6 +25,7 @@ function Header() {
   const inbox = useInbox();
   const read = new Set(db.readNotifications);
   const unreadInbox = inbox.filter((n) => !read.has(n.id)).length;
+  const tr = useTr();
   const label = marinaId === ALL ? "All marinas" : ix.marina(marinaId)?.name;
   const choices = office && many ? [ALL, ...scope] : scope;
   return (
@@ -41,12 +43,12 @@ function Header() {
           {many && <ChevronDown size={18} color={t.text} />}
         </Pressable>
         <View style={{ flex: 1 }} />
-        <IconButton plain icon={ScanLine} label="Scan berth QR code" onPress={() => router.push("/scan")} />
-        <IconButton plain icon={MessageSquare} label="Messages" badge={unreadChat} onPress={() => (office ? router.navigate({ pathname: "/team", params: { view: "messages", at: String(Date.now()) } }) : router.push("/chat"))} />
-        <IconButton plain icon={Bell} label="Notifications" badge={unreadInbox} onPress={() => router.push("/inbox")} />
+        <IconButton plain icon={ScanLine} label={tr("Scan berth QR code")} onPress={() => router.push("/scan")} />
+        <IconButton plain icon={MessageSquare} label={tr("Messages")} badge={unreadChat} onPress={() => (office ? router.navigate({ pathname: "/team", params: { view: "messages", at: String(Date.now()) } }) : router.push("/chat"))} />
+        <IconButton plain icon={Bell} label={tr("Notifications")} badge={unreadInbox} onPress={() => router.push("/inbox")} />
       </View>
       <OfflineBanner />
-      <Sheet open={open} onClose={() => setOpen(false)} title="Choose marina">
+      <Sheet open={open} onClose={() => setOpen(false)} title={tr("Choose marina")}>
         {choices.map((id) => (
           <Pressable
             key={id}
@@ -96,6 +98,7 @@ export default function TabsLayout() {
   const { t } = useTheme();
   const { user, can, db, ix, ids } = useStore();
   const { office } = useRole();
+  const tr = useTr();
   if (!user) return <Redirect href="/login" />;
   const team = new Set(db.staff.filter((s) => ids.includes(s.marinaId)).map((s) => s.id));
   const waiting = office ? ix.bookingsIn(ids).filter((b) => b.status === "pending").length + db.requests.filter((r) => r.status === "pending" && team.has(r.staffId)).length : 0;
@@ -115,13 +118,13 @@ export default function TabsLayout() {
         sceneStyle: { backgroundColor: t.bg },
       }}
     >
-      <Tabs.Screen name="index" options={{ title: office ? "Overview" : "Today", tabBarIcon: icon(office ? LayoutDashboard : House) }} />
+      <Tabs.Screen name="index" options={{ title: office ? "Overview" : tr("Today"), tabBarIcon: icon(office ? LayoutDashboard : House) }} />
       <Tabs.Screen name="approvals" options={{ title: "Approvals", tabBarIcon: icon(CalendarCheck), tabBarBadge: waiting ? (waiting > 99 ? "99+" : waiting) : undefined, tabBarBadgeStyle: { backgroundColor: t.error.base, fontFamily: fonts.numBold, fontSize: 10 }, ...officeOnly }} />
-      <Tabs.Screen name="bookings" options={{ title: "Bookings", tabBarIcon: icon(CalendarDays), ...hidden("bookings") }} />
-      <Tabs.Screen name="berths" options={{ title: "Berths", tabBarIcon: icon(Warehouse), ...staffOnly, ...hidden("berths") }} />
-      <Tabs.Screen name="tasks" options={{ title: "Tasks", tabBarIcon: icon(ClipboardList), ...staffOnly, ...hidden("maintenance") }} />
+      <Tabs.Screen name="bookings" options={{ title: tr("Bookings"), tabBarIcon: icon(CalendarDays), ...hidden("bookings") }} />
+      <Tabs.Screen name="berths" options={{ title: tr("Berths"), tabBarIcon: icon(Warehouse), ...staffOnly, ...hidden("berths") }} />
+      <Tabs.Screen name="tasks" options={{ title: tr("Tasks"), tabBarIcon: icon(ClipboardList), ...staffOnly, ...hidden("maintenance") }} />
       <Tabs.Screen name="team" options={{ title: "Team", tabBarIcon: icon(Users), ...officeOnly }} />
-      <Tabs.Screen name="me" options={{ title: "Me", tabBarIcon: icon(UserRound) }} />
+      <Tabs.Screen name="me" options={{ title: tr("Me"), tabBarIcon: icon(UserRound) }} />
     </Tabs>
     </>
   );

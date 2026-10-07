@@ -7,6 +7,7 @@ import { useNow } from "../lib/clock";
 import { useMe, useStore } from "../store";
 import { useTheme } from "../theme";
 import { Button, Field, Input, Sheet, Txt } from "./ui";
+import { useTr } from "../lib/i18n";
 
 /** Notes from the last 24 hours at these marinas, newest first. */
 export function useHandovers(marinaIds: string[]) {
@@ -17,6 +18,7 @@ export function useHandovers(marinaIds: string[]) {
 
 export function HandoverList({ marinaIds, empty }: { marinaIds: string[]; empty?: string }) {
   const { ix } = useStore();
+  const tr = useTr();
   const { t } = useTheme();
   const notes = useHandovers(marinaIds);
   if (!notes.length) return empty ? <Txt v="bodySm" color={t.text3}>{empty}</Txt> : null;
@@ -25,7 +27,7 @@ export function HandoverList({ marinaIds, empty }: { marinaIds: string[]; empty?
       {notes.map((h) => (
         <View key={h.id} style={{ borderRadius: 16, padding: 14, backgroundColor: t.accentSoft, gap: 4 }}>
           <Txt>{h.text}</Txt>
-          <Txt v="caption" color={t.text2}>{h.by}{h.shift ? `, ${h.shift} shift` : ""} · {fmtDateTime(h.at)}{marinaIds.length > 1 ? ` · ${ix.marina(h.marinaId)?.name}` : ""}</Txt>
+          <Txt v="caption" color={t.text2}>{h.by}{h.shift ? `, ${tr("{shift} shift", { shift: tr(h.shift) })}` : ""} · {fmtDateTime(h.at)}{marinaIds.length > 1 ? ` · ${ix.marina(h.marinaId)?.name}` : ""}</Txt>
         </View>
       ))}
     </View>
@@ -36,6 +38,7 @@ export function HandoverSheet({ marinaId, title = "Note for the next shift", onC
   const { update, toast, user, ix } = useStore();
   const me = useMe();
   const { t } = useTheme();
+  const tr = useTr();
   const [text, setText] = useState("");
   const save = () => {
     if (!text.trim()) return onClose();
@@ -44,15 +47,15 @@ export function HandoverSheet({ marinaId, title = "Note for the next shift", onC
     onClose();
   };
   return (
-    <Sheet open onClose={onClose} title={title} subtitle="Anything the next shift should know?"
+    <Sheet open onClose={onClose} title={title} subtitle={tr("Anything the next shift should know?")}
       footer={
         <View style={{ flexDirection: "row", gap: 8 }}>
-          <Button style={{ flex: 1 }} size="lg" label="Skip" onPress={onClose} />
-          <Button style={{ flex: 1 }} variant="primary" size="lg" icon={NotebookPen} label="Save note" disabled={!text.trim()} onPress={save} />
+          <Button style={{ flex: 1 }} size="lg" label={tr("Skip")} onPress={onClose} />
+          <Button style={{ flex: 1 }} variant="primary" size="lg" icon={NotebookPen} label={tr("Save note")} disabled={!text.trim()} onPress={save} />
         </View>
       }>
-      <Field label="Note" hint="Shown on the Today screen for the next 24 hours.">
-        <Input multiline value={text} onChangeText={setText} placeholder="e.g. Boat on B-03 leaves early tomorrow. Pump-out is low on fuel." />
+      <Field label={tr("Note")} hint={tr("Shown on the Today screen for the next 24 hours.")}>
+        <Input multiline value={text} onChangeText={setText} placeholder={tr("e.g. Boat on B-03 leaves early tomorrow. Pump-out is low on fuel.")} />
       </Field>
       <Txt v="caption" color={t.text3} style={{ marginTop: 8 }}>Your manager sees it too.</Txt>
     </Sheet>

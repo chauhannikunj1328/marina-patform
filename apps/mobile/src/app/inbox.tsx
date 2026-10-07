@@ -8,12 +8,14 @@ import type { InboxKind } from "@/lib/inbox";
 import { useInbox } from "@/lib/role";
 import { useStore } from "@/store";
 import { useTheme } from "@/theme";
+import { useTr } from "@/lib/i18n";
 
 const ICONS: Record<InboxKind, Icon> = { message: MessageSquare, task: ClipboardList, request: CalendarClock, arrival: LogIn, late: TriangleAlert, schedule: CalendarDays, booking: CalendarCheck, invoice: Receipt };
 
 export default function Inbox() {
   const { db, update, user } = useStore();
   const { t } = useTheme();
+  const tr = useTr();
   const items = useInbox();
   const read = new Set(db.readNotifications);
   const unread = items.filter((i) => !read.has(i.id));
@@ -23,7 +25,7 @@ export default function Inbox() {
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
       <StackHeader
-        title="Notifications"
+        title={tr("Notifications")}
         subtitle={unread.length ? `${unread.length} new` : "All caught up"}
         right={unread.length ? (
           <Pressable accessibilityRole="button" onPress={markAll} hitSlop={8} style={{ paddingHorizontal: 12 }}>
@@ -33,7 +35,7 @@ export default function Inbox() {
       />
       <Screen>
         {items.length === 0 ? (
-          <EmptyState icon={BellOff} title="Nothing new" body="Messages, work orders and schedule changes show up here." />
+          <EmptyState icon={BellOff} title={tr("Nothing new")} body={tr("Messages, work orders and schedule changes show up here.")} />
         ) : (
           <View style={{ borderWidth: 1, borderColor: t.border, borderRadius: 16, backgroundColor: t.surface, overflow: "hidden" }}>
             {items.map((n, i) => {

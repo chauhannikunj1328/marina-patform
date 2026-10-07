@@ -9,10 +9,12 @@ import { BerthSheet, ReportProblem } from "@/components/sheets";
 import { useOpenParam } from "@/lib/useOpenParam";
 import { ALL, useStore } from "@/store";
 import { useTheme } from "@/theme";
+import { useTr } from "@/lib/i18n";
 
 export default function Berths() {
   const { db, ix, ids, marinaId, setMarinaId } = useStore();
   const { t } = useTheme();
+  const tr = useTr();
   const [filter, setFilter] = useState<"all" | BerthStatus>("all");
   const [openId, setOpenId] = useOpenParam();
   const open = db.berths.find((b) => b.id === openId);
@@ -30,7 +32,7 @@ export default function Berths() {
   shown.forEach((x) => docks.set(x.b.code.split("-")[0], [...(docks.get(x.b.code.split("-")[0]) ?? []), x]));
 
   return (
-    <Screen title="Berths">
+    <Screen title={tr("Berths")}>
       <View style={{ flexDirection: "row", gap: 8, marginBottom: 20 }}>
         {(["available", "occupied", "reserved", "maintenance"] as BerthStatus[]).map((s) => {
           const on = filter === s;
@@ -44,7 +46,7 @@ export default function Berths() {
               style={{ flex: 1, alignItems: "center", paddingVertical: 8, borderRadius: 12, borderWidth: on ? 2 : 1, borderColor: on ? t.primary : t.border, backgroundColor: t.surface }}
             >
               <Txt v="h3" num weight="semibold">{berths.filter((x) => x.st === s).length}</Txt>
-              <Txt v="label" color={t.text3} numberOfLines={1}>{s === "maintenance" ? "Repair" : berthLabel[s]}</Txt>
+              <Txt v="label" color={t.text3} numberOfLines={1}>{s === "maintenance" ? tr("Repair") : berthLabel[s]}</Txt>
             </Pressable>
           );
         })}
@@ -60,7 +62,7 @@ export default function Berths() {
                   <Txt weight="medium" numberOfLines={1}>{ix.marina(id)?.name}</Txt>
                   <Txt v="caption" num color={t.text3}>{n("available")} free · {n("occupied")} occupied · {n("reserved")} reserved{n("maintenance") ? ` · ${n("maintenance")} in repair` : ""}</Txt>
                 </View>
-                <Txt v="bodySm" weight="semibold" color={t.greenText}>Dock map</Txt>
+                <Txt v="bodySm" weight="semibold" color={t.greenText}>{tr("Dock map")}</Txt>
               </Pressable>
             );
           })}
@@ -104,7 +106,7 @@ export default function Berths() {
           </View>
         </View>
       ))}
-      {shown.length === 0 && <EmptyState icon={Warehouse} title="No berths with this status" />}
+      {shown.length === 0 && <EmptyState icon={Warehouse} title={tr("No berths with this status")} />}
       {open && <BerthSheet berth={open} onClose={() => setOpenId(undefined)} onReport={() => { setReportFor(open.id); setOpenId(undefined); }} />}
       {reportFor && <ReportProblem berthId={reportFor} onClose={() => setReportFor(undefined)} />}
     </Screen>

@@ -10,11 +10,13 @@ import { ReportProblem } from "@/components/sheets";
 import { Badge, Button, Field, Input, Screen, Section, Sheet, StackHeader, Txt } from "@/components/ui";
 import { useMe, useStore } from "@/store";
 import { useTheme } from "@/theme";
+import { useTr } from "@/lib/i18n";
 
 export default function PatrolScreen() {
   const { db, ix, update, toast, user, marinaId } = useStore();
   const me = useMe();
   const { t } = useTheme();
+  const tr = useTr();
   const active = useActivePatrol();
   const [issueFor, setIssueFor] = useState<{ id: string; label: string } | undefined>();
   const [note, setNote] = useState("");
@@ -41,15 +43,15 @@ export default function PatrolScreen() {
   if (!active) {
     return (
       <View style={{ flex: 1, backgroundColor: t.bg }}>
-        <StackHeader title="Dock patrol" subtitle={ix.marina(marinaId)?.name} />
+        <StackHeader title={tr("Dock patrol")} subtitle={ix.marina(marinaId)?.name} />
         <Screen>
           <View style={{ borderRadius: 16, padding: 16, backgroundColor: t.accentSoft, gap: 8, marginBottom: 24 }}>
             <ShieldCheck size={24} color={t.text} />
             <Txt weight="semibold">Walk every dock and check safety</Txt>
             <Txt v="bodySm" color={t.text2}>{points.filter((p) => p.kind === "dock").length} docks and {points.filter((p) => p.kind === "safety").length} safety checks. Scan any berth label on a dock to check it off.</Txt>
-            <Button variant="primary" label="Start patrol" onPress={start} style={{ alignSelf: "flex-start", marginTop: 4 }} />
+            <Button variant="primary" label={tr("Start patrol")} onPress={start} style={{ alignSelf: "flex-start", marginTop: 4 }} />
           </View>
-          <Section title="Recent rounds">
+          <Section title={tr("Recent rounds")}>
             {recent.length === 0 ? <Txt v="bodySm" color={t.text3}>No finished patrols yet.</Txt> : recent.map((p) => <PatrolSummary key={p.id} patrol={p} total={points.length} />)}
           </Section>
         </Screen>
@@ -60,12 +62,12 @@ export default function PatrolScreen() {
   const done = active.checks.length;
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
-      <StackHeader title="Dock patrol" subtitle={`Started ${fmtTime(active.startedAt)} · ${done} of ${points.length} checked`} />
+      <StackHeader title={tr("Dock patrol")} subtitle={`Started ${fmtTime(active.startedAt)} · ${done} of ${points.length} checked`} />
       <Screen>
         <View style={{ height: 8, borderRadius: 4, backgroundColor: t.surface3, overflow: "hidden", marginBottom: 16 }}>
           <View style={{ width: `${Math.round((done / points.length) * 100)}%`, height: "100%", backgroundColor: t.tealStrong }} />
         </View>
-        <Button icon={ScanLine} label="Scan a berth label" onPress={() => router.push({ pathname: "/scan", params: { patrol: "1" } })} style={{ marginBottom: 16 }} />
+        <Button icon={ScanLine} label={tr("Scan a berth label")} onPress={() => router.push({ pathname: "/scan", params: { patrol: "1" } })} style={{ marginBottom: 16 }} />
         {(["dock", "safety"] as const).map((kind) => (
           <Section key={kind} title={kind === "dock" ? "Docks" : "Safety"}>
             {points.filter((p) => p.kind === kind).map((p) => {
@@ -74,13 +76,13 @@ export default function PatrolScreen() {
                 <View key={p.id} style={{ borderWidth: 1, borderColor: c && !c.ok ? t.status.maintenance.fg : t.border, borderRadius: 14, padding: 12, gap: 8, backgroundColor: t.surface }}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                     <Txt weight="medium" style={{ flex: 1 }}>{p.label}</Txt>
-                    {c ? (c.ok ? <Badge tone="success" icon={CircleCheck} label={c.scanned ? `Scanned ${fmtTime(c.at)}` : `OK ${fmtTime(c.at)}`} /> : <Badge tone="maintenance" icon={TriangleAlert} label="Issue" />) : null}
+                    {c ? (c.ok ? <Badge tone="success" icon={CircleCheck} label={c.scanned ? `Scanned ${fmtTime(c.at)}` : `OK ${fmtTime(c.at)}`} /> : <Badge tone="maintenance" icon={TriangleAlert} label={tr("Issue")} />) : null}
                   </View>
                   {c?.note ? <Txt v="bodySm" color={t.text2}>{c.note}</Txt> : null}
                   {!c && (
                     <View style={{ flexDirection: "row", gap: 8 }}>
-                      <Button style={{ flex: 1 }} size="sm" icon={CircleCheck} label="OK" onPress={() => setCheck({ id: p.id, at: new Date().toISOString(), ok: true })} />
-                      <Button style={{ flex: 1 }} size="sm" icon={Flag} label="Issue" onPress={() => { setIssueFor(p); setNote(""); }} />
+                      <Button style={{ flex: 1 }} size="sm" icon={CircleCheck} label={tr("OK")} onPress={() => setCheck({ id: p.id, at: new Date().toISOString(), ok: true })} />
+                      <Button style={{ flex: 1 }} size="sm" icon={Flag} label={tr("Issue")} onPress={() => { setIssueFor(p); setNote(""); }} />
                     </View>
                   )}
                 </View>
@@ -94,12 +96,12 @@ export default function PatrolScreen() {
         <Sheet open onClose={() => setIssueFor(undefined)} title={`Issue: ${issueFor.label}`}
           footer={
             <View style={{ flexDirection: "row", gap: 8 }}>
-              <Button style={{ flex: 1 }} size="lg" label="Report as repair" onPress={() => { setCheck({ id: issueFor.id, at: new Date().toISOString(), ok: false, note: note.trim() || undefined }); setIssueFor(undefined); setReporting(true); }} />
-              <Button style={{ flex: 1 }} variant="primary" size="lg" label="Save" onPress={() => { setCheck({ id: issueFor.id, at: new Date().toISOString(), ok: false, note: note.trim() || undefined }); setIssueFor(undefined); }} />
+              <Button style={{ flex: 1 }} size="lg" label={tr("Report as repair")} onPress={() => { setCheck({ id: issueFor.id, at: new Date().toISOString(), ok: false, note: note.trim() || undefined }); setIssueFor(undefined); setReporting(true); }} />
+              <Button style={{ flex: 1 }} variant="primary" size="lg" label={tr("Save")} onPress={() => { setCheck({ id: issueFor.id, at: new Date().toISOString(), ok: false, note: note.trim() || undefined }); setIssueFor(undefined); }} />
             </View>
           }>
-          <Field label="What's wrong?">
-            <Input multiline value={note} onChangeText={setNote} placeholder="e.g. Life ring missing at the end of Dock B" />
+          <Field label={tr("What's wrong?")}>
+            <Input multiline value={note} onChangeText={setNote} placeholder={tr("e.g. Life ring missing at the end of Dock B")} />
           </Field>
         </Sheet>
       )}

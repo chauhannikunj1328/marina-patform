@@ -9,6 +9,7 @@ import { fmtShort, fmtTime, localDay, nextId, today } from "@marina/shared";
 import { EmptyState, StackHeader, Txt } from "@/components/ui";
 import { useMe, useStore } from "@/store";
 import { fonts, useTheme } from "@/theme";
+import { useTr } from "@/lib/i18n";
 
 export default function Chat() {
   const { db, ix, update, user, scope } = useStore();
@@ -19,6 +20,7 @@ export default function Chat() {
   /** The staff member whose conversation this is. */
   const me = office ? other : self;
   const { t } = useTheme();
+  const tr = useTr();
   const insets = useSafeAreaInsets();
   const [text, setText] = useState("");
   const scroll = useRef<ScrollView>(null);
@@ -45,7 +47,7 @@ export default function Chat() {
   if (!me) {
     return (
       <View style={{ flex: 1, backgroundColor: t.bg }}>
-        <StackHeader title="Messages" />
+        <StackHeader title={tr("Messages")} />
         <EmptyState icon={MessagesSquare} title={office ? "Choose someone to message" : "No staff record linked"} body={office ? "Open the Team tab and pick a team member." : "Ask your manager to add you to the staff list."} />
       </View>
     );
@@ -59,7 +61,7 @@ export default function Chat() {
       />
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
         <ScrollView ref={scroll} contentContainerStyle={{ padding: 16, gap: 8, flexGrow: 1, justifyContent: "flex-end" }} onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: false })}>
-          {thread.length === 0 && <EmptyState icon={MessagesSquare} title="No messages yet" body={office ? `Your message shows up in ${me.name.split(" ")[0]}'s app.` : "Questions about shifts, boats or repairs go straight to your manager."} />}
+          {thread.length === 0 && <EmptyState icon={MessagesSquare} title={tr("No messages yet")} body={office ? `Your message shows up in ${me.name.split(" ")[0]}'s app.` : "Questions about shifts, boats or repairs go straight to your manager."} />}
           {thread.map((m, i) => {
             const mine = !theirs(m);
             const day = localDay(m.at);
@@ -84,7 +86,7 @@ export default function Chat() {
           <TextInput
             value={text}
             onChangeText={setText}
-            placeholder="Message"
+            placeholder={tr("Message")}
             placeholderTextColor={t.text3}
             accessibilityLabel="Message"
             multiline

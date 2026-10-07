@@ -5,11 +5,13 @@ import { addDays, fmtShort, nextId, planFor, SHIFT_HOURS, today, type RequestKin
 import { useMe, useStore } from "../store";
 import { useTheme } from "../theme";
 import { Button, Chip, DayChips, Field, Input, Segmented, Sheet, Stepper, Txt } from "./ui";
+import { useTr } from "../lib/i18n";
 
 export function RequestSheet({ onClose }: { onClose: () => void }) {
   const { db, ix, update, toast } = useStore();
   const me = useMe();
   const { t } = useTheme();
+  const tr = useTr();
   const [kind, setKind] = useState<RequestKind>("leave");
   const [start, setStart] = useState(addDays(today(), 1));
   const [days, setDays] = useState(1);
@@ -51,23 +53,23 @@ export function RequestSheet({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <Sheet open onClose={onClose} title="New request" subtitle={`Goes to ${manager?.name ?? "your marina manager"} to approve`} footer={<Button variant="primary" size="lg" label="Send request" onPress={send} />}>
+    <Sheet open onClose={onClose} title={tr("New request")} subtitle={`Goes to ${manager?.name ?? "your marina manager"} to approve`} footer={<Button variant="primary" size="lg" label={tr("Send request")} onPress={send} />}>
       <View style={{ gap: 16 }}>
         <Segmented value={kind} onChange={(k) => { setKind(k); setError(""); }} items={[{ value: "leave", label: "Time off" }, { value: "swap", label: "Swap a shift" }]} />
         {kind === "leave" ? (
           <>
-            <Field label="First day off"><DayChips days={upcoming} value={start} onChange={(d) => { setStart(d); setError(""); }} /></Field>
-            <Field label="How many days?" hint={days > 1 ? `${fmtShort(start)} – ${fmtShort(end)}` : fmtShort(start)}>
-              <Stepper label="days off" value={days} onChange={setDays} max={21} unit={days === 1 ? "day" : "days"} />
+            <Field label={tr("First day off")}><DayChips days={upcoming} value={start} onChange={(d) => { setStart(d); setError(""); }} /></Field>
+            <Field label={tr("How many days?")} hint={days > 1 ? `${fmtShort(start)} – ${fmtShort(end)}` : fmtShort(start)}>
+              <Stepper label={tr("days off")} value={days} onChange={setDays} max={21} unit={days === 1 ? "day" : "days"} />
             </Field>
           </>
         ) : (
           <>
-            <Field label="Shift to swap" hint={`Your ${me.shift} shift, ${SHIFT_HOURS[me.shift]}`}>
+            <Field label={tr("Shift to swap")} hint={`Your ${me.shift} shift, ${SHIFT_HOURS[me.shift]}`}>
               <DayChips days={working} value={swapDay} onChange={(d) => { setSwapDay(d); setCover(""); setError(""); }} />
             </Field>
             {swapDay ? (
-              <Field label="Who will cover?" hint={colleagues.length ? "Colleagues at your marina who are off that day." : undefined}>
+              <Field label={tr("Who will cover?")} hint={colleagues.length ? "Colleagues at your marina who are off that day." : undefined}>
                 {colleagues.length ? (
                   <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
                     {colleagues.map((s) => <Chip key={s.id} label={s.name} sub={s.position} on={cover === s.id} onPress={() => { setCover(s.id); setError(""); }} />)}
@@ -79,7 +81,7 @@ export function RequestSheet({ onClose }: { onClose: () => void }) {
             ) : null}
           </>
         )}
-        <Field label="Reason" error={error}>
+        <Field label={tr("Reason")} error={error}>
           <Input value={reason} onChangeText={(v) => { setReason(v); setError(""); }} placeholder={kind === "leave" ? "e.g. Family wedding" : "e.g. Doctor's appointment"} invalid={!!error && !reason.trim()} />
         </Field>
       </View>
@@ -91,6 +93,7 @@ export function ProfileSheet({ onClose }: { onClose: () => void }) {
   const { update, toast, user } = useStore();
   const me = useMe();
   const { t } = useTheme();
+  const tr = useTr();
   const [phone, setPhone] = useState(me?.phone ?? "");
   const [error, setError] = useState("");
   if (!me) return null;
@@ -101,9 +104,9 @@ export function ProfileSheet({ onClose }: { onClose: () => void }) {
     onClose();
   };
   return (
-    <Sheet open onClose={onClose} title="Edit profile" footer={<Button variant="primary" size="lg" label="Save" onPress={save} />}>
+    <Sheet open onClose={onClose} title={tr("Edit profile")} footer={<Button variant="primary" size="lg" label={tr("Save")} onPress={save} />}>
       <View style={{ gap: 16 }}>
-        <Field label="Phone" error={error}>
+        <Field label={tr("Phone")} error={error}>
           <Input value={phone} onChangeText={(v) => { setPhone(v); setError(""); }} keyboardType="phone-pad" autoComplete="tel" invalid={!!error} />
         </Field>
         <View style={{ backgroundColor: t.surface3, borderRadius: 12, padding: 12, gap: 2 }}>
@@ -117,6 +120,7 @@ export function ProfileSheet({ onClose }: { onClose: () => void }) {
 }
 
 export function PasswordSheet({ onClose }: { onClose: () => void }) {
+  const tr = useTr();
   const { changePassword, toast } = useStore();
   const [f, setF] = useState({ current: "", next: "", confirm: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -138,11 +142,11 @@ export function PasswordSheet({ onClose }: { onClose: () => void }) {
     onClose();
   };
   return (
-    <Sheet open onClose={onClose} title="Change password" footer={<Button variant="primary" size="lg" label="Change password" loading={busy} onPress={save} />}>
+    <Sheet open onClose={onClose} title={tr("Change password")} footer={<Button variant="primary" size="lg" label={tr("Change password")} loading={busy} onPress={save} />}>
       <View style={{ gap: 16 }}>
-        <Field label="Current password" error={errors.current}><Input secure value={f.current} onChangeText={(v) => set("current", v)} autoComplete="current-password" textContentType="password" invalid={!!errors.current} /></Field>
-        <Field label="New password" error={errors.next} hint="At least 8 characters."><Input secure value={f.next} onChangeText={(v) => set("next", v)} autoComplete="new-password" textContentType="newPassword" invalid={!!errors.next} /></Field>
-        <Field label="Confirm new password" error={errors.confirm}><Input secure value={f.confirm} onChangeText={(v) => set("confirm", v)} autoComplete="new-password" textContentType="newPassword" invalid={!!errors.confirm} /></Field>
+        <Field label={tr("Current password")} error={errors.current}><Input secure value={f.current} onChangeText={(v) => set("current", v)} autoComplete="current-password" textContentType="password" invalid={!!errors.current} /></Field>
+        <Field label={tr("New password")} error={errors.next} hint={tr("At least 8 characters.")}><Input secure value={f.next} onChangeText={(v) => set("next", v)} autoComplete="new-password" textContentType="newPassword" invalid={!!errors.next} /></Field>
+        <Field label={tr("Confirm new password")} error={errors.confirm}><Input secure value={f.confirm} onChangeText={(v) => set("confirm", v)} autoComplete="new-password" textContentType="newPassword" invalid={!!errors.confirm} /></Field>
       </View>
     </Sheet>
   );

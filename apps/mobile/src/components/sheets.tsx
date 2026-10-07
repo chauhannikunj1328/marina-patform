@@ -14,6 +14,7 @@ import { useTheme } from "../theme";
 import { pickPhoto, takePhoto } from "../lib/photos";
 import { BerthBadge, BookingBadge, PriorityBadge, TaskBadge } from "./status";
 import { Badge, Button, Chip, DayChips, Field, Input, Row, Segmented, Sheet, Stepper, Txt } from "./ui";
+import { useTr } from "../lib/i18n";
 
 /** Check in / check out, with Undo and an activity log entry. */
 export function useBookingStatus() {
@@ -30,6 +31,7 @@ export function useBookingStatus() {
 export function BookingSheet({ booking, onClose }: { booking: Booking; onClose: () => void }) {
   const { db, ix, can } = useStore();
   const { t } = useTheme();
+  const tr = useTr();
   const setStatus = useBookingStatus();
   const [paying, setPaying] = useState<Invoice | undefined>();
   const [changing, setChanging] = useState(false);
@@ -55,29 +57,29 @@ export function BookingSheet({ booking, onClose }: { booking: Booking; onClose: 
       footer={
         office && canEdit && b.status === "pending" ? (
           <View style={{ flexDirection: "row", gap: 8 }}>
-            <Button style={{ flex: 1 }} size="lg" label="Decline" onPress={() => setCancelling(true)} />
-            <Button style={{ flex: 1 }} variant="primary" size="lg" label="Approve" disabled={!ix.isFree(b.berthId, b.start, b.end, b.id)} onPress={() => {
+            <Button style={{ flex: 1 }} size="lg" label={tr("Decline")} onPress={() => setCancelling(true)} />
+            <Button style={{ flex: 1 }} variant="primary" size="lg" label={tr("Approve")} disabled={!ix.isFree(b.berthId, b.start, b.end, b.id)} onPress={() => {
               const before = db;
               update((d) => withInvoice({ ...d, bookings: d.bookings.map((x) => (x.id === b.id ? { ...x, status: "confirmed" as const } : x)) }, b.id, ix.amount(b)), { text: `Approved booking ${b.code} for ${boat?.name}`, to: `/bookings?q=${b.code}`, marinaId: berth?.marinaId });
               toast(`${boat?.name} approved and invoiced`, before);
             }} />
           </View>
         )
-        : canCheckIn ? <Button variant="primary" size="lg" icon={LogIn} label="Check in" onPress={() => setCheckingIn(true)} />
-        : canCheckOut ? <Button variant="primary" size="lg" icon={LogOut} label="Check out" onPress={() => { setStatus(b, "completed"); onClose(); }} />
-        : <Button size="lg" label="Close" onPress={onClose} />
+        : canCheckIn ? <Button variant="primary" size="lg" icon={LogIn} label={tr("Check in")} onPress={() => setCheckingIn(true)} />
+        : canCheckOut ? <Button variant="primary" size="lg" icon={LogOut} label={tr("Check out")} onPress={() => { setStatus(b, "completed"); onClose(); }} />
+        : <Button size="lg" label={tr("Close")} onPress={onClose} />
       }
     >
       <View style={{ marginBottom: 16 }}><BookingBadge status={b.status} /></View>
-      <Row label="Boat" value={`${boat?.type} · ${boat?.length} ft`} sub={boat?.registration} />
-      <Row label="Dates" value={`${fmtShort(b.start)} – ${fmtShort(b.end)}`} sub={`${daysBetween(b.start, b.end)} ${daysBetween(b.start, b.end) === 1 ? "night" : "nights"} · ${b.guests} ${b.guests === 1 ? "guest" : "guests"}`} />
-      <Row label="Berth" value={`${berth?.code} · up to ${berth?.maxLength} ft`} sub={`${berth?.type}${berth?.power ? " · power" : ""}${berth?.water ? " · water" : ""}`} />
+      <Row label={tr("Boat")} value={`${boat?.type} · ${boat?.length} ft`} sub={boat?.registration} />
+      <Row label={tr("Dates")} value={`${fmtShort(b.start)} – ${fmtShort(b.end)}`} sub={`${daysBetween(b.start, b.end)} ${daysBetween(b.start, b.end) === 1 ? "night" : "nights"} · ${b.guests} ${b.guests === 1 ? "guest" : "guests"}`} />
+      <Row label={tr("Berth")} value={`${berth?.code} · up to ${berth?.maxLength} ft`} sub={`${berth?.type}${berth?.power ? " · power" : ""}${berth?.water ? " · water" : ""}`} />
       {owner && can("owners") !== "none" ? (
         <Pressable accessibilityRole="button" accessibilityLabel={`Boat owner ${owner.name}. Open their details`} onPress={() => setOwnerOpen(true)}>
-          <Row label="Boat owner" value={`${owner.name} ›`} sub={owner.email} />
+          <Row label={tr("Boat owner")} value={`${owner.name} ›`} sub={owner.email} />
         </Pressable>
       ) : (
-        <Row label="Boat owner" value={owner?.name ?? ""} sub={owner?.email} />
+        <Row label={tr("Boat owner")} value={owner?.name ?? ""} sub={owner?.email} />
       )}
       {b.status === "pending" && (
         <View style={{ backgroundColor: t.status.pending.bg, borderRadius: 12, padding: 12, marginBottom: 12 }}>
@@ -89,15 +91,15 @@ export function BookingSheet({ booking, onClose }: { booking: Booking; onClose: 
       <InvoiceRow bookingId={b.id} onPay={setPaying} />
       {owner && (
         <View style={{ flexDirection: "row", gap: 8, marginTop: 4 }}>
-          <Button style={{ flex: 1 }} icon={Phone} label="Call" disabled={!owner.phone} onPress={() => Linking.openURL(`tel:${owner.phone.replace(/[^\d+]/g, "")}`)} />
-          <Button style={{ flex: 1 }} icon={Mail} label="Email" onPress={() => Linking.openURL(`mailto:${owner.email}?subject=${encodeURIComponent(`Your stay at ${ix.marinaOfBerth(b.berthId)?.name}`)}`)} />
+          <Button style={{ flex: 1 }} icon={Phone} label={tr("Call")} disabled={!owner.phone} onPress={() => Linking.openURL(`tel:${owner.phone.replace(/[^\d+]/g, "")}`)} />
+          <Button style={{ flex: 1 }} icon={Mail} label={tr("Email")} onPress={() => Linking.openURL(`mailto:${owner.email}?subject=${encodeURIComponent(`Your stay at ${ix.marinaOfBerth(b.berthId)?.name}`)}`)} />
         </View>
       )}
       {canEdit && (b.status === "pending" || b.status === "confirmed" || b.status === "checked-in") && (
         <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
           <Button style={{ flex: 1 }} size="sm" icon={CalendarCog} label={b.status === "checked-in" ? "Extend or move" : "Change"} onPress={() => setChanging(true)} />
-          {b.status === "checked-in" && <Button style={{ flex: 1 }} size="sm" icon={Fuel} label="Add service" onPress={() => setServicing(true)} />}
-          {b.status !== "checked-in" && <Button style={{ flex: 1 }} size="sm" icon={CircleX} label="Cancel" onPress={() => setCancelling(true)} />}
+          {b.status === "checked-in" && <Button style={{ flex: 1 }} size="sm" icon={Fuel} label={tr("Add service")} onPress={() => setServicing(true)} />}
+          {b.status !== "checked-in" && <Button style={{ flex: 1 }} size="sm" icon={CircleX} label={tr("Cancel")} onPress={() => setCancelling(true)} />}
         </View>
       )}
       {paying && <PaymentSheet invoice={paying} onClose={() => setPaying(undefined)} />}
@@ -114,6 +116,7 @@ export function BookingSheet({ booking, onClose }: { booking: Booking; onClose: 
 function InvoiceRow({ bookingId, onPay }: { bookingId: string; onPay: (inv: Invoice) => void }) {
   const { db, ix, can } = useStore();
   const { t } = useTheme();
+  const tr = useTr();
   const inv = db.invoices.find((i) => i.bookingId === bookingId && i.status !== "void");
   if (!inv || can("billing") === "none") return null;
   const owed = ix.balance(inv);
@@ -124,7 +127,7 @@ function InvoiceRow({ bookingId, onPay }: { bookingId: string; onPay: (inv: Invo
           <Txt v="bodySm" weight="medium">Invoice {inv.number}</Txt>
           <Txt v="caption" num color={t.text3}>{money2(inv.amount)} · paid {money2(ix.paidSoFar(inv))}</Txt>
         </View>
-        {inv.status === "paid" ? <Badge tone="success" icon={CircleCheck} label="Paid" />
+        {inv.status === "paid" ? <Badge tone="success" icon={CircleCheck} label={tr("Paid")} />
           : inv.status === "overdue" ? <Badge tone="cancelled" label={`${money2(owed)} overdue`} />
           : <Badge tone="pending" label={`${money2(owed)} due`} />}
       </View>
@@ -134,7 +137,7 @@ function InvoiceRow({ bookingId, onPay }: { bookingId: string; onPay: (inv: Invo
           <Txt v="caption" num color={t.text2}>{money2(l.amount)}</Txt>
         </View>
       ))}
-      {owed > 0 && can("billing") !== "view" && <Button size="sm" icon={Banknote} label="Take payment" onPress={() => onPay(inv)} style={{ alignSelf: "flex-start" }} />}
+      {owed > 0 && can("billing") !== "view" && <Button size="sm" icon={Banknote} label={tr("Take payment")} onPress={() => onPay(inv)} style={{ alignSelf: "flex-start" }} />}
     </View>
   );
 }
@@ -143,6 +146,7 @@ const DOCK_METHODS: PaymentMethod[] = ["Card", "Cash", "Check"];
 
 /** Record money taken at the dock (card reader, cash or check) against an invoice. Same rules as Billing on the web. */
 export function PaymentSheet({ invoice, onClose }: { invoice: Invoice; onClose: () => void }) {
+  const tr = useTr();
   const { db, ix, update, toast, user } = useStore();
   const methods: PaymentMethod[] = user?.role === "staff" ? DOCK_METHODS : [...DOCK_METHODS, "Bank transfer"];
   const balance = ix.balance(invoice);
@@ -164,16 +168,16 @@ export function PaymentSheet({ invoice, onClose }: { invoice: Invoice; onClose: 
     onClose();
   };
   return (
-    <Sheet open onClose={onClose} title="Take payment" subtitle={`${invoice.number} · ${money2(balance)} owed`} footer={<Button variant="primary" size="lg" label={`Record ${money2(Number(amount) || 0)}`} onPress={save} />}>
+    <Sheet open onClose={onClose} title={tr("Take payment")} subtitle={`${invoice.number} · ${money2(balance)} owed`} footer={<Button variant="primary" size="lg" label={`Record ${money2(Number(amount) || 0)}`} onPress={save} />}>
       <View style={{ gap: 16 }}>
-        <Field label="Amount" error={error}>
+        <Field label={tr("Amount")} error={error}>
           <Input value={amount} onChangeText={(v) => { setAmount(v); setError(""); }} keyboardType="decimal-pad" inputMode="decimal" invalid={!!error} accessibilityLabel="Amount" />
         </Field>
         <View style={{ flexDirection: "row", gap: 8 }}>
-          <Chip label="Full balance" on={Number(amount) === balance} onPress={() => setAmount(balance.toFixed(2))} />
-          <Chip label="Half" on={Number(amount) === Math.round(balance * 50) / 100} onPress={() => setAmount((Math.round(balance * 50) / 100).toFixed(2))} />
+          <Chip label={tr("Full balance")} on={Number(amount) === balance} onPress={() => setAmount(balance.toFixed(2))} />
+          <Chip label={tr("Half")} on={Number(amount) === Math.round(balance * 50) / 100} onPress={() => setAmount((Math.round(balance * 50) / 100).toFixed(2))} />
         </View>
-        <Field label="Paid by" hint={method === "Card" ? "Run the card on the marina's card reader first, then record it here." : method === "Check" ? "Write the invoice number on the back of the check." : method === "Bank transfer" ? "Record it once the money shows in the bank account." : "Hand the cash to the front desk at the end of your shift."}>
+        <Field label={tr("Paid by")} hint={method === "Card" ? "Run the card on the marina's card reader first, then record it here." : method === "Check" ? "Write the invoice number on the back of the check." : method === "Bank transfer" ? "Record it once the money shows in the bank account." : "Hand the cash to the front desk at the end of your shift."}>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
             {methods.map((m) => <Chip key={m} label={m} on={method === m} onPress={() => setMethod(m)} />)}
           </View>
@@ -192,6 +196,7 @@ const BOAT_TYPES: BoatType[] = ["Sailboat", "Motor Yacht", "Catamaran", "Center 
 export function NewBookingSheet({ onClose, onDone }: { onClose: () => void; onDone: (bookingId: string, checkIn: boolean) => void }) {
   const { db, ix, update, toast, marinaId: current, scope } = useStore();
   const { t } = useTheme();
+  const tr = useTr();
   const [marinaId, setMarina] = useState(current === ALL ? scope.find((m) => ix.marina(m)?.status !== "inactive") ?? scope[0] : current);
   const [mode, setMode] = useState<"existing" | "new">("existing");
   const closed = ix.marina(marinaId)?.status === "inactive";
@@ -256,7 +261,7 @@ export function NewBookingSheet({ onClose, onDone }: { onClose: () => void; onDo
   };
 
   return (
-    <Sheet open onClose={onClose} title="New booking" subtitle={arrivingToday ? "Arriving today, or pick a later day" : `Arriving ${fmtShort(start)}`} footer={<Button variant="primary" size="lg" icon={checkIn ? LogIn : undefined} label={berth ? `${checkIn ? "Book, then check in" : "Book"} · ${money2(price)}` : "Book"} onPress={save} />}>
+    <Sheet open onClose={onClose} title={tr("New booking")} subtitle={arrivingToday ? "Arriving today, or pick a later day" : `Arriving ${fmtShort(start)}`} footer={<Button variant="primary" size="lg" icon={checkIn ? LogIn : undefined} label={berth ? `${checkIn ? "Book, then check in" : "Book"} · ${money2(price)}` : "Book"} onPress={save} />}>
       <View style={{ gap: 16 }}>
         {current === ALL && <MarinaPicker openOnly value={marinaId} onChange={(id) => { setMarina(id); setBerthId(""); }} />}
         {closed && (
@@ -266,7 +271,7 @@ export function NewBookingSheet({ onClose, onDone }: { onClose: () => void; onDo
         )}
         <Segmented value={mode} onChange={(v) => { setMode(v); setErrors({}); }} items={[{ value: "existing", label: "Known boat" }, { value: "new", label: "New boat" }]} />
         {mode === "existing" ? (
-          <Field label="Boat" error={errors.boat}>
+          <Field label={tr("Boat")} error={errors.boat}>
             {boat ? (
               <Pressable accessibilityRole="button" accessibilityLabel={`${boat.name}. Change boat`} onPress={() => { setBoatId(""); setBerthId(""); }} style={{ flexDirection: "row", alignItems: "center", gap: 12, borderWidth: 1, borderColor: t.primary, borderRadius: 12, padding: 12 }}>
                 <View style={{ flex: 1 }}>
@@ -279,7 +284,7 @@ export function NewBookingSheet({ onClose, onDone }: { onClose: () => void; onDo
               <View style={{ gap: 8 }}>
                 <View style={{ justifyContent: "center" }}>
                   <Search size={18} color={t.text3} style={{ position: "absolute", left: 14, zIndex: 1 }} />
-                  <Input value={q} onChangeText={setQ} placeholder="Boat name, registration or owner" style={{ paddingLeft: 40 }} autoCorrect={false} invalid={!!errors.boat} />
+                  <Input value={q} onChangeText={setQ} placeholder={tr("Boat name, registration or owner")} style={{ paddingLeft: 40 }} autoCorrect={false} invalid={!!errors.boat} />
                 </View>
                 {matches.map((b) => (
                   <Pressable key={b.id} accessibilityRole="button" onPress={() => { setBoatId(b.id); setBerthId(""); setErrors({}); }} style={({ pressed }) => ({ borderWidth: 1, borderColor: t.border, borderRadius: 12, padding: 12, backgroundColor: pressed ? t.sidebar : t.surface })}>
@@ -297,34 +302,34 @@ export function NewBookingSheet({ onClose, onDone }: { onClose: () => void; onDo
           </Field>
         ) : (
           <>
-            <Field label="Owner's name" error={errors.owner}><Input value={f.owner} onChangeText={(v) => set("owner", v)} autoComplete="name" invalid={!!errors.owner} /></Field>
+            <Field label={tr("Owner's name")} error={errors.owner}><Input value={f.owner} onChangeText={(v) => set("owner", v)} autoComplete="name" invalid={!!errors.owner} /></Field>
             <View style={{ flexDirection: "row", gap: 8 }}>
-              <View style={{ flex: 1 }}><Field label="Phone"><Input value={f.phone} onChangeText={(v) => set("phone", v)} keyboardType="phone-pad" autoComplete="tel" invalid={!!errors.contact} /></Field></View>
-              <View style={{ flex: 1 }}><Field label="Email"><Input value={f.email} onChangeText={(v) => set("email", v)} keyboardType="email-address" autoCapitalize="none" invalid={!!errors.contact} /></Field></View>
+              <View style={{ flex: 1 }}><Field label={tr("Phone")}><Input value={f.phone} onChangeText={(v) => set("phone", v)} keyboardType="phone-pad" autoComplete="tel" invalid={!!errors.contact} /></Field></View>
+              <View style={{ flex: 1 }}><Field label={tr("Email")}><Input value={f.email} onChangeText={(v) => set("email", v)} keyboardType="email-address" autoCapitalize="none" invalid={!!errors.contact} /></Field></View>
             </View>
             {errors.contact ? <Txt v="caption" weight="medium" color={t.error.fg} style={{ marginTop: -8 }}>{errors.contact}</Txt> : null}
-            <Field label="Boat name" error={errors.newBoat}><Input value={f.boat} onChangeText={(v) => set("boat", v)} invalid={!!errors.newBoat} /></Field>
-            <Field label="Length (ft)" error={errors.length}><Input value={f.length} onChangeText={(v) => { set("length", v.replace(/\D/g, "")); setBerthId(""); }} keyboardType="number-pad" invalid={!!errors.length} /></Field>
-            <Field label="Type">
+            <Field label={tr("Boat name")} error={errors.newBoat}><Input value={f.boat} onChangeText={(v) => set("boat", v)} invalid={!!errors.newBoat} /></Field>
+            <Field label={tr("Length (ft)")} error={errors.length}><Input value={f.length} onChangeText={(v) => { set("length", v.replace(/\D/g, "")); setBerthId(""); }} keyboardType="number-pad" invalid={!!errors.length} /></Field>
+            <Field label={tr("Type")}>
               <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
                 {BOAT_TYPES.map((x) => <Chip key={x} label={x} on={f.type === x} onPress={() => set("type", x)} />)}
               </View>
             </Field>
           </>
         )}
-        <Field label="Arrival"><DayChips days={Array.from({ length: 120 }, (_, i) => addDays(today(), i))} value={start} onChange={(d) => { setStart(d); setBerthId(""); setErrors({}); }} /></Field>
+        <Field label={tr("Arrival")}><DayChips days={Array.from({ length: 120 }, (_, i) => addDays(today(), i))} value={start} onChange={(d) => { setStart(d); setBerthId(""); setErrors({}); }} /></Field>
         <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 16 }}>
-          <Field label="Nights" hint={`Leaves ${fmtShort(end)}`}><Stepper label="nights" value={nights} onChange={(n) => { setNights(n); setBerthId(""); }} max={60} /></Field>
-          <Field label="Guests"><Stepper label="guests" value={guests} onChange={setGuests} max={20} /></Field>
+          <Field label={tr("Nights")} hint={`Leaves ${fmtShort(end)}`}><Stepper label={tr("nights")} value={nights} onChange={(n) => { setNights(n); setBerthId(""); }} max={60} /></Field>
+          <Field label={tr("Guests")}><Stepper label={tr("guests")} value={guests} onChange={setGuests} max={20} /></Field>
         </View>
-        <Field label="Berth" error={errors.berth} hint={length ? `Free ${arrivingToday ? "from tonight" : `from ${fmtShort(start)}`}${nights > 1 ? ` for ${nights} nights` : ""} and fits ${length} ft, smallest first.` : "Choose the boat first to see berths that fit."}>
+        <Field label={tr("Berth")} error={errors.berth} hint={length ? `Free ${arrivingToday ? "from tonight" : `from ${fmtShort(start)}`}${nights > 1 ? ` for ${nights} nights` : ""} and fits ${length} ft, smallest first.` : "Choose the boat first to see berths that fit."}>
           {length > 0 && (
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
               {free.slice(0, 12).map((b) => <Chip key={b.id} label={b.code} sub={`${b.maxLength} ft`} on={berthId === b.id} onPress={() => { setBerthId(b.id); setErrors({}); }} />)}
             </View>
           )}
         </Field>
-        {berth && <Row label="Price" value={money2(price)} sub={nights >= db.settings.monthlyFromNights ? "Monthly rate, prorated" : `${nights} × ${money2(berth.dailyRate)} a night`} />}
+        {berth && <Row label={tr("Price")} value={money2(price)} sub={nights >= db.settings.monthlyFromNights ? "Monthly rate, prorated" : `${nights} × ${money2(berth.dailyRate)} a night`} />}
         {arrivingToday && <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: checkIn }} onPress={() => setCheckIn(!checkIn)} style={{ flexDirection: "row", alignItems: "center", gap: 12, borderWidth: 1, borderColor: t.border, borderRadius: 12, padding: 12 }}>
           <View style={{ width: 22, height: 22, borderRadius: 6, borderWidth: 1.5, borderColor: t.primary, backgroundColor: checkIn ? t.primary : "transparent", alignItems: "center", justifyContent: "center" }}>
             {checkIn && <CircleCheck size={14} color={t.onPrimary} />}
@@ -337,6 +342,7 @@ export function NewBookingSheet({ onClose, onDone }: { onClose: () => void; onDo
 }
 
 export function BerthSheet({ berth, onClose, onReport }: { berth: Berth; onClose: () => void; onReport: () => void }) {
+  const tr = useTr();
   const { db, ix, update, toast, can } = useStore();
   const [moving, setMoving] = useState(false);
   const b = db.berths.find((x) => x.id === berth.id) ?? berth;
@@ -359,14 +365,14 @@ export function BerthSheet({ berth, onClose, onReport }: { berth: Berth; onClose
       footer={
         <View style={{ flexDirection: "row", gap: 8 }}>
           {can("berths") !== "view" && <Button style={{ flex: 1 }} label={b.underMaintenance ? "Back in service" : "Out of service"} onPress={toggle} />}
-          {can("maintenance") !== "view" && <Button style={{ flex: 1 }} variant="primary" icon={TriangleAlert} label="Report" onPress={onReport} />}
+          {can("maintenance") !== "view" && <Button style={{ flex: 1 }} variant="primary" icon={TriangleAlert} label={tr("Report")} onPress={onReport} />}
         </View>
       }
     >
       <View style={{ marginBottom: 16 }}><BerthBadge status={status} /></View>
-      {current && <Row label="Boat here now" value={ix.boat(current.boatId)?.name ?? ""} sub={`Leaves ${fmtShort(current.end)} · ${ix.ownerOfBooking(current)?.name}`} />}
-      <Row label="Next arrival" value={next ? fmtShort(next.start) : "None booked"} sub={next ? `${ix.boat(next.boatId)?.name} · ${relative(next.start).toLowerCase()}` : undefined} />
-      <Row label="Open repairs" value={tasks.length ? String(tasks.length) : "None"} sub={tasks.map((x) => x.title).join(", ") || undefined} />
+      {current && <Row label={tr("Boat here now")} value={ix.boat(current.boatId)?.name ?? ""} sub={`Leaves ${fmtShort(current.end)} · ${ix.ownerOfBooking(current)?.name}`} />}
+      <Row label={tr("Next arrival")} value={next ? fmtShort(next.start) : "None booked"} sub={next ? `${ix.boat(next.boatId)?.name} · ${relative(next.start).toLowerCase()}` : undefined} />
+      <Row label={tr("Open repairs")} value={tasks.length ? String(tasks.length) : "None"} sub={tasks.map((x) => x.title).join(", ") || undefined} />
       {current && can("bookings") !== "view" && (
         <Button icon={ArrowRightLeft} label={`Move ${ix.boat(current.boatId)?.name} to another berth`} onPress={() => setMoving(true)} />
       )}
@@ -425,6 +431,7 @@ export function ReportProblem({ berthId, onClose }: { berthId?: string; onClose:
   const { db, update, toast, marinaId: current, scope } = useStore();
   const me = useMe();
   const { t } = useTheme();
+  const tr = useTr();
   const fromBerth = db.berths.find((b) => b.id === berthId)?.marinaId;
   const [marinaId, setMarina] = useState(fromBerth ?? (current === ALL ? scope[0] : current));
   const [title, setTitle] = useState("");
@@ -448,13 +455,13 @@ export function ReportProblem({ berthId, onClose }: { berthId?: string; onClose:
     onClose();
   };
   return (
-    <Sheet open onClose={onClose} title="Report a problem" subtitle="It goes straight to the marina's work orders." footer={<Button variant="primary" size="lg" label="Send report" onPress={save} />}>
+    <Sheet open onClose={onClose} title={tr("Report a problem")} subtitle={tr("It goes straight to the marina's work orders.")} footer={<Button variant="primary" size="lg" label={tr("Send report")} onPress={save} />}>
       <View style={{ gap: 16 }}>
         {current === ALL && !fromBerth && <MarinaPicker value={marinaId} onChange={(id) => { setMarina(id); setBerth(""); }} />}
-        <Field label="What's wrong?" error={error}>
-          <Input multiline value={title} onChangeText={(v) => { setTitle(v); setError(""); }} placeholder="e.g. Power pedestal sparks when plugged in" invalid={!!error} />
+        <Field label={tr("What's wrong?")} error={error}>
+          <Input multiline value={title} onChangeText={(v) => { setTitle(v); setError(""); }} placeholder={tr("e.g. Power pedestal sparks when plugged in")} invalid={!!error} />
         </Field>
-        <Field label="Berth">
+        <Field label={tr("Berth")}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
             {[{ id: "", code: "Not a berth" }, ...db.berths.filter((b) => b.marinaId === marinaId)].map((b) => {
               const on = berth === b.id;
@@ -466,7 +473,7 @@ export function ReportProblem({ berthId, onClose }: { berthId?: string; onClose:
             })}
           </ScrollView>
         </Field>
-        <Field label="How urgent?">
+        <Field label={tr("How urgent?")}>
           <View style={{ flexDirection: "row", gap: 8 }}>
             {(["low", "medium", "high"] as Priority[]).map((p) => (
               <Pressable key={p} accessibilityRole="radio" accessibilityState={{ checked: priority === p }} onPress={() => setPriority(p)} style={{ flex: 1, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: priority === p ? t.primary : t.border, backgroundColor: priority === p ? t.primary : t.surface }}>
@@ -494,6 +501,7 @@ export function TaskSheet({ task, onClose }: { task: MaintenanceTask; onClose: (
   const office = user?.role === "admin" || user?.role === "manager";
   const me = useMe();
   const { t } = useTheme();
+  const tr = useTr();
   const x = db.tasks.find((y) => y.id === task.id) ?? task;
   const [note, setNote] = useState("");
   const [photos, setPhotos] = useState<string[]>([]);
@@ -529,9 +537,9 @@ export function TaskSheet({ task, onClose }: { task: MaintenanceTask; onClose: (
       title={x.title}
       subtitle={`${x.code} · ${x.berthId ? `Berth ${ix.berth(x.berthId)?.code}` : "Facility"}`}
       footer={
-        canEdit && x.status === "open" && !office ? <Button variant="primary" size="lg" label="Start work" onPress={() => setStatus("in-progress")} />
-        : canEdit && x.status !== "done" ? <Button variant="primary" size="lg" icon={CircleCheck} label="Mark as done" onPress={() => { setStatus("done"); onClose(); }} />
-        : <Button size="lg" label="Close" onPress={onClose} />
+        canEdit && x.status === "open" && !office ? <Button variant="primary" size="lg" label={tr("Start work")} onPress={() => setStatus("in-progress")} />
+        : canEdit && x.status !== "done" ? <Button variant="primary" size="lg" icon={CircleCheck} label={tr("Mark as done")} onPress={() => { setStatus("done"); onClose(); }} />
+        : <Button size="lg" label={tr("Close")} onPress={onClose} />
       }
     >
       <View style={{ flexDirection: "row", gap: 8, marginBottom: 12 }}>
@@ -541,7 +549,7 @@ export function TaskSheet({ task, onClose }: { task: MaintenanceTask; onClose: (
       <Txt v="bodySm" color={t.text3} style={{ marginBottom: 16 }}>Due {fmtDate(x.due)} · {x.assigneeId ? `Assigned to ${ix.staffMember(x.assigneeId)?.name}` : "Unassigned"}</Txt>
       {office && canEdit && x.status !== "done" && (
         <View style={{ gap: 16, marginBottom: 16 }}>
-          <Field label="Priority">
+          <Field label={tr("Priority")}>
             <View style={{ flexDirection: "row", gap: 8 }}>
               {(["low", "medium", "high"] as Priority[]).map((p) => (
                 <Chip key={p} label={p === "high" ? "Urgent" : p === "medium" ? "Medium" : "Low"} on={x.priority === p} onPress={() => {
@@ -553,7 +561,7 @@ export function TaskSheet({ task, onClose }: { task: MaintenanceTask; onClose: (
               ))}
             </View>
           </Field>
-          <Field label="Due">
+          <Field label={tr("Due")}>
             <DayChips days={[...(x.due < today() ? [x.due] : []), ...Array.from({ length: 60 }, (_, i) => addDays(today(), i))]} value={x.due} onChange={(due) => {
               const before = db;
               update((d) => ({ ...d, tasks: d.tasks.map((y) => (y.id === x.id ? { ...y, due } : y)) }), log(`Due date set to ${fmtShort(due)}: ${x.title}`));
@@ -564,7 +572,7 @@ export function TaskSheet({ task, onClose }: { task: MaintenanceTask; onClose: (
       )}
       {office && canEdit && x.status !== "done" && (
         <View style={{ marginBottom: 16 }}>
-          <Field label="Assign to" hint="They see it under Mine in their app.">
+          <Field label={tr("Assign to")} hint={tr("They see it under Mine in their app.")}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
               {db.staff.filter((s) => s.marinaId === x.marinaId && s.position !== "Marina Manager" && s.status === "active").map((s) => (
                 <Chip
@@ -597,9 +605,9 @@ export function TaskSheet({ task, onClose }: { task: MaintenanceTask; onClose: (
       ))}
       {canEdit && (
         <View style={{ gap: 12, borderWidth: 1, borderColor: t.border, borderRadius: 16, padding: 12, marginTop: 4 }}>
-          <Input multiline value={note} onChangeText={setNote} placeholder="Add a note…" accessibilityLabel="Add a note" />
+          <Input multiline value={note} onChangeText={setNote} placeholder={tr("Add a note…")} accessibilityLabel="Add a note" />
           <PhotoPicker photos={photos} onChange={setPhotos} />
-          <Button size="sm" label="Add update" disabled={!note.trim() && photos.length === 0} onPress={addUpdate} style={{ alignSelf: "flex-start" }} />
+          <Button size="sm" label={tr("Add update")} disabled={!note.trim() && photos.length === 0} onPress={addUpdate} style={{ alignSelf: "flex-start" }} />
         </View>
       )}
     </Sheet>
@@ -610,6 +618,7 @@ export function TaskSheet({ task, onClose }: { task: MaintenanceTask; onClose: (
 export function ChangeBookingSheet({ booking: b, onClose }: { booking: Booking; onClose: () => void }) {
   const { db, ix, update, toast } = useStore();
   const { t } = useTheme();
+  const tr = useTr();
   const now = today();
   const started = b.start <= now && b.status === "checked-in";
   const [start, setStart] = useState(b.start);
@@ -649,19 +658,19 @@ export function ChangeBookingSheet({ booking: b, onClose }: { booking: Booking; 
   return (
     <Sheet open onClose={onClose} title={`Change ${b.code}`} subtitle={`${boat?.name} · ${boat?.length} ft`} footer={<Button variant="primary" size="lg" label={`Save · ${money2(amount)}`} disabled={!changed} onPress={save} />}>
       <View style={{ gap: 16 }}>
-        <Field label="Arrival" hint={started ? "Already arrived" : undefined}>
+        <Field label={tr("Arrival")} hint={started ? "Already arrived" : undefined}>
           {started ? <Txt>{fmtShort(start)}</Txt> : <DayChips days={b.start < now ? [b.start, ...days] : days} value={start} onChange={(d) => { setStart(d); setError(""); }} />}
         </Field>
         <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 16 }}>
-          <Field label="Nights" hint={`Leaves ${fmtShort(end)}`}><Stepper label="nights" value={nights} onChange={(n) => { setNights(n); setError(""); }} min={started ? Math.max(1, daysBetween(b.start, now)) : 1} max={365} /></Field>
-          <Field label="Guests"><Stepper label="guests" value={guests} onChange={setGuests} max={20} /></Field>
+          <Field label={tr("Nights")} hint={`Leaves ${fmtShort(end)}`}><Stepper label={tr("nights")} value={nights} onChange={(n) => { setNights(n); setError(""); }} min={started ? Math.max(1, daysBetween(b.start, now)) : 1} max={365} /></Field>
+          <Field label={tr("Guests")}><Stepper label={tr("guests")} value={guests} onChange={setGuests} max={20} /></Field>
         </View>
-        <Field label="Berth" error={error} hint={fits ? `${free.length} free berths fit this boat` : `Berth ${berth?.code} isn't free for these dates`}>
+        <Field label={tr("Berth")} error={error} hint={fits ? `${free.length} free berths fit this boat` : `Berth ${berth?.code} isn't free for these dates`}>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
             {free.slice(0, 16).map((x) => <Chip key={x.id} label={x.code} sub={`${x.maxLength} ft`} on={berthId === x.id} onPress={() => { setBerthId(x.id); setError(""); }} />)}
           </View>
         </Field>
-        <Row label="New total" value={money2(amount)} sub={invoice ? (invoice.status === "paid" ? "The invoice is already paid. Adjust any difference in Billing." : `Invoice ${invoice.number} is updated to match.`) : undefined} />
+        <Row label={tr("New total")} value={money2(amount)} sub={invoice ? (invoice.status === "paid" ? "The invoice is already paid. Adjust any difference in Billing." : `Invoice ${invoice.number} is updated to match.`) : undefined} />
         {!fits && <Txt v="caption" color={t.error.fg}>Pick one of the free berths above to save.</Txt>}
       </View>
     </Sheet>
@@ -703,6 +712,7 @@ export function PrepChecklist({ booking: b }: { booking: Booking }) {
   const { db, ix, update, user } = useStore();
   const me = useMe();
   const { t } = useTheme();
+  const tr = useTr();
   const [reporting, setReporting] = useState(false);
   const live = db.bookings.find((x) => x.id === b.id) ?? b;
   const berth = ix.berth(b.berthId);
@@ -718,7 +728,7 @@ export function PrepChecklist({ booking: b }: { booking: Booking }) {
     <View style={{ borderWidth: 1, borderColor: ready ? t.success.fg : t.border, borderRadius: 16, padding: 12, marginBottom: 12, gap: 4 }}>
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
         <Txt v="bodySm" weight="semibold">Berth {berth?.code} ready check</Txt>
-        {ready ? <Badge tone="success" icon={CircleCheck} label="Ready" /> : <Txt v="caption" num color={t.text3}>{done.filter((d) => items.some((i) => i.id === d)).length} of {items.length}</Txt>}
+        {ready ? <Badge tone="success" icon={CircleCheck} label={tr("Ready")} /> : <Txt v="caption" num color={t.text3}>{done.filter((d) => items.some((i) => i.id === d)).length} of {items.length}</Txt>}
       </View>
       {items.map((i) => {
         const on = done.includes(i.id);
@@ -732,7 +742,7 @@ export function PrepChecklist({ booking: b }: { booking: Booking }) {
         );
       })}
       {live.prep && <Txt v="caption" color={t.text3}>Last checked by {live.prep.by}, {fmtShort(live.prep.at.slice(0, 10))}</Txt>}
-      {!ready && <Button size="sm" icon={TriangleAlert} label="Something's wrong: report it" onPress={() => setReporting(true)} style={{ alignSelf: "flex-start", marginTop: 4 }} />}
+      {!ready && <Button size="sm" icon={TriangleAlert} label={tr("Something's wrong: report it")} onPress={() => setReporting(true)} style={{ alignSelf: "flex-start", marginTop: 4 }} />}
       {reporting && <ReportProblem berthId={b.berthId} onClose={() => setReporting(false)} />}
     </View>
   );
@@ -749,6 +759,7 @@ export function CheckInSheet({ booking: b, onClose }: { booking: Booking; onClos
   const { db, ix, update, toast, user } = useStore();
   const me = useMe();
   const { t } = useTheme();
+  const tr = useTr();
   const owner = ix.ownerOfBooking(b);
   const [condition, setCondition] = useState<BoatCondition>("good");
   const [notes, setNotes] = useState("");
@@ -770,20 +781,20 @@ export function CheckInSheet({ booking: b, onClose }: { booking: Booking; onClos
     onClose();
   };
   return (
-    <Sheet open onClose={onClose} title={`Check in ${boat?.name}`} subtitle={`Berth ${ix.berth(b.berthId)?.code} · ${owner?.name}`} footer={<Button variant="primary" size="lg" icon={LogIn} label="Check in" onPress={save} />}>
+    <Sheet open onClose={onClose} title={`Check in ${boat?.name}`} subtitle={`Berth ${ix.berth(b.berthId)?.code} · ${owner?.name}`} footer={<Button variant="primary" size="lg" icon={LogIn} label={tr("Check in")} onPress={save} />}>
       <View style={{ gap: 16 }}>
-        <Field label="Boat condition on arrival">
+        <Field label={tr("Boat condition on arrival")}>
           <View style={{ flexDirection: "row", gap: 8 }}>
             {CONDITIONS.map((c) => <Chip key={c.id} label={c.label} on={condition === c.id} onPress={() => { setCondition(c.id); setError(""); }} />)}
           </View>
         </Field>
         {condition !== "good" && (
-          <Field label="What did you see?">
-            <Input multiline value={notes} onChangeText={(v) => { setNotes(v); setError(""); }} placeholder="e.g. Scratch on the port bow, about 30 cm" />
+          <Field label={tr("What did you see?")}>
+            <Input multiline value={notes} onChangeText={(v) => { setNotes(v); setError(""); }} placeholder={tr("e.g. Scratch on the port bow, about 30 cm")} />
           </Field>
         )}
         <PhotoPicker photos={photos} onChange={setPhotos} max={4} />
-        <Field label={`${owner?.name ?? "Owner"}'s signature`} hint="Confirms the boat's condition and the marina rules.">
+        <Field label={`${owner?.name ?? "Owner"}'s signature`} hint={tr("Confirms the boat's condition and the marina rules.")}>
           {absent ? (
             <Txt v="bodySm" color={t.text3}>Owner not here. The check-in is recorded without a signature.</Txt>
           ) : (
@@ -828,6 +839,7 @@ export function ServiceSheet({ booking: b, onClose }: { booking: Booking; onClos
   const { db, ix, update, toast, user } = useStore();
   const me = useMe();
   const { t } = useTheme();
+  const tr = useTr();
   const [serviceId, setServiceId] = useState<(typeof SERVICES)[number]["id"]>("gas");
   const service = SERVICES.find((x) => x.id === serviceId)!;
   const [qty, setQty] = useState(20);
@@ -846,9 +858,9 @@ export function ServiceSheet({ booking: b, onClose }: { booking: Booking; onClos
     onClose();
   };
   return (
-    <Sheet open onClose={onClose} title="Add a service" subtitle={`${boat?.name} · berth ${ix.berth(b.berthId)?.code}`} footer={<Button variant="primary" size="lg" label={`Add ${money2(amount)} to invoice`} onPress={save} />}>
+    <Sheet open onClose={onClose} title={tr("Add a service")} subtitle={`${boat?.name} · berth ${ix.berth(b.berthId)?.code}`} footer={<Button variant="primary" size="lg" label={`Add ${money2(amount)} to invoice`} onPress={save} />}>
       <View style={{ gap: 16 }}>
-        <Field label="Service">
+        <Field label={tr("Service")}>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
             {SERVICES.map((x) => <Chip key={x.id} label={x.label} sub={`${money2(x.price)} / ${x.unit}`} on={serviceId === x.id} onPress={() => pick(x.id)} />)}
           </View>
@@ -859,7 +871,7 @@ export function ServiceSheet({ booking: b, onClose }: { booking: Booking; onClos
             {service.unit === "gal" && [10, 50, 100].map((n) => <Chip key={n} label={`+${n}`} on={false} onPress={() => setQty(Math.min(500, qty + n))} />)}
           </View>
         </Field>
-        <Row label="Charge" value={money2(amount)} sub={`${qty} × ${money2(service.price)}`} />
+        <Row label={tr("Charge")} value={money2(amount)} sub={`${qty} × ${money2(service.price)}`} />
         <Txt v="caption" color={t.text3}>Added to the stay&apos;s invoice. If it was already paid, the extra becomes due.</Txt>
       </View>
     </Sheet>

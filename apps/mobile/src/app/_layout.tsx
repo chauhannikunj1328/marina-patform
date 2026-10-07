@@ -11,6 +11,7 @@ import { StoreProvider, useStore } from "@/store";
 import { ThemeProvider, useTheme } from "@/theme";
 import { Toasts } from "@/components/ui";
 import { LockScreen } from "@/components/lock";
+import { LangProvider } from "@/lib/i18n";
 
 SplashScreen.preventAutoHideAsync();
 SplashScreen.setOptions({ duration: 300, fade: true });
@@ -52,9 +53,11 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <ThemeProvider>
-        <StoreProvider>
-          <Shell />
-        </StoreProvider>
+        <LangProvider>
+          <StoreProvider>
+            <Shell />
+          </StoreProvider>
+        </LangProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );
