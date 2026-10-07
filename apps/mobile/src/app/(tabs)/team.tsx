@@ -5,6 +5,7 @@ import { router } from "expo-router";
 import { Clock, MessagesSquare, Users } from "lucide-react-native";
 import { addDays, fmtDateTime, fmtDuration, fmtShort, fmtTime, fromISO, minutesWorked, openEntry, planFor, today, type Staff } from "@marina/shared";
 import { List, StaffSheet } from "@/components/office";
+import { WeekSchedule } from "@/components/schedule";
 import { Avatar, Badge, EmptyState, Screen, Section, Segmented, Txt } from "@/components/ui";
 import { useViewParam } from "@/lib/useOpenParam";
 import { useNow } from "@/lib/clock";
@@ -30,7 +31,7 @@ export default function Team() {
   const { db, ids } = useStore();
   const { t } = useTheme();
   const now = useNow();
-  const [view, setView] = useViewParam(["today", "hours", "messages"] as const, "today");
+  const [view, setView] = useViewParam(["today", "week", "hours", "messages"] as const, "today");
   const [open, setOpen] = useState<Staff | undefined>();
   const staff = db.staff.filter((s) => ids.includes(s.marinaId)).sort((a, b) => a.name.localeCompare(b.name));
   const day = today();
@@ -57,7 +58,7 @@ export default function Team() {
 
   return (
     <Screen title="Team">
-      <Segmented value={view} onChange={setView} items={[{ value: "today", label: "Today", count: clocked.length + working.length }, { value: "hours", label: "Hours" }, { value: "messages", label: "Messages", count: unread || undefined }]} />
+      <Segmented value={view} onChange={setView} items={[{ value: "today", label: "Today" }, { value: "week", label: "Week" }, { value: "hours", label: "Hours" }, { value: "messages", label: "Chat", count: unread || undefined }]} />
 
       {view === "today" && (
         <>
@@ -76,6 +77,8 @@ export default function Team() {
           </Section>
         </>
       )}
+
+      {view === "week" && <WeekSchedule onPerson={setOpen} />}
 
       {view === "hours" && (
         hours.length === 0 ? <EmptyState icon={Clock} title="No hours this week yet" body="Staff clock in and out on the Today tab of their app." /> : (

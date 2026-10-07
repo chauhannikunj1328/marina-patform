@@ -1,14 +1,16 @@
 // Building blocks for the manager and admin screens: KPI tiles, a small bar chart, alert rows,
 // marina rows, the staff detail sheet and a marina picker for sheets opened on "All marinas".
+import { useState } from "react";
 import { Linking, Pressable, ScrollView, View } from "react-native";
 import { router } from "expo-router";
-import { ChevronRight, Mail, MessageSquare, Phone, TrendingDown, TrendingUp } from "lucide-react-native";
+import { CalendarCog, ChevronRight, Mail, MessageSquare, Phone, TrendingDown, TrendingUp } from "lucide-react-native";
 import {
   addDays, DAYS, fmtDuration, fmtMonth, fmtTime, fromISO, minutesWorked, moneyShort, openEntry, pct, planFor, SHIFT_HOURS, today, type Staff,
 } from "@marina/shared";
 import { useStore } from "../store";
 import { useTheme } from "../theme";
 import { Badge, Button, Card, Chip, Field, Row, Sheet, Txt, type Icon } from "./ui";
+import { EditScheduleSheet } from "./schedule";
 
 export function Kpi({ label, value, sub, trend, onPress }: { label: string; value: string; sub?: string; trend?: { value: string; up: boolean; good: boolean }; onPress?: () => void }) {
   const { t } = useTheme();
@@ -108,7 +110,8 @@ export function MarinaPicker({ value, onChange }: { value: string; onChange: (id
 }
 
 export function StaffSheet({ staff, onClose }: { staff: Staff; onClose: () => void }) {
-  const { db, ix } = useStore();
+  const { db, ix, can } = useStore();
+  const [editing, setEditing] = useState(false);
   const { t } = useTheme();
   const s = db.staff.find((x) => x.id === staff.id) ?? staff;
   const start = addDays(today(), -fromISO(today()).getDay());
@@ -134,7 +137,9 @@ export function StaffSheet({ staff, onClose }: { staff: Staff; onClose: () => vo
         <Button style={{ flex: 1 }} icon={Phone} label="Call" disabled={!tel} onPress={() => Linking.openURL(`tel:${tel}`)} />
         <Button style={{ flex: 1 }} icon={Mail} label="Email" onPress={() => Linking.openURL(`mailto:${s.email}`)} />
       </View>
+      {can("staff") !== "view" && s.position !== "Marina Manager" && <Button icon={CalendarCog} label="Edit schedule" onPress={() => setEditing(true)} style={{ marginTop: 8 }} />}
       <Txt v="caption" color={t.text3} style={{ marginTop: 12 }}>{s.email} · {s.phone}</Txt>
+      {editing && <EditScheduleSheet staff={s} onClose={() => setEditing(false)} />}
     </Sheet>
   );
 }
