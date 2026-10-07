@@ -1,7 +1,7 @@
 // Detail sheets and actions shared by the staff tabs: bookings, berths, tasks, problem reports.
 import { useState } from "react";
 import { Image, Linking, Pressable, ScrollView, View } from "react-native";
-import { Banknote, CalendarCog, Camera, CircleCheck, CircleX, ImagePlus, LogIn, LogOut, Mail, Phone, Search, TriangleAlert, X } from "lucide-react-native";
+import { ArrowRightLeft, Banknote, CalendarCog, Camera, CircleCheck, CircleX, ImagePlus, LogIn, LogOut, Mail, Phone, Search, TriangleAlert, X } from "lucide-react-native";
 import {
   addDays, bookingAmount, daysBetween, fmtDate, fmtShort, money2, nextId, relative, today, withInvoice,
   type Berth, type Booking, type BookingStatus, type BoatType, type Invoice, type MaintenanceTask, type PaymentMethod, type Priority,
@@ -316,6 +316,7 @@ export function NewBookingSheet({ onClose, onDone }: { onClose: () => void; onDo
 
 export function BerthSheet({ berth, onClose, onReport }: { berth: Berth; onClose: () => void; onReport: () => void }) {
   const { db, ix, update, toast, can } = useStore();
+  const [moving, setMoving] = useState(false);
   const b = db.berths.find((x) => x.id === berth.id) ?? berth;
   const status = ix.berthStatus(b);
   const current = ix.currentBooking(b.id);
@@ -344,6 +345,10 @@ export function BerthSheet({ berth, onClose, onReport }: { berth: Berth; onClose
       {current && <Row label="Boat here now" value={ix.boat(current.boatId)?.name ?? ""} sub={`Leaves ${fmtShort(current.end)} · ${ix.ownerOfBooking(current)?.name}`} />}
       <Row label="Next arrival" value={next ? fmtShort(next.start) : "None booked"} sub={next ? `${ix.boat(next.boatId)?.name} · ${relative(next.start).toLowerCase()}` : undefined} />
       <Row label="Open repairs" value={tasks.length ? String(tasks.length) : "None"} sub={tasks.map((x) => x.title).join(", ") || undefined} />
+      {current && can("bookings") !== "view" && (
+        <Button icon={ArrowRightLeft} label={`Move ${ix.boat(current.boatId)?.name} to another berth`} onPress={() => setMoving(true)} />
+      )}
+      {moving && current && <ChangeBookingSheet booking={current} onClose={() => setMoving(false)} />}
     </Sheet>
   );
 }
