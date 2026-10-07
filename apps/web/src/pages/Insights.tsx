@@ -9,13 +9,14 @@ import { downloadCsv } from "@/lib/csv";
 import { Button, Card, CardHeader, Field, PageHeader, Select, StatCard, Table } from "@/components/ui";
 import { MAX_SERIES, OccupancyChart, RevenueChart } from "@/components/charts";
 
-type ReportKind = "marina-summary" | "bookings" | "receivables" | "owners";
+type ReportKind = "marina-summary" | "bookings" | "receivables" | "owners" | "services";
 
 const REPORTS: { value: ReportKind; label: string; description: string }[] = [
   { value: "marina-summary", label: "Marina performance", description: "Revenue, occupancy and bookings per marina for the chosen month" },
   { value: "bookings", label: "Bookings by status", description: "How many bookings started in the month, grouped by status" },
   { value: "receivables", label: "Unpaid invoices", description: "Every due and overdue invoice, oldest first" },
   { value: "owners", label: "Top boat owners", description: "Owners ranked by revenue in the chosen month" },
+  { value: "services", label: "Fuel, services and utilities", description: "Fuel, pump-outs, ice, laundry, electricity and water charged in the month, by marina" },
 ];
 
 export function Reports() {
@@ -55,6 +56,25 @@ export function Reports() {
           return [i.number, owner?.name ?? "", ix.marinaOfBerth(bk.berthId)?.name ?? "", i.due, Math.max(0, daysBetween(i.due, now)), ix.balance(i)];
         });
       return { head: ["Invoice", "Boat owner", "Marina", "Due", "Days late", "Balance due"], rows, display: rows.map((r) => [...r.slice(0, 5), money(Number(r[5]))]) };
+    }
+    if (kind === "services") {
+      const totals = new Map<string, { service: string; marina: string; qty: number; unit: string; count: number; amount: number }>();
+      for (const inv of db.invoices) {
+        if (inv.status === "void") continue;
+        const marinaId = ix.marinaOfInvoice(inv) ?? "";
+        if (!scope.includes(marinaId)) continue;
+        for (const l of inv.lines ?? []) {
+          if (monthKey(l.at.slice(0, 10)) !== month) continue;
+          const key = `${l.label}|${marinaId}`;
+          const t = totals.get(key) ?? { service: l.label, marina: ix.marina(marinaId)?.name ?? "", qty: 0, unit: l.unit, count: 0, amount: 0 };
+          t.qty += l.qty;
+          t.count += 1;
+          t.amount += l.amount;
+          totals.set(key, t);
+        }
+      }
+      const rows = [...totals.values()].sort((a, b) => a.service.localeCompare(b.service) || b.amount - a.amount).map((t) => [t.service, t.marina, `${Math.round(t.qty * 10) / 10} ${t.unit}`, t.count, Math.round(t.amount * 100) / 100]);
+      return { head: ["Service", "Marina", "Quantity", "Charges", "Revenue"], rows, display: rows.map((r) => [...r.slice(0, 4), money(Number(r[4]))]) };
     }
     const byOwner = new Map<string, number>();
     for (const b of ix.bookingsIn(scope)) {

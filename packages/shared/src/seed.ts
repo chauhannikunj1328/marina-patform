@@ -7,6 +7,7 @@ import type {
 import { addDays, daysBetween, fromISO, today } from "./date";
 import { bookingAmount } from "./pricing";
 import { DEFAULT_PERMISSIONS } from "./permissions";
+import { SERVICES } from "./actions";
 
 export interface Db {
   counties: County[];
@@ -246,6 +247,15 @@ export function createSeed(): Db {
       payments: [],
     });
     const last = invoices[invoices.length - 1];
+    // About a third of recent stays bought fuel, a pump-out or ice during the stay.
+    if (bk.start <= now && bk.start >= addDays(now, -100) && daysBetween(bk.start, bk.end) < 28 && r() < 0.35) {
+      const svc = pick([SERVICES[0], SERVICES[0], SERVICES[1], SERVICES[2], SERVICES[3]]);
+      const qty = svc.unit === "gal" ? between(4, 16) * 5 : between(1, 3);
+      const at = new Date(fromISO(addDays(bk.start, between(0, Math.max(0, Math.min(daysBetween(bk.start, bk.end), daysBetween(bk.start, now)) - 1)))).getTime() + 11 * 3_600_000).toISOString();
+      const amount = Math.round(qty * svc.price * 100) / 100;
+      last.lines = [{ label: svc.label, qty, unit: svc.unit, unitPrice: svc.price, amount, at, by: "Fuel dock" }];
+      last.amount = Math.round((last.amount + amount) * 100) / 100;
+    }
     if (last.status === "paid") last.payments = [{ date: last.paidAt!, amount: last.amount, method: last.method! }];
     inv++;
   }
