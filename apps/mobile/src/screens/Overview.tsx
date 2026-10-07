@@ -85,7 +85,7 @@ export function Overview() {
         <Button icon={FileText} label="Day report" onPress={() => router.push("/report")} />
       </Section>
 
-      <Section title="Recent activity">
+      <Section title="Recent activity" action={<Pressable accessibilityRole="button" onPress={() => router.push("/activity")} hitSlop={8}><Txt v="bodySm" weight="semibold" color={t.greenText}>See all</Txt></Pressable>}>
         <List>
           {activity.map((a, i) => (
             <View key={a.id} style={{ flexDirection: "row", gap: 12, padding: 14, borderTopWidth: i ? 1 : 0, borderColor: t.border }}>

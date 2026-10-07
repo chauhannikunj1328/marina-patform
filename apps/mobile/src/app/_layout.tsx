@@ -38,6 +38,7 @@ function Shell() {
         <Stack.Screen name="report" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="revenue" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="compare" options={{ animation: "slide_from_right" }} />
+        <Stack.Screen name="activity" options={{ animation: "slide_from_right" }} />
       </Stack>
       <Toasts />
     </View>
