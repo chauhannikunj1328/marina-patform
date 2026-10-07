@@ -1,17 +1,19 @@
 import { useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { CalendarRange, Clock, Download, FileDown, FileText, Ruler, Sailboat } from "lucide-react";
+import { CalendarRange, Clock, Download, FileDown, FileText, Ruler, Sailboat, Sheet } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { useStore } from "@/data/store";
 import { daysBetween, fmtDate, fmtMonth, lastMonths, monthKey, nightsInMonth, today } from "@marina/shared";
 import { money, pct } from "@marina/shared";
-import { downloadCsv } from "@/lib/csv";
+import { downloadCsv, downloadWorkbook } from "@/lib/csv";
+import { allDataSheets } from "@/lib/exportAll";
+import { ReportSchedules } from "./ReportSchedules";
 import { Button, Card, CardHeader, Field, PageHeader, Select, StatCard, Table } from "@/components/ui";
 import { MAX_SERIES, OccupancyChart, RevenueChart } from "@/components/charts";
 
 type ReportKind = "marina-summary" | "bookings" | "receivables" | "owners" | "services";
 
-const REPORTS: { value: ReportKind; label: string; description: string }[] = [
+export const REPORTS: { value: ReportKind; label: string; description: string }[] = [
   { value: "marina-summary", label: "Marina performance", description: "Revenue, occupancy and bookings per marina for the chosen month" },
   { value: "bookings", label: "Bookings by status", description: "How many bookings started in the month, grouped by status" },
   { value: "receivables", label: "Unpaid invoices", description: "Every due and overdue invoice, oldest first" },
@@ -95,13 +97,14 @@ export function Reports() {
 
   return (
     <>
-      <PageHeader title="Reports" description="Pick a report, preview it, and download it as CSV" />
+      <PageHeader title="Reports" description="Pick a report, preview it, and download it as CSV, Excel or PDF" actions={<Button icon={Sheet} onClick={() => downloadWorkbook(`marina-data-${today()}.xls`, allDataSheets(db, ix, scope))}>Export all data (Excel)</Button>} />
       <Card className="mb-4">
         <div className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-[1fr_200px_auto] sm:items-end">
           <Field label="Report">{(id) => <Select id={id} value={kind} onChange={(e) => setKind(e.target.value as ReportKind)}>{REPORTS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}</Select>}</Field>
           <Field label="Month">{(id) => <Select id={id} value={month} onChange={(e) => setMonth(e.target.value)} disabled={kind === "receivables"}>{[...months].reverse().map((m) => <option key={m} value={m}>{fmtMonth(m)} {m.slice(0, 4)}{m === months[months.length - 1] ? " (to date)" : ""}</option>)}</Select>}</Field>
           <div className="flex gap-2">
             <Button icon={Download} onClick={() => downloadCsv(`${kind}-${kind === "receivables" ? today() : month}.csv`, report.head, report.rows)}>CSV</Button>
+            <Button icon={Sheet} onClick={() => downloadWorkbook(`${kind}-${kind === "receivables" ? today() : month}.xls`, [{ name: info.label, head: report.head, rows: report.rows }])}>Excel</Button>
             <Button variant="primary" icon={FileDown} onClick={() => window.print()}>Download PDF</Button>
           </div>
         </div>
@@ -136,6 +139,7 @@ export function Reports() {
           ))}
         </Table>
       </Card>
+      <ReportSchedules reports={REPORTS} />
     </>
   );
 }

@@ -214,6 +214,16 @@ export interface Settings {
   pricing?: import("./pricing").PricingRules;
   /** Utility rates for metered berths. */
   utilities?: { powerPerKwh: number; waterPerGallon: number };
+  /** Reports emailed on a schedule (sent once the app has a server). */
+  reportSchedules?: ReportSchedule[];
+}
+
+export interface ReportSchedule {
+  id: ID;
+  report: string;
+  frequency: "daily" | "weekly" | "monthly";
+  recipients: string[];
+  createdBy: string;
 }
 
 /** A clock-in / clock-out pair from the staff app. `end` is empty while clocked in. */
