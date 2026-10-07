@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { CalendarCheck, CalendarPlus, ChevronLeft, ChevronRight, CircleCheck, Clock, DollarSign, Download, Eye, LogIn, LogOut, Mail, Pencil, Sailboat, TriangleAlert } from "lucide-react";
 import { nextId, useStore } from "@/data/store";
 import type { Booking, BookingStatus, BoatType } from "@marina/shared";
-import { bookingAmount, priceNote } from "@marina/shared";
+import { linesTotal, bookingAmount, priceNote } from "@marina/shared";
 import { withInvoice, withMessage } from "@marina/shared";
 import { addDays, daysBetween, fmtDate, fmtShort, fromISO, relative, toISO, today } from "@marina/shared";
 import { money } from "@marina/shared";
@@ -430,7 +430,7 @@ function EditBooking({ booking: b, onDone }: { booking: Booking; onDone: () => v
     update((d) => {
       const bookings = d.bookings.map((x) => (x.id === b.id ? { ...x, start: f.start, end: f.end, berthId: f.berthId, guests: Number(f.guests) || x.guests } : x));
       // Unpaid invoices follow the new price; paid ones are left as issued.
-      const invoices = d.invoices.map((i) => (i.bookingId === b.id && (i.status === "due" || i.status === "overdue") ? { ...i, amount } : i));
+      const invoices = d.invoices.map((i) => (i.bookingId === b.id && (i.status === "due" || i.status === "overdue") ? { ...i, amount: amount + linesTotal(i) } : i));
       return { ...d, bookings, invoices };
     }, { text: `Changed ${b.code}: ${fmtShort(f.start)}–${fmtShort(f.end)}, berth ${berth?.code}`, to: `/bookings?q=${b.code}`, marinaId });
     toast(`${b.code} updated`, before);

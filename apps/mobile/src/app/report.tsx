@@ -32,6 +32,8 @@ export default function DayReport() {
   const payments = invoices.flatMap((i) => i.payments.filter((p) => p.date === day));
   const taken = payments.reduce((s, p) => s + p.amount, 0);
   const byMethod = (["Card", "Cash", "Check", "Bank transfer"] as PaymentMethod[]).map((m) => ({ m, n: payments.filter((p) => p.method === m).reduce((s, p) => s + p.amount, 0) })).filter((x) => x.n > 0);
+  const services = invoices.flatMap((i) => (i.lines ?? []).filter((l) => localDay(l.at) === day));
+  const servicesTotal = services.reduce((sum, l) => sum + l.amount, 0);
   const tasks = db.tasks.filter((x) => inIds.has(x.marinaId));
   const done = tasks.filter((x) => x.doneAt === day);
   const reported = tasks.filter((x) => x.created === day);
@@ -52,7 +54,7 @@ export default function DayReport() {
     `${where}: day report for ${fmtDate(day)}`,
     "",
     `Boats: ${arrived.length} arrived, ${left.length} left, ${made.length} new bookings. ${occupied} of ${berths.length} berths occupied (${pct(berths.length ? occupied / berths.length : 0)}).`,
-    `Money: ${money2(taken)} taken${byMethod.length ? ` (${byMethod.map((x) => `${x.m} ${money2(x.n)}`).join(", ")})` : ""}.`,
+    `Money: ${money2(taken)} taken${byMethod.length ? ` (${byMethod.map((x) => `${x.m} ${money2(x.n)}`).join(", ")})` : ""}, ${money2(servicesTotal)} in services sold.`,
     `Work: ${done.length} work orders finished, ${reported.length} new problems reported, ${urgentOpen.length} urgent still open.`,
     `People: ${clockedIn} staff clocked in, ${fmtDuration(minutes)} worked.`,
     "",
@@ -84,6 +86,7 @@ export default function DayReport() {
           <View>
             <Row label="Taken" value={money2(taken)} sub={`${payments.length} ${payments.length === 1 ? "payment" : "payments"}`} />
             {byMethod.map((x) => <Row key={x.m} label={x.m} value={money2(x.n)} />)}
+            <Row label="Services sold" value={money2(servicesTotal)} sub={services.length ? [...new Set(services.map((l) => l.label))].join(", ") : undefined} />
           </View>
         </Section>
         <Section title="Work">

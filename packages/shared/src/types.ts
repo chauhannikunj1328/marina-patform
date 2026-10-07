@@ -148,6 +148,18 @@ export interface Invoice {
   reminders: string[];
   /** Payments received. The invoice is paid when they add up to the amount. */
   payments: Payment[];
+  /** Extra charges added during the stay (fuel, pump-out…). Included in `amount`. */
+  lines?: InvoiceLine[];
+}
+
+export interface InvoiceLine {
+  label: string;
+  qty: number;
+  unit: string;
+  unitPrice: number;
+  amount: number;
+  at: string; // ISO date-time
+  by: string;
 }
 
 export interface Payment {

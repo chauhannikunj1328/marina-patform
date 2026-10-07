@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Ban, CircleAlert, CircleCheck, CircleDollarSign, Clock, DollarSign, Download, Eye, Printer, Send } from "lucide-react";
 import { useStore } from "@/data/store";
 import type { Invoice, InvoiceStatus, PaymentMethod } from "@marina/shared";
-import { withMessage } from "@marina/shared";
+import { linesTotal, withMessage } from "@marina/shared";
 import { daysBetween, fmtDate, monthKey, today } from "@marina/shared";
 import { money, money2 } from "@marina/shared";
 import { downloadCsv } from "@/lib/csv";
@@ -159,8 +159,16 @@ function InvoiceDetail({ invoice: inv, onClose }: { invoice: Invoice; onClose: (
               </td>
               <td className="py-3 text-right num">{monthly ? `${(nights / 30).toFixed(2)} mo` : `${nights} nights`}</td>
               <td className="py-3 text-right num">{money2(monthly ? berth?.monthlyRate ?? 0 : berth?.dailyRate ?? 0)}</td>
-              <td className="py-3 text-right num">{money2(live.amount)}</td>
+              <td className="py-3 text-right num">{money2(live.amount - linesTotal(live))}</td>
             </tr>
+            {(live.lines ?? []).map((l, k) => (
+              <tr key={k} className="border-b border-line">
+                <td className="py-3">{l.label}<span className="block text-xs text-ink-3">{fmtDate(l.at.slice(0, 10))} · added by {l.by}</span></td>
+                <td className="py-3 text-right num">{l.qty} {l.unit}</td>
+                <td className="py-3 text-right num">{money2(l.unitPrice)}</td>
+                <td className="py-3 text-right num">{money2(l.amount)}</td>
+              </tr>
+            ))}
           </tbody>
           <tfoot>
             <tr>

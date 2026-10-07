@@ -1,9 +1,9 @@
 // Detail sheets and actions shared by the staff tabs: bookings, berths, tasks, problem reports.
 import { useState } from "react";
 import { Image, Linking, Pressable, ScrollView, View } from "react-native";
-import { ArrowRightLeft, Banknote, CalendarCog, Camera, CircleCheck, CircleX, ImagePlus, LogIn, LogOut, Mail, Phone, Search, TriangleAlert, X } from "lucide-react-native";
+import { ArrowRightLeft, Banknote, Fuel, CalendarCog, Camera, CircleCheck, CircleX, ImagePlus, LogIn, LogOut, Mail, Phone, Search, TriangleAlert, X } from "lucide-react-native";
 import {
-  addDays, bookingAmount, daysBetween, fmtDate, fmtShort, money2, nextId, prepChecklist, relative, today, withInvoice,
+  addDays, bookingAmount, daysBetween, fmtDate, fmtShort, linesTotal, money2, nextId, prepChecklist, relative, SERVICES, today, withInvoice, withServiceCharge,
   type ArrivalRecord, type Berth, type BoatCondition, type Booking, type BookingStatus, type BoatType, type Invoice, type MaintenanceTask, type PaymentMethod, type Priority,
 } from "@marina/shared";
 import { ALL, useMe, useStore } from "../store";
@@ -36,6 +36,7 @@ export function BookingSheet({ booking, onClose }: { booking: Booking; onClose: 
   const [ownerOpen, setOwnerOpen] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [checkingIn, setCheckingIn] = useState(false);
+  const [servicing, setServicing] = useState(false);
   const { user, update, toast } = useStore();
   const office = user?.role === "admin" || user?.role === "manager";
   const b = db.bookings.find((x) => x.id === booking.id) ?? booking;
@@ -95,6 +96,7 @@ export function BookingSheet({ booking, onClose }: { booking: Booking; onClose: 
       {canEdit && (b.status === "pending" || b.status === "confirmed" || b.status === "checked-in") && (
         <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
           <Button style={{ flex: 1 }} size="sm" icon={CalendarCog} label={b.status === "checked-in" ? "Extend or move" : "Change"} onPress={() => setChanging(true)} />
+          {b.status === "checked-in" && <Button style={{ flex: 1 }} size="sm" icon={Fuel} label="Add service" onPress={() => setServicing(true)} />}
           {b.status !== "checked-in" && <Button style={{ flex: 1 }} size="sm" icon={CircleX} label="Cancel" onPress={() => setCancelling(true)} />}
         </View>
       )}
@@ -102,6 +104,7 @@ export function BookingSheet({ booking, onClose }: { booking: Booking; onClose: 
       {changing && <ChangeBookingSheet booking={b} onClose={() => setChanging(false)} />}
       {ownerOpen && owner && <OwnerSheet owner={owner} onClose={() => setOwnerOpen(false)} />}
       {checkingIn && <CheckInSheet booking={b} onClose={() => setCheckingIn(false)} />}
+      {servicing && <ServiceSheet booking={b} onClose={() => setServicing(false)} />}
       {cancelling && <CancelBookingSheet booking={b} decline={b.status === "pending"} onClose={() => setCancelling(false)} />}
     </Sheet>
   );
@@ -125,6 +128,12 @@ function InvoiceRow({ bookingId, onPay }: { bookingId: string; onPay: (inv: Invo
           : inv.status === "overdue" ? <Badge tone="cancelled" label={`${money2(owed)} overdue`} />
           : <Badge tone="pending" label={`${money2(owed)} due`} />}
       </View>
+      {(inv.lines ?? []).map((l, i) => (
+        <View key={i} style={{ flexDirection: "row", justifyContent: "space-between" }}>
+          <Txt v="caption" color={t.text2}>{l.label} · {l.qty} {l.unit} · {fmtShort(l.at.slice(0, 10))}</Txt>
+          <Txt v="caption" num color={t.text2}>{money2(l.amount)}</Txt>
+        </View>
+      ))}
       {owed > 0 && can("billing") !== "view" && <Button size="sm" icon={Banknote} label="Take payment" onPress={() => onPay(inv)} style={{ alignSelf: "flex-start" }} />}
     </View>
   );
@@ -629,7 +638,7 @@ export function ChangeBookingSheet({ booking: b, onClose }: { booking: Booking; 
         ...d,
         bookings: d.bookings.map((x) => (x.id === b.id ? { ...x, start, end, berthId, guests } : x)),
         // Unpaid invoices follow the new price; paid ones are left as issued.
-        invoices: d.invoices.map((i) => (i.bookingId === b.id && (i.status === "due" || i.status === "overdue") ? { ...i, amount } : i)),
+        invoices: d.invoices.map((i) => (i.bookingId === b.id && (i.status === "due" || i.status === "overdue") ? { ...i, amount: amount + linesTotal(i) } : i)),
       }),
       { text: `Changed ${b.code}: ${fmtShort(start)}–${fmtShort(end)}, berth ${berth?.code}`, to: `/bookings?q=${b.code}`, marinaId },
     );
@@ -811,5 +820,48 @@ function ArrivalSummary({ record }: { record: ArrivalRecord }) {
       {record.signature ? <SignatureView value={record.signature} /> : <Txt v="caption" color={t.text3}>Not signed: owner wasn&apos;t there.</Txt>}
       <Txt v="caption" color={t.text3}>{record.signedBy ? `Signed by ${record.signedBy} · ` : ""}Checked in by {record.by}, {fmtShort(record.at.slice(0, 10))}</Txt>
     </View>
+  );
+}
+
+/** Log a service for a boat staying with us (fuel, pump-out, ice…); the charge goes on the stay's invoice. */
+export function ServiceSheet({ booking: b, onClose }: { booking: Booking; onClose: () => void }) {
+  const { db, ix, update, toast, user } = useStore();
+  const me = useMe();
+  const { t } = useTheme();
+  const [serviceId, setServiceId] = useState<(typeof SERVICES)[number]["id"]>("gas");
+  const service = SERVICES.find((x) => x.id === serviceId)!;
+  const [qty, setQty] = useState(20);
+  const amount = Math.round(qty * service.price * 100) / 100;
+  const boat = ix.boat(b.boatId);
+  const pick = (id: (typeof SERVICES)[number]["id"]) => {
+    const next = SERVICES.find((x) => x.id === id)!;
+    setServiceId(id);
+    setQty(next.unit === "gal" ? 20 : 1);
+  };
+  const save = () => {
+    const before = db;
+    const line = { label: service.label, qty, unit: service.unit, unitPrice: service.price, amount, at: new Date().toISOString(), by: me?.name ?? user?.name ?? "Staff" };
+    update((d) => withServiceCharge(d, b.id, ix.amount(b), line), { text: `${service.label} for ${boat?.name}: ${qty} ${service.unit}, ${money2(amount)} added to the invoice`, to: `/bookings?q=${b.code}`, marinaId: ix.berth(b.berthId)?.marinaId });
+    toast(`${money2(amount)} added to ${boat?.name}'s invoice`, before);
+    onClose();
+  };
+  return (
+    <Sheet open onClose={onClose} title="Add a service" subtitle={`${boat?.name} · berth ${ix.berth(b.berthId)?.code}`} footer={<Button variant="primary" size="lg" label={`Add ${money2(amount)} to invoice`} onPress={save} />}>
+      <View style={{ gap: 16 }}>
+        <Field label="Service">
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+            {SERVICES.map((x) => <Chip key={x.id} label={x.label} sub={`${money2(x.price)} / ${x.unit}`} on={serviceId === x.id} onPress={() => pick(x.id)} />)}
+          </View>
+        </Field>
+        <Field label={service.unit === "gal" ? "Gallons" : "How many?"}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            <Stepper label={service.unit} value={qty} onChange={setQty} max={service.unit === "gal" ? 500 : 20} unit={service.unit} />
+            {service.unit === "gal" && [10, 50, 100].map((n) => <Chip key={n} label={`+${n}`} on={false} onPress={() => setQty(Math.min(500, qty + n))} />)}
+          </View>
+        </Field>
+        <Row label="Charge" value={money2(amount)} sub={`${qty} × ${money2(service.price)}`} />
+        <Txt v="caption" color={t.text3}>Added to the stay&apos;s invoice. If it was already paid, the extra becomes due.</Txt>
+      </View>
+    </Sheet>
   );
 }
