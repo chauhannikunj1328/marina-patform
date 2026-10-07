@@ -6,6 +6,7 @@ import { Clock, Megaphone, MessagesSquare, Users } from "lucide-react-native";
 import { addDays, fmtDateTime, fmtDuration, fmtShort, fmtTime, fromISO, minutesWorked, openEntry, planFor, today, type Staff } from "@marina/shared";
 import { List, StaffSheet } from "@/components/office";
 import { BroadcastSheet, WeekSchedule } from "@/components/schedule";
+import { HandoverList } from "@/components/handover";
 import { Avatar, Badge, Button, EmptyState, Screen, Section, Segmented, Txt } from "@/components/ui";
 import { useViewParam } from "@/lib/useOpenParam";
 import { useNow } from "@/lib/clock";
@@ -63,6 +64,9 @@ export default function Team() {
 
       {view === "today" && (
         <>
+          <Section title="Hand-over notes">
+            <HandoverList marinaIds={ids} empty="No notes from staff in the last 24 hours." />
+          </Section>
           <Section title="On the clock" count={clocked.length}>
             {clocked.length === 0 ? <Txt v="bodySm" color={t.text3}>Nobody has clocked in yet.</Txt> : (
               <List>{clocked.map((s, i) => <PersonRow key={s.id} s={s} first={i === 0} onPress={() => setOpen(s)} right={<Badge tone="success" label={`Since ${fmtTime(openEntry(db, s.id)!.start)}`} />} />)}</List>

@@ -70,6 +70,7 @@ function normalize(db: Db): Db {
     timeEntries: db.timeEntries ?? [],
     requests: db.requests ?? [],
     chat: db.chat ?? [],
+    handovers: db.handovers ?? [],
     settings: { ...db.settings, permissions: { ...DEFAULT_PERMISSIONS, ...db.settings.permissions } },
     invoices: db.invoices.map((i) => ({ ...i, payments: i.payments ?? [], status: i.status === "due" && i.due < today() ? "overdue" : i.status })),
   };

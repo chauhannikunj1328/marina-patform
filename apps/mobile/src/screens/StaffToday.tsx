@@ -6,6 +6,7 @@ import { ChevronRight, Clock, LogIn, LogOut, Sailboat, Wrench } from "lucide-rea
 import { fmtDate, fmtDuration, fmtTime, planFor, prepChecklist, relative, SHIFT_HOURS, today, type Booking } from "@marina/shared";
 import { Badge, Button, Card, EmptyState, Screen, Section, Txt } from "@/components/ui";
 import { BookingSheet, CheckInSheet, useBookingStatus } from "@/components/sheets";
+import { HandoverList, HandoverSheet } from "@/components/handover";
 import { useClock, useNow } from "@/lib/clock";
 import { useOpenParam } from "@/lib/useOpenParam";
 import { useStore } from "@/store";
@@ -39,6 +40,7 @@ export function StaffToday() {
   const [openId, setOpenId] = useOpenParam();
   const open = db.bookings.find((b) => b.id === openId);
   const [checkingIn, setCheckingIn] = useState<Booking | undefined>();
+  const [handover, setHandover] = useState<"clockout" | "note" | undefined>();
   const now = today();
   const all = ix.bookingsIn([marinaId]);
   const arrivals = all.filter((b) => b.start === now && (b.status === "confirmed" || b.status === "pending" || b.status === "checked-in"));
@@ -80,10 +82,14 @@ export function StaffToday() {
             <Txt v="bodySm" color={t.text2} style={{ flex: 1 }}>
               {entry ? <>On the clock since {fmtTime(entry.start)} · <Txt v="bodySm" num weight="semibold">{fmtDuration((nowMs - Date.parse(entry.start)) / 60_000)}</Txt></> : "Not clocked in"}
             </Txt>
-            {entry ? <Button size="sm" label="Clock out" onPress={clockOut} /> : <Button size="sm" variant="primary" label="Clock in" onPress={clockIn} />}
+            {entry ? <Button size="sm" label="Clock out" onPress={() => { clockOut(); setHandover("clockout"); }} /> : <Button size="sm" variant="primary" label="Clock in" onPress={clockIn} />}
           </View>
         )}
       </View>
+
+      <Section title="From the last shift" action={<Button size="sm" label="Leave a note" onPress={() => setHandover("note")} />}>
+        <HandoverList marinaIds={[marinaId]} empty="No hand-over notes in the last 24 hours." />
+      </Section>
 
       <View style={{ flexDirection: "row", gap: 8, marginBottom: 24 }}>
         {[
@@ -160,6 +166,7 @@ export function StaffToday() {
       <Txt v="caption" color={t.text3} style={{ textAlign: "center" }}>{m.occupied} of {m.berths} berths occupied · {m.available} free</Txt>
       {open && <BookingSheet booking={open} onClose={() => setOpenId(undefined)} />}
       {checkingIn && <CheckInSheet booking={checkingIn} onClose={() => setCheckingIn(undefined)} />}
+      {handover && <HandoverSheet marinaId={marinaId} title={handover === "clockout" ? "Clocked out. Any notes?" : undefined} onClose={() => setHandover(undefined)} />}
     </Screen>
   );
 }

@@ -2,7 +2,7 @@
 // and dates are generated relative to today so the data never looks stale.
 import type {
   Berth, BerthType, Boat, BoatOwner, BoatType, Booking, BookingStatus, City, County,
-  Activity, ChatMessage, Invoice, MaintenanceTask, Marina, Message, Settings, Shift, Staff, StaffRequest, SystemUser, TimeEntry,
+  Activity, ChatMessage, Handover, Invoice, MaintenanceTask, Marina, Message, Settings, Shift, Staff, StaffRequest, SystemUser, TimeEntry,
 } from "./types";
 import { addDays, daysBetween, fromISO, today } from "./date";
 import { bookingAmount } from "./pricing";
@@ -28,6 +28,8 @@ export interface Db {
   requests: StaffRequest[];
   /** Staff ↔ manager conversations */
   chat: ChatMessage[];
+  /** Notes left for the next shift */
+  handovers: Handover[];
   settings: Settings;
   /** Notification ids the user has dismissed or read */
   readNotifications: string[];
@@ -370,5 +372,10 @@ export function createSeed(): Db {
     { id: "ch-3", staffId: priya.id, fromStaff: false, by: ggManager.name, text: "Morning Priya. The fuel dock pump is playing up again. Can you take a look when you have a minute?", at: created(0.06), read: false },
   ];
 
-  return { counties, cities, marinas, berths, owners, boats, bookings, staff, tasks, invoices, users, activity, messages, timeEntries, requests, chat, settings, readNotifications: [] };
+  const nightGuard = staff.find((s) => s.marinaId === "m-gg" && s.department === "Security");
+  const handovers: Handover[] = [
+    { id: "ho-1", marinaId: "m-gg", text: "Gate 2 keypad is slow to respond, use the side gate. Boat on C-07 asked for a pump-out first thing.", by: nightGuard?.name ?? "Night shift", shift: "Night", at: new Date(Date.now() - 5 * 3_600_000).toISOString() },
+  ];
+
+  return { counties, cities, marinas, berths, owners, boats, bookings, staff, tasks, invoices, users, activity, messages, timeEntries, requests, chat, handovers, settings, readNotifications: [] };
 }

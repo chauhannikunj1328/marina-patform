@@ -253,3 +253,13 @@ export interface ChatMessage {
   /** Sent to everyone at a marina at once (an announcement). */
   broadcast?: boolean;
 }
+
+/** A note for the next shift at a marina. */
+export interface Handover {
+  id: ID;
+  marinaId: ID;
+  text: string;
+  by: string;
+  shift?: Shift;
+  at: string; // ISO date-time
+}
