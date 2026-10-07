@@ -1,5 +1,5 @@
 // Manager and admin home: how the marinas are doing today, what needs a decision, and where to look.
-import { View } from "react-native";
+import { Pressable, View } from "react-native";
 import { router } from "expo-router";
 import { CalendarCheck, CircleAlert, Clock, FileText, Receipt, ScanLine, TriangleAlert, UsersRound, Warehouse, Wrench } from "lucide-react-native";
 import { fmtDate, fmtDateTime, lastMonths, money, moneyShort, openEntry, pct, today } from "@marina/shared";
@@ -60,9 +60,10 @@ export function Overview() {
       </Section>
 
       <Section title="Revenue" action={<Txt v="caption" color={t.text3}>Last 6 months</Txt>}>
-        <View style={{ borderWidth: 1, borderColor: t.border, borderRadius: 16, padding: 16, backgroundColor: t.surface }}>
+        <Pressable accessibilityRole="button" accessibilityHint="Opens revenue by county, city and marina" onPress={() => router.push("/revenue")} style={({ pressed }) => ({ borderWidth: 1, borderColor: t.border, borderRadius: 16, padding: 16, backgroundColor: pressed ? t.sidebar : t.surface, gap: 8 })}>
           <MiniBars months={months} values={revenue} />
-        </View>
+          <Txt v="bodySm" weight="semibold" color={t.greenText} style={{ textAlign: "right" }}>By county, city and marina ›</Txt>
+        </Pressable>
       </Section>
 
       {ids.length > 1 && (
