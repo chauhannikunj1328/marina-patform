@@ -2,6 +2,7 @@
 import type { Db } from "./seed";
 import type { Index } from "./selectors";
 import { today } from "./date";
+import { renewalsDue } from "./actions";
 
 export interface AppNotification {
   id: string;
@@ -38,6 +39,9 @@ export function buildNotifications(db: Db, ix: Index, scope: string[], isAdmin: 
       out.push({ id: `tasks-${urgent.map((t) => t.id).join(".")}`, title: `${urgent.length} high priority work orders`, body: "Repairs that are blocking berths or facilities.", to: "/maintenance" });
     }
   }
+  const renewals = renewalsDue(db.contracts ?? [], now).filter((c) => inScope.has(c.marinaId));
+  if (renewals.length)
+    out.push({ id: `renewals-${renewals.map((c) => c.id).join(".")}`, title: `${renewals.length} ${renewals.length === 1 ? "contract is" : "contracts are"} up for renewal`, body: "Renew them or let the berth go back on sale.", to: "/contracts" });
   const matched = (db.waitlist ?? []).filter((w) => w.status === "waiting" && inScope.has(w.marinaId) && ix.waitlistMatches(w).length > 0);
   if (matched.length)
     out.push({ id: `waitlist-${matched.map((w) => w.id).join(".")}`, title: `${matched.length} waitlist ${matched.length === 1 ? "match" : "matches"}`, body: "A berth has opened up for someone on the waitlist.", to: "/bookings?view=waitlist" });

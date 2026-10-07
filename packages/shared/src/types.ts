@@ -307,3 +307,25 @@ export interface WaitlistEntry {
   offeredBerthId?: ID;
   bookingId?: ID;
 }
+
+export type ContractTerm = "monthly" | "seasonal" | "annual";
+
+/** A long-term berth agreement. It holds the berth through a booking for the whole term. */
+export interface Contract {
+  id: ID;
+  code: string;
+  ownerId: ID;
+  boatId: ID;
+  berthId: ID;
+  marinaId: ID;
+  term: ContractTerm;
+  start: string;
+  end: string; // exclusive, like bookings
+  monthlyFee: number;
+  autoRenew: boolean;
+  status: "active" | "ended" | "cancelled";
+  bookingId: ID;
+  createdAt: string;
+  /** The contract this one renewed. */
+  renewedFromId?: ID;
+}

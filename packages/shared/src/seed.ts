@@ -2,7 +2,7 @@
 // and dates are generated relative to today so the data never looks stale.
 import type {
   Berth, BerthType, Boat, BoatOwner, BoatType, Booking, BookingStatus, City, County,
-  Activity, ChatMessage, Handover, Invoice, Patrol, WaitlistEntry, MaintenanceTask, Marina, Message, Settings, Shift, Staff, StaffRequest, SystemUser, TimeEntry,
+  Activity, ChatMessage, Contract, Handover, Invoice, Patrol, WaitlistEntry, MaintenanceTask, Marina, Message, Settings, Shift, Staff, StaffRequest, SystemUser, TimeEntry,
 } from "./types";
 import { addDays, daysBetween, fromISO, today } from "./date";
 import { bookingAmount } from "./pricing";
@@ -34,6 +34,8 @@ export interface Db {
   patrols: Patrol[];
   /** Boat owners waiting for a berth */
   waitlist: WaitlistEntry[];
+  /** Long-term berth agreements */
+  contracts: Contract[];
   settings: Settings;
   /** Notification ids the user has dismissed or read */
   readNotifications: string[];
@@ -170,9 +172,21 @@ export function createSeed(): Db {
   let seq = 1;
   const HISTORY = 185;
   const FUTURE = 60;
-  for (const b of berths) {
-    let cursor = addDays(now, -HISTORY + between(0, 10));
+  /** Berths held by long-term contract holders: one stay for the whole term, free afterwards. */
+  const contractStays = new Map<string, "monthly" | "annual">();
+  for (const [i, b] of berths.entries()) {
     const fits = boats.filter((bt) => bt.length <= b.maxLength);
+    if (i % 9 === 4 && !b.underMaintenance && fits.length) {
+      const term = i % 2 ? "annual" : "monthly";
+      const end = addDays(now, between(1, term === "monthly" ? 25 : 70));
+      const start = term === "monthly" ? addDays(end, -30) : addDays(end, -365);
+      const id = `bk-${seq}`;
+      bookings.push({ id, code: `BK-${String(seq).padStart(4, "0")}`, boatId: pick(fits).id, berthId: b.id, start, end, guests: between(1, 4), status: "checked-in", createdAt: addDays(start, -between(7, 30)) });
+      contractStays.set(id, term);
+      seq++;
+      continue;
+    }
+    let cursor = addDays(now, -HISTORY + between(0, 10));
     while (daysBetween(cursor, addDays(now, FUTURE)) > 0) {
       const monthly = r() < 0.35;
       const nights = monthly ? between(28, 31) : between(2, 12);
@@ -388,5 +402,15 @@ export function createSeed(): Db {
     { id: "wl-3", marinaId: "m-bh", name: "Keiko Tanaka", email: "keiko.tanaka@email.com", phone: "(510) 555-0117", boatName: "Sakura", boatLength: 28, start: addDays(now, 1), end: addDays(now, 4), status: "waiting", createdAt: addDays(now, -1) },
   ];
 
-  return { counties, cities, marinas, berths, owners, boats, bookings, staff, tasks, invoices, users, activity, messages, timeEntries, requests, chat, handovers, patrols, waitlist, settings, readNotifications: [] };
+  // Monthly stays in the marina now are held on contracts; a few come up for renewal soon.
+  const contracts: Contract[] = bookings
+    .filter((b) => contractStays.has(b.id))
+    .map((b, i) => {
+      const berth = berthById.get(b.berthId)!;
+      const boat = boats.find((x) => x.id === b.boatId)!;
+      const annual = contractStays.get(b.id) === "annual";
+      return { id: `ct-${i + 1}`, code: `CT-${String(i + 1).padStart(3, "0")}`, ownerId: boat.ownerId, boatId: b.boatId, berthId: b.berthId, marinaId: berth.marinaId, term: annual ? "annual" : "monthly", start: b.start, end: b.end, monthlyFee: annual ? Math.round(berth.monthlyRate * 0.9) : berth.monthlyRate, autoRenew: i % 3 !== 0, status: "active", bookingId: b.id, createdAt: b.createdAt };
+    });
+
+  return { counties, cities, marinas, berths, owners, boats, bookings, staff, tasks, invoices, users, activity, messages, timeEntries, requests, chat, handovers, patrols, waitlist, contracts, settings, readNotifications: [] };
 }

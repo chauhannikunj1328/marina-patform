@@ -11,7 +11,7 @@ export const AREAS: { key: Area; label: string; routes: string[] }[] = [
   { key: "dashboards", label: "Global, county and city dashboards", routes: ["/", "/county", "/city"] },
   { key: "marinas", label: "Marinas: add, edit, deactivate", routes: ["/marinas"] },
   { key: "berths", label: "Berths: add, edit, maintenance", routes: ["/berths"] },
-  { key: "bookings", label: "Bookings: create, approve, check in/out", routes: ["/bookings"] },
+  { key: "bookings", label: "Bookings and contracts: create, approve, check in/out", routes: ["/bookings", "/contracts"] },
   { key: "staff", label: "Staff and shifts", routes: ["/staff"] },
   { key: "maintenance", label: "Work orders", routes: ["/maintenance"] },
   { key: "owners", label: "Boat owners", routes: ["/users"] },

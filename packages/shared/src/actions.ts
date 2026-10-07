@@ -1,8 +1,8 @@
 // Small helpers shared by pages that change data, so every page creates records the same way.
 import type { Db } from "./seed";
-import type { Invoice, InvoiceLine, Message } from "./types";
+import type { Contract, Invoice, InvoiceLine, Message } from "./types";
 import { nextId } from "./util";
-import { addDays, today } from "./date";
+import { addDays, daysBetween, today } from "./date";
 
 export function withInvoice(d: Db, bookingId: string, amount: number): Db {
   if (d.invoices.some((i) => i.bookingId === bookingId && i.status !== "void")) return d;
@@ -52,4 +52,13 @@ export function withServiceCharge(d: Db, bookingId: string, stayAmount: number, 
     ),
   };
   return next;
+}
+
+/** How early a contract is flagged for renewal: a week for monthly, a month for seasonal, two months for annual. */
+export const RENEWAL_NOTICE_DAYS: Record<Contract["term"], number> = { monthly: 7, seasonal: 30, annual: 60 };
+
+/** Active contracts ending within their notice period that haven't been renewed yet. */
+export function renewalsDue(contracts: Contract[], now: string): Contract[] {
+  const renewed = new Set(contracts.map((c) => c.renewedFromId).filter(Boolean));
+  return contracts.filter((c) => c.status === "active" && c.end > now && !renewed.has(c.id) && daysBetween(now, c.end) <= RENEWAL_NOTICE_DAYS[c.term]);
 }

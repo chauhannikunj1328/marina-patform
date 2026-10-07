@@ -22,6 +22,7 @@ const StaffPage = page(() => import("@/pages/Operations"), "StaffPage");
 const Maintenance = page(() => import("@/pages/Operations"), "Maintenance");
 const People = page(() => import("@/pages/People"), "People");
 const Billing = page(() => import("@/pages/Billing"), "Billing");
+const Contracts = page(() => import("@/pages/Contracts"), "Contracts");
 const Reports = page(() => import("@/pages/Insights"), "Reports");
 const Analytics = page(() => import("@/pages/Insights"), "Analytics");
 const AccessControl = page(() => import("@/pages/System"), "AccessControl");
@@ -75,6 +76,7 @@ export default function App() {
           <Route path="marinas/:id" element={<Guard area="marinas">{lazyPage(<MarinaDetail />)}</Guard>} />
           <Route path="berths" element={<Guard area="berths">{lazyPage(<Berths />)}</Guard>} />
           <Route path="bookings" element={<Guard area="bookings">{lazyPage(<ByQuery><Bookings /></ByQuery>)}</Guard>} />
+          <Route path="contracts" element={<Guard area="bookings">{lazyPage(<Contracts />)}</Guard>} />
           <Route path="locations" element={<Guard admin>{lazyPage(<Locations />)}</Guard>} />
           <Route path="staff" element={<Guard area="staff">{lazyPage(<ByQuery><StaffPage /></ByQuery>)}</Guard>} />
           <Route path="maintenance" element={<Guard area="maintenance">{lazyPage(<ByQuery><Maintenance /></ByQuery>)}</Guard>} />

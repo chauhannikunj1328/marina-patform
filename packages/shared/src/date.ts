@@ -99,3 +99,13 @@ export function fmtDateTime(iso: string): string {
   if (mins >= 60 && mins < 24 * 60) return `${Math.floor(mins / 60)}h ago`;
   return `${dayFmt.format(d).replace("Sept", "Sep")}, ${timeFmt.format(d).toLowerCase()}`;
 }
+
+/** Same day n months later (clamped to the month's last day). */
+export function addMonths(iso: string, n: number): string {
+  const d = fromISO(iso);
+  const day = d.getDate();
+  d.setDate(1);
+  d.setMonth(d.getMonth() + n);
+  d.setDate(Math.min(day, new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()));
+  return toISO(d);
+}
