@@ -15,7 +15,8 @@
       "supportsTablet": true,
       "infoPlist": {
         "NSCameraUsageDescription": "Marina uses the camera to scan berth QR codes and add photos to repair reports.",
-        "NSPhotoLibraryUsageDescription": "Marina lets you attach photos to repair reports."
+        "NSPhotoLibraryUsageDescription": "Marina lets you attach photos to repair reports.",
+        "NSFaceIDUsageDescription": "Marina uses Face ID to unlock the app."
       }
     },
     "android": {
@@ -70,6 +71,12 @@
         "expo-notifications",
         {
           "color": "#2F3740"
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Marina uses Face ID to unlock the app."
         }
       ],
       "expo-status-bar"

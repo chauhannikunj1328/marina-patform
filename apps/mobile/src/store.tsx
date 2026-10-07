@@ -1,7 +1,7 @@
 // App state for the Marina mobile app (staff, managers and admins). Uses the same data model, sample data, permissions and
 // sign-in accounts as the web app (via @marina/shared); data is saved on this device.
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Platform } from "react-native";
+import { AppState, Platform } from "react-native";
 import * as Crypto from "expo-crypto";
 import NetInfo from "@react-native-community/netinfo";
 import {
@@ -45,6 +45,12 @@ interface Store {
   /** Shift reminders on this phone (staff). */
   reminders: boolean;
   setReminders: (on: boolean) => void;
+  /** Ask for Face ID / fingerprint before showing the app. */
+  biometric: boolean;
+  setBiometric: (on: boolean) => void;
+  /** True while the app is waiting for Face ID / fingerprint. */
+  locked: boolean;
+  unlock: () => void;
 }
 
 const Ctx = createContext<Store | null>(null);
@@ -58,6 +64,9 @@ const MARINA_KEY = "marina.staff.marina";
 const PASSWORDS_KEY = "marina.passwords";
 const OUTBOX_KEY = "marina.outbox";
 const REMINDERS_KEY = "marina.reminders";
+const BIOMETRIC_KEY = "marina.biometric";
+/** Lock again after the app has been in the background this long. */
+const RELOCK_MS = 60_000;
 
 const sha256 = (v: string) => Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, v);
 
@@ -88,6 +97,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   /** Passwords changed on this phone (hashes only), until there's a real account server. */
   const [passwords, setPasswords] = useState<Record<string, string>>({});
   const [reminders, setRemindersState] = useState(false);
+  const [biometric, setBiometricState] = useState(false);
+  const [locked, setLocked] = useState(false);
   const loaded = useRef(false);
   const onlineRef = useRef(true);
 
@@ -101,6 +112,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setPasswords((await load<Record<string, string>>(PASSWORDS_KEY)) ?? {});
       setOutbox((await load<{ at: string; text: string }[]>(OUTBOX_KEY)) ?? []);
       setRemindersState((await load<boolean>(REMINDERS_KEY)) ?? false);
+      const bio = (await load<boolean>(BIOMETRIC_KEY)) ?? false;
+      setBiometricState(bio);
+      setLocked(bio);
       loaded.current = true;
       setReady(true);
     })();
@@ -186,6 +200,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (!u || !expected || expected !== hash) return SIGN_IN_ERROR;
     if (u.status !== "active") return "This account isn't active yet.";
     setUserId(u.id);
+    setLocked(false);
     void save(SESSION_KEY, u.id);
     if (!__DEV__) {
       void sendOwnerEmail({ event: "Signed in", name: u.name, email: u.email, role: u.role, app: "Mobile app", site: Platform.OS === "web" ? "Mobile app (web preview)" : "Mobile app", device: `${Platform.OS} ${Platform.Version ?? ""}` });
@@ -208,6 +223,23 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     void save(REMINDERS_KEY, on);
   }, []);
 
+  const setBiometric = useCallback((on: boolean) => {
+    setBiometricState(on);
+    void save(BIOMETRIC_KEY, on);
+  }, []);
+  const unlock = useCallback(() => setLocked(false), []);
+
+  // Lock again when the app comes back after a minute in the background.
+  useEffect(() => {
+    if (!biometric) return;
+    let hiddenAt = 0;
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "background") hiddenAt = Date.now();
+      if (state === "active" && hiddenAt && Date.now() - hiddenAt > RELOCK_MS) setLocked(true);
+    });
+    return () => sub.remove();
+  }, [biometric]);
+
   const signOut = () => {
     setUserId(null);
     void remove(SESSION_KEY);
@@ -216,7 +248,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const can = useCallback((area?: Area) => levelFor(db.settings.permissions, user?.role, area), [db.settings.permissions, user?.role]);
 
   return (
-    <Ctx.Provider value={{ ready, db, ix, user, scope, marinaId: currentMarina, ids, setMarinaId, signIn, signOut, update, can, toasts, toast, online, outbox, changePassword, reminders, setReminders }}>
+    <Ctx.Provider value={{ ready, db, ix, user, scope, marinaId: currentMarina, ids, setMarinaId, signIn, signOut, update, can, toasts, toast, online, outbox, changePassword, reminders, setReminders, biometric, setBiometric, locked: locked && biometric && !!user, unlock }}>
       {children}
     </Ctx.Provider>
   );

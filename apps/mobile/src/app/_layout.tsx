@@ -10,6 +10,7 @@ import { Inter_500Medium, Inter_600SemiBold } from "@expo-google-fonts/inter";
 import { StoreProvider, useStore } from "@/store";
 import { ThemeProvider, useTheme } from "@/theme";
 import { Toasts } from "@/components/ui";
+import { LockScreen } from "@/components/lock";
 
 SplashScreen.preventAutoHideAsync();
 SplashScreen.setOptions({ duration: 300, fade: true });
@@ -42,6 +43,7 @@ function Shell() {
         <Stack.Screen name="patrol" options={{ animation: "slide_from_right" }} />
       </Stack>
       <Toasts />
+      <LockScreen />
     </View>
   );
 }

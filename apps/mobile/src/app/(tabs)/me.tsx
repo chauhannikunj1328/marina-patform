@@ -1,5 +1,5 @@
 // Me: profile, this week's shifts and hours, time off and swaps, marinas, appearance and account.
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Linking, Pressable, Switch, View } from "react-native";
 import { router } from "expo-router";
 import { ChevronRight, CloudOff, ExternalLink, KeyRound, LogOut, Plus, UserRoundPen } from "lucide-react-native";
@@ -9,6 +9,7 @@ import { PasswordSheet, ProfileSheet, RequestSheet } from "@/components/me-sheet
 import { useNow } from "@/lib/clock";
 import { useRole } from "@/lib/role";
 import { allowNotifications, remindersSupported } from "@/lib/reminders";
+import { biometricInfo, biometricUnlock } from "@/lib/biometrics";
 import { useMe, useStore } from "@/store";
 import { useTheme, type ThemeMode } from "@/theme";
 
@@ -30,7 +31,11 @@ function ListRow({ icon: IconCmp, label, onPress }: { icon: Icon; label: string;
 }
 
 export default function Me() {
-  const { db, ix, user, scope, signOut, update, toast, outbox, reminders, setReminders } = useStore();
+  const { db, ix, user, scope, signOut, update, toast, outbox, reminders, setReminders, biometric, setBiometric } = useStore();
+  const [bio, setBio] = useState<{ available: boolean; label: string }>({ available: false, label: "Face ID or fingerprint" });
+  useEffect(() => {
+    void biometricInfo().then(setBio);
+  }, []);
   const me = useMe();
   const { t, mode, setMode } = useTheme();
   const { office, isAdmin } = useRole();
@@ -170,6 +175,26 @@ export default function Me() {
               <Txt v="bodySm" weight="semibold" color={mode === m ? t.text : t.text3}>{m === "system" ? "Automatic" : m === "light" ? "Light" : "Dark"}</Txt>
             </Pressable>
           ))}
+        </View>
+      </Section>
+
+      <Section title="Security">
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 12, borderWidth: 1, borderColor: t.border, borderRadius: 16, padding: 16, backgroundColor: t.surface }}>
+          <View style={{ flex: 1 }}>
+            <Txt>Unlock with {bio.label}</Txt>
+            <Txt v="caption" color={t.text3}>{bio.available ? "Asked when you open the app or come back after a minute." : "Set up Face ID or a fingerprint on this phone first. Not available in the web preview."}</Txt>
+          </View>
+          <Switch
+            accessibilityLabel={`Unlock with ${bio.label}`}
+            disabled={!bio.available}
+            value={biometric && bio.available}
+            trackColor={{ true: t.tealStrong, false: t.surface3 }}
+            onValueChange={async (on) => {
+              if (on && !(await biometricUnlock(`Turn on ${bio.label} for Marina`))) return;
+              setBiometric(on);
+              toast(on ? `${bio.label} unlock is on` : `${bio.label} unlock is off`);
+            }}
+          />
         </View>
       </Section>
 
