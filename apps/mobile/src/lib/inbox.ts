@@ -9,7 +9,7 @@ export interface InboxItem {
   title: string;
   body: string;
   /** Screen to open; `open` is the work order to show there. */
-  path: "/" | "/chat" | "/me" | "/tasks" | "/approvals" | "/team" | "/bookings";
+  path: "/" | "/chat" | "/me" | "/tasks" | "/approvals" | "/team" | "/bookings" | "/invoices";
   open?: string;
   /** Extra screen option, e.g. which list to show. */
   view?: string;
@@ -66,7 +66,7 @@ export function buildOfficeInbox(db: Db, ix: Index, ids: string[], isAdmin: bool
     const base = { id: n.id, title: n.title, body: n.body };
     if (to.startsWith("/bookings?status=pending")) out.push({ ...base, kind: "booking", path: "/approvals", view: "bookings" });
     else if (to.startsWith("/bookings")) out.push({ ...base, kind: "arrival", path: "/bookings" });
-    else if (to.startsWith("/billing")) out.push({ ...base, kind: "invoice", path: "/" });
+    else if (to.startsWith("/billing")) out.push({ ...base, kind: "invoice", path: "/invoices", view: "overdue" });
     else if (to.startsWith("/maintenance?open=")) out.push({ ...base, kind: "task", urgent: true, path: "/tasks", open: to.split("open=")[1] });
     else if (to.startsWith("/maintenance")) out.push({ ...base, kind: "task", urgent: true, path: "/tasks" });
     else if (to.startsWith("/staff?tab=requests")) out.push({ ...base, kind: "request", path: "/approvals", view: "staff" });

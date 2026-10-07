@@ -129,7 +129,8 @@ const DOCK_METHODS: PaymentMethod[] = ["Card", "Cash", "Check"];
 
 /** Record money taken at the dock (card reader, cash or check) against an invoice. Same rules as Billing on the web. */
 export function PaymentSheet({ invoice, onClose }: { invoice: Invoice; onClose: () => void }) {
-  const { db, ix, update, toast } = useStore();
+  const { db, ix, update, toast, user } = useStore();
+  const methods: PaymentMethod[] = user?.role === "staff" ? DOCK_METHODS : [...DOCK_METHODS, "Bank transfer"];
   const balance = ix.balance(invoice);
   const [amount, setAmount] = useState(balance.toFixed(2));
   const [method, setMethod] = useState<PaymentMethod>("Card");
@@ -143,7 +144,7 @@ export function PaymentSheet({ invoice, onClose }: { invoice: Invoice; onClose: 
     const now = today();
     update(
       (d) => ({ ...d, invoices: d.invoices.map((i) => (i.id === invoice.id ? { ...i, payments: [...i.payments, { date: now, amount: value, method }], ...(full ? { status: "paid" as const, paidAt: now, method } : {}) } : i)) }),
-      { text: `Took ${money2(value)} ${full ? "payment" : "part payment"} for ${invoice.number} at the dock (${method})`, to: `/billing?open=${invoice.id}`, marinaId: ix.marinaOfInvoice(invoice) },
+      { text: `Recorded ${money2(value)} ${full ? "payment" : "part payment"} for ${invoice.number} (${method})`, to: `/billing?open=${invoice.id}`, marinaId: ix.marinaOfInvoice(invoice) },
     );
     toast(full ? `${invoice.number} is paid` : `${money2(value)} taken. ${money2(balance - value)} still owed.`, before);
     onClose();
@@ -158,9 +159,9 @@ export function PaymentSheet({ invoice, onClose }: { invoice: Invoice; onClose: 
           <Chip label="Full balance" on={Number(amount) === balance} onPress={() => setAmount(balance.toFixed(2))} />
           <Chip label="Half" on={Number(amount) === Math.round(balance * 50) / 100} onPress={() => setAmount((Math.round(balance * 50) / 100).toFixed(2))} />
         </View>
-        <Field label="Paid by" hint={method === "Card" ? "Run the card on the marina's card reader first, then record it here." : method === "Check" ? "Write the invoice number on the back of the check." : "Hand the cash to the front desk at the end of your shift."}>
-          <View style={{ flexDirection: "row", gap: 8 }}>
-            {DOCK_METHODS.map((m) => <Chip key={m} label={m} on={method === m} onPress={() => setMethod(m)} />)}
+        <Field label="Paid by" hint={method === "Card" ? "Run the card on the marina's card reader first, then record it here." : method === "Check" ? "Write the invoice number on the back of the check." : method === "Bank transfer" ? "Record it once the money shows in the bank account." : "Hand the cash to the front desk at the end of your shift."}>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+            {methods.map((m) => <Chip key={m} label={m} on={method === m} onPress={() => setMethod(m)} />)}
           </View>
         </Field>
       </View>

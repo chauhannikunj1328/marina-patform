@@ -10,7 +10,7 @@ import { ALL, useStore } from "@/store";
 import { useTheme } from "@/theme";
 
 export function Overview() {
-  const { db, ix, ids, user, marinaId, scope } = useStore();
+  const { db, ix, ids, user, marinaId, scope, can } = useStore();
   const { isAdmin } = useRole();
   const { t } = useTheme();
   const now = today();
@@ -35,7 +35,7 @@ export function Overview() {
     late.length > 0 && { icon: TriangleAlert, tone: "bad" as const, title: `${late.length} ${late.length === 1 ? "boat" : "boats"} past departure`, body: "Still checked in after their last night.", go: () => router.navigate({ pathname: "/bookings", params: { view: "in", at: String(Date.now()) } }) },
     needBerth.length > 0 && { icon: CircleAlert, tone: "bad" as const, title: `${needBerth.length} upcoming ${needBerth.length === 1 ? "booking needs" : "bookings need"} a new berth`, body: "Their berth is out of service. Move them in the web app.", go: undefined },
     urgent.length > 0 && { icon: Wrench, tone: "warn" as const, title: `${urgent.length} urgent ${urgent.length === 1 ? "repair" : "repairs"}`, body: `${openTasks.length} open work orders in total`, go: () => router.navigate("/tasks") },
-    overdue.length > 0 && { icon: Receipt, tone: "warn" as const, title: `${money(overdueTotal)} overdue`, body: `${overdue.length} ${overdue.length === 1 ? "invoice" : "invoices"} past due. Send reminders from the web app.`, go: undefined },
+    overdue.length > 0 && { icon: Receipt, tone: "warn" as const, title: `${money(overdueTotal)} overdue`, body: `${overdue.length} ${overdue.length === 1 ? "invoice" : "invoices"} past due. Tap to remind or record payments.`, go: can("billing") !== "none" ? () => router.push("/invoices") : undefined },
   ].filter(Boolean) as { icon: typeof Wrench; tone: "neutral" | "warn" | "bad"; title: string; body: string; go?: () => void }[];
   const activity = db.activity.filter((a) => !a.marinaId || inIds.has(a.marinaId)).slice(0, 6);
 
@@ -77,7 +77,10 @@ export function Overview() {
           <Button style={{ flex: 1 }} icon={Wrench} label="Repairs" onPress={() => router.navigate("/tasks")} />
           <Button style={{ flex: 1 }} icon={ScanLine} label="Scan" onPress={() => router.push("/scan")} />
         </View>
-        <Button icon={UsersRound} label="Boat owners" onPress={() => router.push("/owners")} />
+        <View style={{ flexDirection: "row", gap: 8 }}>
+          <Button style={{ flex: 1 }} icon={UsersRound} label="Owners" onPress={() => router.push("/owners")} />
+          {can("billing") !== "none" && <Button style={{ flex: 1 }} icon={Receipt} label="Invoices" onPress={() => router.push("/invoices")} />}
+        </View>
       </Section>
 
       <Section title="Recent activity">

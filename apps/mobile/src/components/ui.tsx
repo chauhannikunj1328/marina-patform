@@ -131,7 +131,7 @@ export function Button({
       ]}
     >
       {loading ? <ActivityIndicator color={fg} /> : IconCmp && <IconCmp size={18} color={fg} strokeWidth={1.75} />}
-      <Text style={{ fontFamily: fonts.semibold, fontSize: size === "sm" ? 13 : 15, color: fg }}>{label}</Text>
+      <Text numberOfLines={1} style={{ fontFamily: fonts.semibold, fontSize: size === "sm" ? 13 : 15, color: fg, flexShrink: 1 }}>{label}</Text>
     </Pressable>
   );
 }
