@@ -513,6 +513,29 @@ export function TaskSheet({ task, onClose }: { task: MaintenanceTask; onClose: (
       </View>
       <Txt v="bodySm" color={t.text3} style={{ marginBottom: 16 }}>Due {fmtDate(x.due)} · {x.assigneeId ? `Assigned to ${ix.staffMember(x.assigneeId)?.name}` : "Unassigned"}</Txt>
       {office && canEdit && x.status !== "done" && (
+        <View style={{ gap: 16, marginBottom: 16 }}>
+          <Field label="Priority">
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              {(["low", "medium", "high"] as Priority[]).map((p) => (
+                <Chip key={p} label={p === "high" ? "Urgent" : p === "medium" ? "Medium" : "Low"} on={x.priority === p} onPress={() => {
+                  if (x.priority === p) return;
+                  const before = db;
+                  update((d) => ({ ...d, tasks: d.tasks.map((y) => (y.id === x.id ? { ...y, priority: p } : y)) }), log(`Priority set to ${p === "high" ? "urgent" : p}: ${x.title}`));
+                  toast("Priority changed", before);
+                }} />
+              ))}
+            </View>
+          </Field>
+          <Field label="Due">
+            <DayChips days={[...(x.due < today() ? [x.due] : []), ...Array.from({ length: 60 }, (_, i) => addDays(today(), i))]} value={x.due} onChange={(due) => {
+              const before = db;
+              update((d) => ({ ...d, tasks: d.tasks.map((y) => (y.id === x.id ? { ...y, due } : y)) }), log(`Due date set to ${fmtShort(due)}: ${x.title}`));
+              toast(`Due ${fmtShort(due)}`, before);
+            }} />
+          </Field>
+        </View>
+      )}
+      {office && canEdit && x.status !== "done" && (
         <View style={{ marginBottom: 16 }}>
           <Field label="Assign to" hint="They see it under Mine in their app.">
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
