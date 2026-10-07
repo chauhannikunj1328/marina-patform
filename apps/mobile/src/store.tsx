@@ -5,7 +5,7 @@ import { AppState, Platform } from "react-native";
 import * as Crypto from "expo-crypto";
 import NetInfo from "@react-native-community/netinfo";
 import {
-  BUILT_IN_USERS, createSeed, DEFAULT_PERMISSIONS, Index, levelFor, nextId, PASSWORD_HASHES, sendOwnerEmail, SIGN_IN_ERROR, setCurrency, setTimeZone, today,
+  BUILT_IN_USERS, createSeed, DEFAULT_PERMISSIONS, diffDb, Index, levelFor, nextId, PASSWORD_HASHES, sendOwnerEmail, SIGN_IN_ERROR, setCurrency, setTimeZone, today,
   type Area, type Db, type Level, type SystemUser,
 } from "@marina/shared";
 import { load, remove, save } from "./lib/storage";
@@ -188,7 +188,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setDb((d) => {
         const next = fn(d);
         if (!log) return next;
-        const entry = { id: nextId("a", next.activity), at: new Date().toISOString(), by: user?.name ?? "Staff", ...log };
+        const changes = diffDb(d, next);
+        const entry = { id: nextId("a", next.activity), at: new Date().toISOString(), by: user?.name ?? "Staff", ...log, ...(changes.length ? { changes } : {}) };
         return { ...next, activity: [entry, ...next.activity].slice(0, 200) };
       });
     },

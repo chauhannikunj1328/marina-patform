@@ -1,6 +1,6 @@
 import { useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { StoreContext } from "./context";
-import { setTimeZone, today } from "@marina/shared";
+import { diffDb, setTimeZone, today } from "@marina/shared";
 import { setCurrency } from "@marina/shared";
 import { notifyOwner } from "@/lib/notify";
 import { DEFAULT_PERMISSIONS, levelFor, type Area, type Level } from "@marina/shared";
@@ -169,7 +169,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         const entry: { text: string; to?: string; marinaId?: string } = typeof log === "string" ? { text: log } : log;
         // A manager with one marina can only change that marina.
         if (!entry.marinaId && scope.length === 1) entry.marinaId = scope[0];
-        return { ...next, activity: [{ id: nextId("a", next.activity), at: new Date().toISOString(), by: userName, ...entry }, ...next.activity].slice(0, 200) };
+        const changes = diffDb(d, next);
+        return { ...next, activity: [{ id: nextId("a", next.activity), at: new Date().toISOString(), by: userName, ...entry, ...(changes.length ? { changes } : {}) }, ...next.activity].slice(0, 200) };
       }),
     [userName, scope],
   );

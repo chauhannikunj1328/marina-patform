@@ -108,15 +108,40 @@ function AuditLog() {
   const pg = paginate(rows, page, 12);
   return (
     <Card>
-      <CardHeader title="Audit log" description="Every change made in the system, newest first" />
+      <CardHeader title="Audit log" description="Every change made in the system, newest first, with before and after values" />
       <Toolbar><SearchInput value={q} onChange={(v) => { setQ(v); setPage(1); }} placeholder="Search by person or action" /></Toolbar>
       <Table head={["When", "Who", "What", ""]} empty={rows.length === 0}>
         {pg.rows.map((a) => (
           <tr key={a.id}>
-            <td className="whitespace-nowrap text-ink-2">{fmtDateTime(a.at)}</td>
-            <td className="whitespace-nowrap font-medium">{a.by}</td>
-            <td>{a.text}</td>
-            <td>{a.to && <Link to={a.to} className="text-[13px] font-semibold text-green-text hover:underline">Open</Link>}</td>
+            <td className="whitespace-nowrap align-top text-ink-2">{fmtDateTime(a.at)}</td>
+            <td className="whitespace-nowrap align-top font-medium">{a.by}</td>
+            <td>
+              {a.text}
+              {a.changes && a.changes.length > 0 && (
+                <details className="mt-1">
+                  <summary className="cursor-pointer text-xs font-semibold text-green-text">{a.changes.length} {a.changes.length === 1 ? "change" : "changes"}: before and after</summary>
+                  <table className="mt-2 w-full text-xs">
+                    <tbody>
+                      {a.changes.map((c, i) => (
+                        <tr key={i} className="border-t border-line">
+                          <td className="py-1 pr-3 font-medium">{c.record}</td>
+                          {c.kind === "changed" ? (
+                            <>
+                              <td className="py-1 pr-3 text-ink-3">{c.field}</td>
+                              <td className="py-1 pr-3 text-ink-2 line-through decoration-ink-3/60">{c.before}</td>
+                              <td className="py-1 font-medium">{c.after}</td>
+                            </>
+                          ) : (
+                            <td colSpan={3} className="py-1 text-ink-2">{c.kind === "added" ? "Added" : "Removed"}</td>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </details>
+              )}
+            </td>
+            <td className="align-top">{a.to && <Link to={a.to} className="text-[13px] font-semibold text-green-text hover:underline">Open</Link>}</td>
           </tr>
         ))}
       </Table>

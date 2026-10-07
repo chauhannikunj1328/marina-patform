@@ -192,6 +192,8 @@ export interface Activity {
   to?: string;
   /** Marina the change belongs to, so managers only see their own marinas' activity. */
   marinaId?: ID;
+  /** What changed, field by field (before → after). */
+  changes?: import("./audit").FieldChange[];
 }
 
 export interface Message {
