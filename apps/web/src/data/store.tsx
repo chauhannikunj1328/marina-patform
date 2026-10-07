@@ -114,6 +114,7 @@ function normalize(db: Db): Db {
     requests: db.requests ?? [],
     chat: db.chat ?? [],
     handovers: db.handovers ?? [],
+    patrols: db.patrols ?? [],
     invoices: db.invoices.map((i) => {
       // Data saved before partial payments existed: rebuild the payment list from paidAt.
       const payments = i.payments ?? (i.status === "paid" && i.paidAt ? [{ date: i.paidAt, amount: i.amount, method: i.method ?? "Card" }] : []);

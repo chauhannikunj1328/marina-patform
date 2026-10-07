@@ -263,3 +263,23 @@ export interface Handover {
   shift?: Shift;
   at: string; // ISO date-time
 }
+
+/** One stop on a dock patrol: checked by scanning a berth label on that dock, or by hand. */
+export interface PatrolCheck {
+  id: string; // checkpoint id, e.g. "dock-A" or "safety-lights"
+  at: string;
+  ok: boolean;
+  note?: string;
+  scanned?: boolean;
+}
+
+/** A dock patrol round and its safety checklist. */
+export interface Patrol {
+  id: ID;
+  marinaId: ID;
+  staffId: ID;
+  by: string;
+  startedAt: string;
+  endedAt?: string;
+  checks: PatrolCheck[];
+}

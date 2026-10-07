@@ -7,6 +7,7 @@ import { fmtDate, fmtDuration, fmtTime, planFor, prepChecklist, relative, SHIFT_
 import { Badge, Button, Card, EmptyState, Screen, Section, Txt } from "@/components/ui";
 import { BookingSheet, CheckInSheet, useBookingStatus } from "@/components/sheets";
 import { HandoverList, HandoverSheet } from "@/components/handover";
+import { PatrolLink } from "@/components/patrol";
 import { useClock, useNow } from "@/lib/clock";
 import { useOpenParam } from "@/lib/useOpenParam";
 import { useStore } from "@/store";
@@ -86,6 +87,8 @@ export function StaffToday() {
           </View>
         )}
       </View>
+
+      <PatrolLink />
 
       <Section title="From the last shift" action={<Button size="sm" label="Leave a note" onPress={() => setHandover("note")} />}>
         <HandoverList marinaIds={[marinaId]} empty="No hand-over notes in the last 24 hours." />

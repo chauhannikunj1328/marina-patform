@@ -2,7 +2,7 @@
 // and dates are generated relative to today so the data never looks stale.
 import type {
   Berth, BerthType, Boat, BoatOwner, BoatType, Booking, BookingStatus, City, County,
-  Activity, ChatMessage, Handover, Invoice, MaintenanceTask, Marina, Message, Settings, Shift, Staff, StaffRequest, SystemUser, TimeEntry,
+  Activity, ChatMessage, Handover, Invoice, Patrol, MaintenanceTask, Marina, Message, Settings, Shift, Staff, StaffRequest, SystemUser, TimeEntry,
 } from "./types";
 import { addDays, daysBetween, fromISO, today } from "./date";
 import { bookingAmount } from "./pricing";
@@ -30,6 +30,8 @@ export interface Db {
   chat: ChatMessage[];
   /** Notes left for the next shift */
   handovers: Handover[];
+  /** Dock patrol rounds */
+  patrols: Patrol[];
   settings: Settings;
   /** Notification ids the user has dismissed or read */
   readNotifications: string[];
@@ -377,5 +379,7 @@ export function createSeed(): Db {
     { id: "ho-1", marinaId: "m-gg", text: "Gate 2 keypad is slow to respond, use the side gate. Boat on C-07 asked for a pump-out first thing.", by: nightGuard?.name ?? "Night shift", shift: "Night", at: new Date(Date.now() - 5 * 3_600_000).toISOString() },
   ];
 
-  return { counties, cities, marinas, berths, owners, boats, bookings, staff, tasks, invoices, users, activity, messages, timeEntries, requests, chat, handovers, settings, readNotifications: [] };
+  const patrols: Patrol[] = [];
+
+  return { counties, cities, marinas, berths, owners, boats, bookings, staff, tasks, invoices, users, activity, messages, timeEntries, requests, chat, handovers, patrols, settings, readNotifications: [] };
 }

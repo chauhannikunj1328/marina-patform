@@ -1,11 +1,11 @@
 // Scan the QR label on a berth post to open that berth. Typing the berth number works too.
 import { useRef, useState } from "react";
 import { Platform, View } from "react-native";
-import { Redirect, router } from "expo-router";
+import { Redirect, router, useLocalSearchParams } from "expo-router";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { Camera } from "lucide-react-native";
 import { Button, Field, Input, StackHeader, Txt } from "@/components/ui";
-import { ALL, useStore } from "@/store";
+import { ALL, useMe, useStore } from "@/store";
 import { useTheme } from "@/theme";
 
 /** Berth id from a label: "marinastaff://berth/<id>", a web link ending in /berth/<id>, or a bare id. */
@@ -14,7 +14,9 @@ function berthIdFromCode(data: string): string {
 }
 
 export default function Scan() {
-  const { db, scope, marinaId, setMarinaId, toast, user } = useStore();
+  const { db, scope, marinaId, setMarinaId, toast, user, update } = useStore();
+  const me = useMe();
+  const params = useLocalSearchParams<{ patrol?: string }>();
   const { t } = useTheme();
   const [permission, requestPermission] = useCameraPermissions();
   const [code, setCode] = useState("");
@@ -28,6 +30,14 @@ export default function Scan() {
     if (!b) return toast("That code isn't a Marina berth label.", undefined, "warning");
     if (!scope.includes(b.marinaId)) return toast("That berth isn't at one of your marinas.", undefined, "warning");
     handled.current = true;
+    // During a patrol, a scan checks off that berth's dock and goes back to the round.
+    const patrol = params.patrol && me ? (db.patrols ?? []).find((p) => p.staffId === me.id && p.marinaId === b.marinaId && !p.endedAt) : undefined;
+    if (patrol) {
+      const dock = `dock-${b.code.split("-")[0]}`;
+      update((d) => ({ ...d, patrols: (d.patrols ?? []).map((p) => (p.id === patrol.id ? { ...p, checks: [...p.checks.filter((c) => c.id !== dock), { id: dock, at: new Date().toISOString(), ok: true, scanned: true }] } : p)) }));
+      toast(`Dock ${b.code.split("-")[0]} checked`);
+      return router.back();
+    }
     if (b.marinaId !== marinaId) setMarinaId(b.marinaId);
     router.replace({ pathname: "/berths", params: { open: b.id, at: String(Date.now()) } });
   };

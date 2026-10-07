@@ -1,6 +1,6 @@
 // Shifts, time off, swaps and hours worked. Used by the staff app and the web Staff page.
 import type { Db } from "./seed";
-import type { Shift, Staff, StaffRequest, TimeEntry } from "./types";
+import type { Berth, Shift, Staff, StaffRequest, TimeEntry } from "./types";
 import { fromISO, toISO } from "./date";
 
 export type DayPlan =
@@ -63,5 +63,19 @@ export function prepChecklist(berth: { power: boolean; water: boolean } | undefi
     ...(berth?.water ? [{ id: "water", label: "Water tap works" }] : []),
     { id: "fenders", label: "Fenders in place" },
     { id: "number", label: "Berth number visible" },
+  ];
+}
+
+/** Patrol route for a marina: every dock, then the safety checks. */
+export function patrolCheckpoints(berths: Berth[]): { id: string; label: string; kind: "dock" | "safety" }[] {
+  const docks = [...new Set(berths.map((b) => b.code.split("-")[0]))].sort();
+  return [
+    ...docks.map((d) => ({ id: `dock-${d}`, label: `Dock ${d}`, kind: "dock" as const })),
+    { id: "safety-fire", label: "Fire extinguishers in place and in date", kind: "safety" },
+    { id: "safety-rings", label: "Life rings on their hooks", kind: "safety" },
+    { id: "safety-lights", label: "Dock lighting working", kind: "safety" },
+    { id: "safety-power", label: "No damaged power cords or pedestals", kind: "safety" },
+    { id: "safety-gates", label: "Gates closed and locked", kind: "safety" },
+    { id: "safety-fuel", label: "Fuel dock tidy, no spills", kind: "safety" },
   ];
 }
