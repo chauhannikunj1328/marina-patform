@@ -9,6 +9,8 @@ import { Chip, EmptyState, Screen, SearchBox, StackHeader, Txt } from "@/compone
 import { useRole } from "@/lib/role";
 import { useStore } from "@/store";
 import { useTheme } from "@/theme";
+import { useTr } from "@/lib/i18n";
+import { tx } from "@marina/shared";
 
 const TYPES = ["All", "Bookings", "Payments", "Staff", "Work orders", "Berths"] as const;
 type Kind = (typeof TYPES)[number];
@@ -26,6 +28,7 @@ function kindOf(a: Activity): Kind {
 }
 
 export default function ActivityLog() {
+  const tr = useTr();
   const { db, ids, user } = useStore();
   const { office } = useRole();
   const { t } = useTheme();
@@ -42,22 +45,22 @@ export default function ActivityLog() {
     .filter((a) => (kind === "All" || kindOf(a) === kind) && (!who || a.by === who) && (!s || a.text.toLowerCase().includes(s)))
     .slice(0, 150);
   const days = [...new Set(rows.map((a) => localDay(a.at)))];
-  const label = (d: string) => (d === today() ? "Today" : d === addDays(today(), -1) ? "Yesterday" : fmtDate(d));
+  const label = (d: string) => (d === today() ? tr("Today") : d === addDays(today(), -1) ? tr("Yesterday") : fmtDate(d));
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
-      <StackHeader title="Activity" subtitle={`${inScope.length} changes`} />
+      <StackHeader title={tr("Activity")} subtitle={tr("{n} changes", { n: inScope.length })} />
       <Screen>
-        <SearchBox value={q} onChange={setQ} placeholder="Search activity" />
+        <SearchBox value={q} onChange={setQ} placeholder={tr("Search activity")} />
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }} style={{ marginBottom: 8 }}>
-          {TYPES.map((k) => <Chip key={k} label={k} on={kind === k} onPress={() => setKind(k)} />)}
+          {TYPES.map((k) => <Chip key={k} label={tr(k)} on={kind === k} onPress={() => setKind(k)} />)}
         </ScrollView>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }} style={{ marginBottom: 16 }}>
-          <Chip label="Everyone" on={!who} onPress={() => setWho("")} />
-          {people.map((p) => <Chip key={p} label={p} on={who === p} onPress={() => setWho(who === p ? "" : p)} />)}
+          <Chip label={tr("Everyone")} on={!who} onPress={() => setWho("")} />
+          {people.map((p) => <Chip key={p} label={tr(p)} on={who === p} onPress={() => setWho(who === p ? "" : p)} />)}
         </ScrollView>
         {rows.length === 0 ? (
-          <EmptyState icon={History} title="No activity matches" body="Try another type, person or search." />
+          <EmptyState icon={History} title={tr("No activity matches")} body={tr("Try another type, person or search.")} />
         ) : (
           days.map((d) => (
             <View key={d} style={{ marginBottom: 16 }}>
@@ -67,8 +70,8 @@ export default function ActivityLog() {
                   <View key={a.id} style={{ flexDirection: "row", gap: 12, padding: 12, paddingHorizontal: 14, borderTopWidth: i ? 1 : 0, borderColor: t.border }}>
                     <Txt v="caption" num color={t.text3} style={{ width: 58, marginTop: 2 }}>{fmtTime(a.at)}</Txt>
                     <View style={{ flex: 1 }}>
-                      <Txt v="bodySm">{a.text}</Txt>
-                      <Txt v="caption" color={t.text3}>{a.by}{kindOf(a) !== "All" ? ` · ${kindOf(a)}` : ""}</Txt>
+                      <Txt v="bodySm">{tx(a.text)}</Txt>
+                      <Txt v="caption" color={t.text3}>{tr(a.by)}{kindOf(a) !== "All" ? ` · ${tr(kindOf(a))}` : ""}</Txt>
                     </View>
                   </View>
                 ))}
@@ -76,7 +79,7 @@ export default function ActivityLog() {
             </View>
           ))
         )}
-        {rows.length === 150 && <Txt v="caption" color={t.text3} style={{ textAlign: "center" }}>Showing the latest 150. Filter to see older changes.</Txt>}
+        {rows.length === 150 && <Txt v="caption" color={t.text3} style={{ textAlign: "center" }}>{tr("Showing the latest 150. Filter to see older changes.")}</Txt>}
       </Screen>
     </View>
   );

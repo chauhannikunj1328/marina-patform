@@ -48,7 +48,7 @@ export default function Chat() {
     return (
       <View style={{ flex: 1, backgroundColor: t.bg }}>
         <StackHeader title={tr("Messages")} />
-        <EmptyState icon={MessagesSquare} title={office ? "Choose someone to message" : "No staff record linked"} body={office ? "Open the Team tab and pick a team member." : "Ask your manager to add you to the staff list."} />
+        <EmptyState icon={MessagesSquare} title={office ? tr("Choose someone to message") : tr("No staff record linked")} body={office ? tr("Open the Team tab and pick a team member.") : tr("Ask your manager to add you to the staff list.")} />
       </View>
     );
   }
@@ -57,25 +57,25 @@ export default function Chat() {
     <View style={{ flex: 1, backgroundColor: t.bg }}>
       <StackHeader
         title={office ? me.name : `${ix.marina(me.marinaId)?.name} office`}
-        subtitle={office ? `${me.position} · ${ix.marina(me.marinaId)?.name}` : manager ? `${manager.name}, Marina Manager` : "Marina managers"}
+        subtitle={office ? `${me.position} · ${ix.marina(me.marinaId)?.name}` : manager ? tr("{name}, Marina Manager", { name: manager.name }) : tr("Marina managers")}
       />
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
         <ScrollView ref={scroll} contentContainerStyle={{ padding: 16, gap: 8, flexGrow: 1, justifyContent: "flex-end" }} onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: false })}>
-          {thread.length === 0 && <EmptyState icon={MessagesSquare} title={tr("No messages yet")} body={office ? `Your message shows up in ${me.name.split(" ")[0]}'s app.` : "Questions about shifts, boats or repairs go straight to your manager."} />}
+          {thread.length === 0 && <EmptyState icon={MessagesSquare} title={tr("No messages yet")} body={office ? tr("Your message shows up in {v}'s app.", { v: me.name.split(" ")[0] }) : tr("Questions about shifts, boats or repairs go straight to your manager.")} />}
           {thread.map((m, i) => {
             const mine = !theirs(m);
             const day = localDay(m.at);
             const newDay = i === 0 || localDay(thread[i - 1].at) !== day;
             return (
               <View key={m.id}>
-                {newDay && <Txt v="caption" color={t.text3} style={{ textAlign: "center", marginVertical: 8 }}>{day === today() ? "Today" : fmtShort(day)}</Txt>}
+                {newDay && <Txt v="caption" color={t.text3} style={{ textAlign: "center", marginVertical: 8 }}>{day === today() ? tr("Today") : fmtShort(day)}</Txt>}
                 <View style={{ alignSelf: mine ? "flex-end" : "flex-start", maxWidth: "82%" }}>
-                  <View style={{ backgroundColor: mine ? t.primary : t.surface, borderWidth: mine ? 0 : 1, borderColor: t.border, borderRadius: 18, borderBottomRightRadius: mine ? 6 : 18, borderBottomLeftRadius: mine ? 18 : 6, paddingHorizontal: 14, paddingVertical: 10 }}>
-                    {m.broadcast && <Txt v="caption" weight="semibold" color={mine ? t.onPrimary : t.greenText}>Announcement to everyone</Txt>}
+                  <View style={{ backgroundColor: mine ? t.primary : t.surface, borderWidth: mine ? 0 : 1, borderColor: t.border, borderRadius: 18, borderBottomEndRadius: mine ? 6 : 18, borderBottomStartRadius: mine ? 18 : 6, paddingHorizontal: 14, paddingVertical: 10 }}>
+                    {m.broadcast && <Txt v="caption" weight="semibold" color={mine ? t.onPrimary : t.greenText}>{tr("Announcement to everyone")}</Txt>}
                     <Txt color={mine ? t.onPrimary : t.text}>{m.text}</Txt>
                   </View>
                   <Txt v="caption" color={t.text3} style={{ marginTop: 2, textAlign: mine ? "right" : "left" }}>
-                    {mine && !office ? "" : `${m.by.split(" ")[0]} · `}{fmtTime(m.at)}{mine && m.read ? " · Seen" : ""}
+                    {mine && !office ? "" : `${m.by.split(" ")[0]} · `}{fmtTime(m.at)}{mine && m.read ? tr(" · Seen") : ""}
                   </Txt>
                 </View>
               </View>
@@ -88,12 +88,12 @@ export default function Chat() {
             onChangeText={setText}
             placeholder={tr("Message")}
             placeholderTextColor={t.text3}
-            accessibilityLabel="Message"
+            accessibilityLabel={tr("Message")}
             multiline
             numberOfLines={1}
             style={{ flex: 1, minHeight: 44, maxHeight: 120, borderRadius: 22, borderWidth: 1, borderColor: t.borderStrong, paddingHorizontal: 16, paddingTop: 11, paddingBottom: 11, fontFamily: fonts.regular, fontSize: 15, color: t.text, backgroundColor: t.bg }}
           />
-          <Pressable accessibilityRole="button" accessibilityLabel="Send" disabled={!text.trim()} onPress={send} style={({ pressed }) => ({ width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", backgroundColor: pressed ? t.primaryPressed : t.primary, opacity: text.trim() ? 1 : 0.4 })}>
+          <Pressable accessibilityRole="button" accessibilityLabel={tr("Send")} disabled={!text.trim()} onPress={send} style={({ pressed }) => ({ width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", backgroundColor: pressed ? t.primaryPressed : t.primary, opacity: text.trim() ? 1 : 0.4 })}>
             <SendHorizontal size={20} color={t.onPrimary} />
           </Pressable>
         </View>

@@ -10,8 +10,10 @@ import { useRole } from "@/lib/role";
 import { useOpenParam } from "@/lib/useOpenParam";
 import { useStore } from "@/store";
 import { useTheme } from "@/theme";
+import { useTr } from "@/lib/i18n";
 
 export default function Owners() {
+  const tr = useTr();
   const { db, ix, ids, user, can } = useStore();
   const { isAdmin } = useRole();
   const { t } = useTheme();
@@ -34,11 +36,11 @@ export default function Owners() {
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
-      <StackHeader title="Boat owners" subtitle={`${owners.length} at ${ids.length > 1 ? `${ids.length} marinas` : ix.marina(ids[0])?.name}`} />
+      <StackHeader title={tr("Boat owners")} subtitle={tr("{n} at {where}", { n: owners.length, where: ids.length > 1 ? tr("{n} marinas", { n: ids.length }) : ix.marina(ids[0])?.name })} />
       <Screen>
-        <SearchBox value={q} onChange={setQ} placeholder="Name, phone, email, boat or registration" />
+        <SearchBox value={q} onChange={setQ} placeholder={tr("Name, phone, email, boat or registration")} />
         {rows.length === 0 ? (
-          <EmptyState icon={s ? Search : UsersRound} title={s ? `Nobody matches “${q}”` : "No boat owners yet"} />
+          <EmptyState icon={s ? Search : UsersRound} title={s ? tr("Nobody matches “{q}”", { q: q }) : tr("No boat owners yet")} />
         ) : (
           <View style={{ borderWidth: 1, borderColor: t.border, borderRadius: 16, backgroundColor: t.surface, overflow: "hidden" }}>
             {rows.map((o, i) => {
@@ -49,15 +51,15 @@ export default function Owners() {
                   <Avatar name={o.name} size={40} />
                   <View style={{ flex: 1 }}>
                     <Txt weight="medium" numberOfLines={1}>{o.name}</Txt>
-                    <Txt v="caption" color={t.text3} numberOfLines={1}>{boats.map((b) => b.name).join(", ") || "No boats"}</Txt>
+                    <Txt v="caption" color={t.text3} numberOfLines={1}>{boats.map((b) => b.name).join(", ") || tr("No boats")}</Txt>
                   </View>
-                  {due > 0 && <Txt v="caption" num weight="semibold" color={t.status.pending.fg}>{money2(due)} due</Txt>}
+                  {due > 0 && <Txt v="caption" num weight="semibold" color={t.status.pending.fg}>{money2(due)} {tr("due")}</Txt>}
                 </Pressable>
               );
             })}
           </View>
         )}
-        {rows.length === 80 && <Txt v="caption" color={t.text3} style={{ textAlign: "center", marginTop: 12 }}>Showing the first 80. Search to narrow it down.</Txt>}
+        {rows.length === 80 && <Txt v="caption" color={t.text3} style={{ textAlign: "center", marginTop: 12 }}>{tr("Showing the first 80. Search to narrow it down.")}</Txt>}
       </Screen>
       {open && <OwnerSheet owner={open} onClose={() => setOpenId(undefined)} />}
     </View>

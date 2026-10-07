@@ -6,8 +6,10 @@ import { palette } from "@marina/shared";
 import { Logomark } from "@/components/ui";
 import { fonts } from "@/theme";
 import { useStore } from "@/store";
+import { useTr } from "@/lib/i18n";
 
 export default function Splash() {
+  const tr = useTr();
   const { user } = useStore();
   const [fade] = useState(() => new Animated.Value(0));
   const [rise] = useState(() => new Animated.Value(12));
@@ -22,12 +24,12 @@ export default function Splash() {
   }, [fade, rise, user]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: palette.slate[800], alignItems: "center", justifyContent: "center" }} accessibilityLabel="Marina">
+    <View style={{ flex: 1, backgroundColor: palette.slate[800], alignItems: "center", justifyContent: "center" }} accessibilityLabel={tr("Marina")}>
       <Animated.View style={{ alignItems: "center", opacity: fade, transform: [{ translateY: rise }] }}>
         <Logomark size={72} color="#FFFFFF" />
-        <Text style={{ fontFamily: fonts.medium, fontSize: 30, color: "#FFFFFF", marginTop: 20, letterSpacing: -0.3 }}>Marina</Text>
+        <Text style={{ fontFamily: fonts.medium, fontSize: 30, color: "#FFFFFF", marginTop: 20, letterSpacing: -0.3 }}>{tr("Marina")}</Text>
       </Animated.View>
-      <Text style={{ position: "absolute", bottom: 48, fontFamily: fonts.regular, fontSize: 12, color: palette.teal[300] }}>Marina Management System</Text>
+      <Text style={{ position: "absolute", bottom: 48, fontFamily: fonts.regular, fontSize: 12, color: palette.teal[300] }}>{tr("Marina Management System")}</Text>
     </View>
   );
 }

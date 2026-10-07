@@ -7,12 +7,16 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
-import { ArrowLeft, CircleAlert, Minus, Plus, CircleCheck, Eye, EyeOff, Search, TriangleAlert, WifiOff, X, type LucideProps } from "lucide-react-native";
+import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, CircleAlert, LogIn, LogOut, Minus, Plus, CircleCheck, Eye, EyeOff, Search, Send, TriangleAlert, Undo2, WifiOff, X, type LucideProps } from "lucide-react-native";
+
 import { router } from "expo-router";
-import { DAYS, fmtShort, fromISO, LOGOMARK_PATHS, radius, type as typeScale } from "@marina/shared";
-import { fonts, useTheme } from "../theme";
+import { weekday, fmtShort, fromISO, LOGOMARK_PATHS, radius, type as typeScale } from "@marina/shared";
+import { alignEnd, flipRtl, fonts, useTheme } from "../theme";
 import { useStore } from "../store";
 import { useTr } from "../lib/i18n";
+
+/** Icons that point along the reading direction; they are mirrored in Arabic. */
+const DIRECTIONAL = new Set<unknown>([ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, LogIn, LogOut, Send, Undo2]);
 
 export type Icon = ComponentType<LucideProps>;
 
@@ -73,11 +77,12 @@ export function Logomark({ size = 24, color }: { size?: number; color?: string }
 }
 
 export function Logo({ size = 20, color }: { size?: number; color?: string }) {
+  const tr = useTr();
   const { t } = useTheme();
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: size / 2 }} accessibilityLabel="Marina">
+    <View style={{ flexDirection: "row", alignItems: "center", gap: size / 2 }} accessibilityLabel={tr("Marina")}>
       <Logomark size={size} color={color} />
-      <Text style={{ fontFamily: fonts.medium, fontSize: size * 1.1, color: color ?? t.text, letterSpacing: -0.2 }}>Marina</Text>
+      <Text style={{ fontFamily: fonts.medium, fontSize: size * 1.1, color: color ?? t.text, letterSpacing: -0.2 }}>{tr("Marina")}</Text>
     </View>
   );
 }
@@ -131,23 +136,24 @@ export function Button({
         style,
       ]}
     >
-      {loading ? <ActivityIndicator color={fg} /> : IconCmp && <IconCmp size={18} color={fg} strokeWidth={1.75} />}
+      {loading ? <ActivityIndicator color={fg} /> : IconCmp && <IconCmp size={18} color={fg} strokeWidth={1.75} style={DIRECTIONAL.has(IconCmp) ? flipRtl() : undefined} />}
       <Text numberOfLines={1} style={{ fontFamily: fonts.semibold, fontSize: size === "sm" ? 13 : 15, color: fg, flexShrink: 1 }}>{label}</Text>
     </Pressable>
   );
 }
 
 export function IconButton({ icon: IconCmp, label, onPress, plain, badge = 0 }: { icon: Icon; label: string; onPress: () => void; plain?: boolean; badge?: number }) {
+  const tr = useTr();
   const { t } = useTheme();
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={badge ? `${label}, ${badge} new` : label}
+      accessibilityLabel={badge ? tr("{label}, {badge} new", { label: label, badge: badge }) : label}
       onPress={onPress}
       hitSlop={6}
       style={({ pressed }) => ({ width: 44, height: 44, borderRadius: 22, borderWidth: plain ? 0 : 1, borderColor: t.border, alignItems: "center", justifyContent: "center", backgroundColor: pressed ? t.sidebar : plain ? "transparent" : t.surface })}
     >
-      <IconCmp size={plain ? 22 : 20} color={plain ? t.text : t.text2} strokeWidth={1.5} />
+      <IconCmp size={plain ? 22 : 20} color={plain ? t.text : t.text2} strokeWidth={1.5} style={DIRECTIONAL.has(IconCmp) ? flipRtl() : undefined} />
       <Dot count={badge} />
     </Pressable>
   );
@@ -173,6 +179,7 @@ export function Screen({ children, title, right }: { children: ReactNode; title?
 
 /** Header for full-screen pages opened from the tabs (inbox, messages, scanner). */
 export function StackHeader({ title, subtitle, right }: { title: string; subtitle?: string; right?: ReactNode }) {
+  const tr = useTr();
   const { t } = useTheme();
   const insets = useSafeAreaInsets();
   return (
@@ -180,12 +187,12 @@ export function StackHeader({ title, subtitle, right }: { title: string; subtitl
       <View style={{ minHeight: 56, flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 8 }}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Back"
+          accessibilityLabel={tr("Back")}
           hitSlop={4}
           onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))}
           style={({ pressed }) => ({ width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", backgroundColor: pressed ? t.sidebar : "transparent" })}
         >
-          <ArrowLeft size={22} color={t.text} />
+          <ArrowLeft style={flipRtl()} size={22} color={t.text} />
         </Pressable>
         <View style={{ flex: 1 }}>
           <Txt weight="semibold" numberOfLines={1}>{title}</Txt>
@@ -217,7 +224,7 @@ export function Dot({ count }: { count: number }) {
   const { t } = useTheme();
   if (!count) return null;
   return (
-    <View style={{ position: "absolute", top: 4, right: 2, minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 4, backgroundColor: t.error.base, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: t.surface }}>
+    <View style={{ position: "absolute", top: 4, end: 2, minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 4, backgroundColor: t.error.base, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: t.surface }}>
       <Text style={{ fontFamily: fonts.numBold, fontSize: 10, lineHeight: 12, color: "#FFFFFF" }}>{count > 9 ? "9+" : count}</Text>
     </View>
   );
@@ -265,7 +272,7 @@ export function Stepper({ value, onChange, min = 1, max = 99, label, unit }: { v
 export function DayChips({ days, value, onChange }: { days: string[]; value: string; onChange: (d: string) => void }) {
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-      {days.map((d) => <Chip key={d} label={DAYS[fromISO(d).getDay()]} sub={fmtShort(d)} on={value === d} onPress={() => onChange(d)} />)}
+      {days.map((d) => <Chip key={d} label={weekday(fromISO(d).getDay())} sub={fmtShort(d)} on={value === d} onPress={() => onChange(d)} />)}
     </ScrollView>
   );
 }
@@ -343,8 +350,8 @@ export function Row({ label, value, sub }: { label: string; value: string; sub?:
     <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 16, borderBottomWidth: 1, borderColor: t.border, paddingBottom: 12, marginBottom: 12 }}>
       <Txt v="bodySm" color={t.text3}>{label}</Txt>
       <View style={{ flexShrink: 1, alignItems: "flex-end" }}>
-        <Txt v="bodySm" weight="medium" style={{ textAlign: "right" }}>{value}</Txt>
-        {sub ? <Txt v="caption" color={t.text3} style={{ textAlign: "right" }}>{sub}</Txt> : null}
+        <Txt v="bodySm" weight="medium" style={{ textAlign: alignEnd() }}>{value}</Txt>
+        {sub ? <Txt v="caption" color={t.text3} style={{ textAlign: alignEnd() }}>{sub}</Txt> : null}
       </View>
     </View>
   );
@@ -396,6 +403,7 @@ export function Field({ label, error, hint, children }: { label: string; error?:
 }
 
 export function Input({ invalid, secure, ...props }: TextInputProps & { invalid?: boolean; secure?: boolean }) {
+  const tr = useTr();
   const { t } = useTheme();
   const [focus, setFocus] = useState(false);
   const [show, setShow] = useState(false);
@@ -409,7 +417,7 @@ export function Input({ invalid, secure, ...props }: TextInputProps & { invalid?
         {...props}
         style={[
           {
-            minHeight: 48, borderRadius: radius.md, borderWidth: 1, paddingHorizontal: 14, paddingRight: secure ? 48 : 14,
+            minHeight: 48, borderRadius: radius.md, borderWidth: 1, paddingHorizontal: 14, paddingEnd: secure ? 48 : 14,
             fontFamily: fonts.regular, fontSize: 15, color: t.text, backgroundColor: t.surface,
             borderColor: invalid ? t.error.base : focus ? t.focus : t.borderStrong,
           },
@@ -418,7 +426,7 @@ export function Input({ invalid, secure, ...props }: TextInputProps & { invalid?
         ]}
       />
       {secure && (
-        <Pressable accessibilityRole="button" accessibilityLabel={show ? "Hide password" : "Show password"} onPress={() => setShow((s) => !s)} hitSlop={8} style={{ position: "absolute", right: 12, padding: 4 }}>
+        <Pressable accessibilityRole="button" accessibilityLabel={show ? tr("Hide password") : tr("Show password")} onPress={() => setShow((s) => !s)} hitSlop={8} style={{ position: "absolute", end: 12, padding: 4 }}>
           {show ? <EyeOff size={20} color={t.text2} /> : <Eye size={20} color={t.text2} />}
         </Pressable>
       )}
@@ -430,7 +438,7 @@ export function SearchBox({ value, onChange, placeholder }: { value: string; onC
   const { t } = useTheme();
   return (
     <View style={{ justifyContent: "center", marginBottom: 16 }}>
-      <Search size={20} color={t.text3} style={{ position: "absolute", left: 16, zIndex: 1 }} />
+      <Search size={20} color={t.text3} style={{ position: "absolute", start: 16, zIndex: 1 }} />
       <TextInput
         value={value}
         onChangeText={onChange}
@@ -439,7 +447,7 @@ export function SearchBox({ value, onChange, placeholder }: { value: string; onC
         accessibilityLabel={placeholder}
         returnKeyType="search"
         clearButtonMode="while-editing"
-        style={{ height: 48, borderRadius: radius.full, borderWidth: 1, borderColor: t.borderStrong, backgroundColor: t.surface, paddingLeft: 46, paddingRight: 16, fontFamily: fonts.regular, fontSize: 15, color: t.text }}
+        style={{ height: 48, borderRadius: radius.full, borderWidth: 1, borderColor: t.borderStrong, backgroundColor: t.surface, paddingStart: 46, paddingEnd: 16, fontFamily: fonts.regular, fontSize: 15, color: t.text }}
       />
     </View>
   );
@@ -448,13 +456,14 @@ export function SearchBox({ value, onChange, placeholder }: { value: string; onC
 // ---- Bottom sheet (07 modals: radius 20, padding 32 → 24 on phones) -----------
 
 export function Sheet({ open, onClose, title, subtitle, children, footer }: { open: boolean; onClose: () => void; title: string; subtitle?: string; children: ReactNode; footer?: ReactNode }) {
+  const tr = useTr();
   const { t } = useTheme();
   const insets = useSafeAreaInsets();
   return (
     <Modal visible={open} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1, justifyContent: "flex-end" }}>
-        <Pressable accessibilityLabel="Close" onPress={onClose} style={[StyleSheet.absoluteFill, { backgroundColor: t.scrim }]} />
-        <View style={{ maxHeight: "90%", backgroundColor: t.raised, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, paddingBottom: Math.max(insets.bottom, 16) }}>
+        <Pressable accessibilityLabel={tr("Close")} onPress={onClose} style={[StyleSheet.absoluteFill, { backgroundColor: t.scrim }]} />
+        <View style={{ maxHeight: "90%", backgroundColor: t.raised, borderTopStartRadius: radius.xl, borderTopEndRadius: radius.xl, paddingBottom: Math.max(insets.bottom, 16) }}>
           <View style={{ alignItems: "center", paddingTop: 8 }}>
             <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: t.borderStrong }} />
           </View>
@@ -463,7 +472,7 @@ export function Sheet({ open, onClose, title, subtitle, children, footer }: { op
               <Txt v="h2">{title}</Txt>
               {subtitle && <Txt v="bodySm" color={t.text3}>{subtitle}</Txt>}
             </View>
-            <IconButton icon={X} label="Close" onPress={onClose} />
+            <IconButton icon={X} label={tr("Close")} onPress={onClose} />
           </View>
           <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 16 }} keyboardShouldPersistTaps="handled">
             {children}
@@ -480,11 +489,12 @@ export function Sheet({ open, onClose, title, subtitle, children, footer }: { op
 // ---- Toasts (07: white card with border and a colored leading icon) -------------
 
 export function Toasts({ top }: { top?: number }) {
+  const tr = useTr();
   const { toasts } = useStore();
   const { t } = useTheme();
   if (!toasts.length) return null;
   return (
-    <View pointerEvents="box-none" style={[{ position: "absolute", left: 12, right: 12, gap: 8 }, top !== undefined ? { top } : { bottom: 96 }]} accessibilityLiveRegion="polite">
+    <View pointerEvents="box-none" style={[{ position: "absolute", start: 12, end: 12, gap: 8 }, top !== undefined ? { top } : { bottom: 96 }]} accessibilityLiveRegion="polite">
       {toasts.map((x) => {
         const IconCmp = x.kind === "warning" ? TriangleAlert : x.kind === "error" ? CircleAlert : CircleCheck;
         const color = x.kind === "warning" ? "#E0A11B" : x.kind === "error" ? t.error.base : t.green;
@@ -494,7 +504,7 @@ export function Toasts({ top }: { top?: number }) {
             <Txt v="bodySm" style={{ flex: 1 }}>{x.message}</Txt>
             {x.undo && (
               <Pressable accessibilityRole="button" onPress={x.undo} hitSlop={8}>
-                <Txt v="bodySm" weight="semibold" color={t.greenText}>Undo</Txt>
+                <Txt v="bodySm" weight="semibold" color={t.greenText}>{tr("Undo")}</Txt>
               </Pressable>
             )}
           </View>
@@ -511,7 +521,7 @@ export function Avatar({ name, size = 48, dot }: { name: string; size?: number; 
   return (
     <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: t.surface3, borderWidth: 1, borderColor: t.border, alignItems: "center", justifyContent: "center" }}>
       <Text style={{ fontFamily: fonts.semibold, fontSize: size / 3, color: t.text2 }}>{initials}</Text>
-      {dot && <View style={{ position: "absolute", right: 0, bottom: 0, width: 12, height: 12, borderRadius: 6, backgroundColor: t.green, borderWidth: 2, borderColor: t.bg }} />}
+      {dot && <View style={{ position: "absolute", end: 0, bottom: 0, width: 12, height: 12, borderRadius: 6, backgroundColor: t.green, borderWidth: 2, borderColor: t.bg }} />}
     </View>
   );
 }

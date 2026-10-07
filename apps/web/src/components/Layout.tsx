@@ -7,7 +7,7 @@ import { Languages, Check, ShieldAlert, FileSignature,
 } from "lucide-react";
 import { useStore } from "@/data/store";
 import { useLang } from "@/lib/lang";
-import { cx, LANGS, t } from "@marina/shared";
+import { cx, LANGS, t, tx } from "@marina/shared";
 import { buildNotifications } from "@marina/shared";
 import { Avatar, Badge, IconButton, Modal, Tooltip } from "./ui";
 import { OfflineBanner } from "./StatusPage";
@@ -411,8 +411,8 @@ function Notifications() {
                   >
                     <span className={cx("mt-2 size-2 shrink-0 rounded-full", read.has(n.id) ? "bg-transparent" : "bg-green")} aria-hidden />
                     <span className="min-w-0">
-                      <span className={cx("block text-sm", !read.has(n.id) ? "font-semibold text-ink" : "text-ink-2")}>{n.title}</span>
-                      <span className="block text-xs text-ink-3">{n.body}</span>
+                      <span className={cx("block text-sm", !read.has(n.id) ? "font-semibold text-ink" : "text-ink-2")}>{tx(n.title)}</span>
+                      <span className="block text-xs text-ink-3">{tx(n.body)}</span>
                     </span>
                   </button>
                 </li>

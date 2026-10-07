@@ -13,16 +13,18 @@ import { useViewParam } from "@/lib/useOpenParam";
 import { useNow } from "@/lib/clock";
 import { useStore } from "@/store";
 import { useTheme } from "@/theme";
+import { useTr } from "@/lib/i18n";
 
 function PersonRow({ s, right, first, onPress }: { s: Staff; right?: React.ReactNode; first?: boolean; onPress: () => void }) {
   const { db, ix, ids } = useStore();
+  const tr = useTr();
   const { t } = useTheme();
   return (
     <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: 12, padding: 12, paddingHorizontal: 14, borderTopWidth: first ? 0 : 1, borderColor: t.border, backgroundColor: pressed ? t.sidebar : "transparent" })}>
       <Avatar name={s.name} size={40} dot={!!openEntry(db, s.id)} />
       <View style={{ flex: 1 }}>
         <Txt weight="medium" numberOfLines={1}>{s.name}</Txt>
-        <Txt v="caption" color={t.text3} numberOfLines={1}>{s.position}{ids.length > 1 ? ` · ${ix.marina(s.marinaId)?.name}` : ""}</Txt>
+        <Txt v="caption" color={t.text3} numberOfLines={1}>{tr(s.position)}{ids.length > 1 ? ` · ${ix.marina(s.marinaId)?.name}` : ""}</Txt>
       </View>
       {right}
     </Pressable>
@@ -30,6 +32,7 @@ function PersonRow({ s, right, first, onPress }: { s: Staff; right?: React.React
 }
 
 export default function Team() {
+  const tr = useTr();
   const { db, ids } = useStore();
   const { t } = useTheme();
   const now = useNow();
@@ -47,9 +50,9 @@ export default function Team() {
     return p.working && !!p.covering;
   };
   const offLabel = (s: Staff) => {
-    if (s.status === "on-leave") return "On leave";
+    if (s.status === "on-leave") return tr("On leave");
     const p = planFor(s, day, db.requests);
-    return !p.working && p.why === "leave" ? "Time off" : !p.working && p.why === "swapped" ? "Swapped" : "Day off";
+    return !p.working && p.why === "leave" ? tr("Time off") : !p.working && p.why === "swapped" ? tr("Swapped") : tr("Day off");
   };
   const start = addDays(day, -fromISO(day).getDay());
   const hours = staff.map((s) => ({ s, m: minutesWorked(db.timeEntries, s.id, start, addDays(start, 7), now) })).filter((x) => x.m > 0).sort((a, b) => b.m - a.m);
@@ -61,30 +64,30 @@ export default function Team() {
   const unread = db.chat.filter((m) => m.fromStaff && !m.read && staffIds.has(m.staffId)).length;
 
   return (
-    <Screen title="Team">
-      <Segmented value={view} onChange={setView} items={[{ value: "today", label: "Today" }, { value: "week", label: "Week" }, { value: "hours", label: "Hours" }, { value: "messages", label: "Chat", count: unread || undefined }]} />
+    <Screen title={tr("Team")}>
+      <Segmented value={view} onChange={setView} items={[{ value: "today", label: tr("Today") }, { value: "week", label: tr("Week") }, { value: "hours", label: tr("Hours") }, { value: "messages", label: tr("Chat"), count: unread || undefined }]} />
 
       {view === "today" && (
         <>
-          <Section title="Hand-over notes">
-            <HandoverList marinaIds={ids} empty="No notes from staff in the last 24 hours." />
+          <Section title={tr("Hand-over notes")}>
+            <HandoverList marinaIds={ids} empty={tr("No notes from staff in the last 24 hours.")} />
           </Section>
           {patrolsToday.length > 0 && (
-            <Section title="Patrols today" count={patrolsToday.length}>
+            <Section title={tr("Patrols today")} count={patrolsToday.length}>
               {patrolsToday.map((p) => <PatrolSummary key={p.id} patrol={p} total={patrolCheckpoints(db.berths.filter((b) => b.marinaId === p.marinaId)).length} />)}
             </Section>
           )}
-          <Section title="On the clock" count={clocked.length}>
-            {clocked.length === 0 ? <Txt v="bodySm" color={t.text3}>Nobody has clocked in yet.</Txt> : (
-              <List>{clocked.map((s, i) => <PersonRow key={s.id} s={s} first={i === 0} onPress={() => setOpen(s)} right={<Badge tone="success" label={`Since ${fmtTime(openEntry(db, s.id)!.start)}`} />} />)}</List>
+          <Section title={tr("On the clock")} count={clocked.length}>
+            {clocked.length === 0 ? <Txt v="bodySm" color={t.text3}>{tr("Nobody has clocked in yet.")}</Txt> : (
+              <List>{clocked.map((s, i) => <PersonRow key={s.id} s={s} first={i === 0} onPress={() => setOpen(s)} right={<Badge tone="success" label={tr("Since {start}", { start: fmtTime(openEntry(db, s.id)!.start) })} />} />)}</List>
             )}
           </Section>
-          <Section title="Scheduled, not clocked in" count={working.length}>
-            {working.length === 0 ? <Txt v="bodySm" color={t.text3}>Everyone scheduled today is on the clock.</Txt> : (
-              <List>{working.map((s, i) => <PersonRow key={s.id} s={s} first={i === 0} onPress={() => setOpen(s)} right={<Txt v="caption" color={t.text3}>{covering(s) ? `${s.shift} · cover` : s.shift}</Txt>} />)}</List>
+          <Section title={tr("Scheduled, not clocked in")} count={working.length}>
+            {working.length === 0 ? <Txt v="bodySm" color={t.text3}>{tr("Everyone scheduled today is on the clock.")}</Txt> : (
+              <List>{working.map((s, i) => <PersonRow key={s.id} s={s} first={i === 0} onPress={() => setOpen(s)} right={<Txt v="caption" color={t.text3}>{covering(s) ? tr("{shift} · cover", { shift: s.shift }) : tr(s.shift)}</Txt>} />)}</List>
             )}
           </Section>
-          <Section title="Off today" count={off.length}>
+          <Section title={tr("Off today")} count={off.length}>
             {off.length > 0 && <List>{off.map((s, i) => <PersonRow key={s.id} s={s} first={i === 0} onPress={() => setOpen(s)} right={<Txt v="caption" color={t.text3}>{offLabel(s)}</Txt>} />)}</List>}
           </Section>
         </>
@@ -93,16 +96,16 @@ export default function Team() {
       {view === "week" && <WeekSchedule onPerson={setOpen} />}
 
       {view === "hours" && (
-        hours.length === 0 ? <EmptyState icon={Clock} title="No hours this week yet" body="Staff clock in and out on the Today tab of their app." /> : (
-          <Section title={`Week of ${fmtShort(start)}`} action={<Txt v="bodySm" num weight="semibold">{fmtDuration(hours.reduce((a, x) => a + x.m, 0))}</Txt>}>
+        hours.length === 0 ? <EmptyState icon={Clock} title={tr("No hours this week yet")} body={tr("Staff clock in and out on the Today tab of their app.")} /> : (
+          <Section title={tr("Week of {date}", { date: fmtShort(start) })} action={<Txt v="bodySm" num weight="semibold">{fmtDuration(hours.reduce((a, x) => a + x.m, 0))}</Txt>}>
             <List>{hours.map(({ s, m }, i) => <PersonRow key={s.id} s={s} first={i === 0} onPress={() => setOpen(s)} right={<Txt v="bodySm" num weight="semibold">{fmtDuration(m)}</Txt>} />)}</List>
           </Section>
         )
       )}
 
-      {view === "messages" && <Button icon={Megaphone} label="Message everyone" onPress={() => setBroadcast(true)} style={{ marginBottom: 12 }} />}
+      {view === "messages" && <Button icon={Megaphone} label={tr("Message everyone")} onPress={() => setBroadcast(true)} style={{ marginBottom: 12 }} />}
       {view === "messages" && (
-        threads.length === 0 ? <EmptyState icon={MessagesSquare} title="No conversations yet" body="Open a team member and tap Message to start one." /> : (
+        threads.length === 0 ? <EmptyState icon={MessagesSquare} title={tr("No conversations yet")} body={tr("Open a team member and tap Message to start one.")} /> : (
           <List>
             {threads.map(({ s, msgs }, i) => {
               const last = msgs[msgs.length - 1];
@@ -115,7 +118,7 @@ export default function Team() {
                       <Txt weight={n ? "semibold" : "medium"} numberOfLines={1} style={{ flex: 1 }}>{s.name}</Txt>
                       <Txt v="caption" color={t.text3}>{fmtDateTime(last.at)}</Txt>
                     </View>
-                    <Txt v="bodySm" color={n ? t.text : t.text3} numberOfLines={1}>{last.fromStaff ? "" : "You: "}{last.text}</Txt>
+                    <Txt v="bodySm" color={n ? t.text : t.text3} numberOfLines={1}>{last.fromStaff ? "" : tr("You: ")}{last.text}</Txt>
                   </View>
                   {n > 0 && <View style={{ alignSelf: "center", minWidth: 20, height: 20, borderRadius: 10, paddingHorizontal: 6, backgroundColor: t.green, alignItems: "center", justifyContent: "center" }}><Txt v="caption" num weight="semibold" color="#FFFFFF">{n}</Txt></View>}
                 </Pressable>
@@ -125,7 +128,7 @@ export default function Team() {
         )
       )}
 
-      {staff.length === 0 && <EmptyState icon={Users} title="No staff at this marina" />}
+      {staff.length === 0 && <EmptyState icon={Users} title={tr("No staff at this marina")} />}
       {open && <StaffSheet staff={open} onClose={() => setOpen(undefined)} />}
       {broadcast && <BroadcastSheet onClose={() => setBroadcast(false)} />}
     </Screen>

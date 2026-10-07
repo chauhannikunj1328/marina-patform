@@ -1,40 +1,70 @@
-// App language for the mobile app: English or Spanish (Español) for dock teams.
-// Strings are written in English and looked up in the Spanish table; anything missing stays English.
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+// App language: English (default), Spanish (Español) or Arabic (العربية, right to left).
+// Text and translations live in @marina/shared; this keeps the person's choice and re-renders the
+// app when it changes. Arabic turns the layout around: React Native's RTL flag for the next launch,
+// a right-to-left root view right away, and the page direction on web.
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { I18nManager, Platform, View } from "react-native";
+import { isRtl, setLang as setSharedLang, t, type Lang } from "@marina/shared";
 import { load, save } from "./storage";
-import { es } from "./es";
+import { setArabicFonts } from "@/theme";
 
-export type Lang = "en" | "es";
-type Vars = Record<string, string | number | undefined>;
-export type Tr = (text: string, vars?: Vars) => string;
+export type { Lang };
+type Vars = Record<string, string | number | undefined | null>;
+/** Same as the shared t(); a new function per language so screens re-render. */
+export type Tr = typeof t;
 
 const KEY = "marina.lang";
-const Ctx = createContext<{ lang: Lang; setLang: (l: Lang) => void; tr: Tr } | null>(null);
+const Ctx = createContext<{ lang: Lang; setLang: (l: Lang) => void; tr: Tr; rtl: boolean } | null>(null);
 
-const fill = (s: string, vars?: Vars) => (vars ? s.replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? "")) : s);
-/** "task|Open" is "Open" in English; the part before | only tells translations apart. */
-const plain = (text: string) => text.slice(text.indexOf("|") + 1);
-
-/** Phone language on first run (Spanish phones start in Spanish), then the person's choice. */
-const deviceLang = (): Lang => {
-  try {
-    return Intl.DateTimeFormat().resolvedOptions().locale.toLowerCase().startsWith("es") ? "es" : "en";
-  } catch {
-    return "en";
+function apply(l: Lang) {
+  setSharedLang(l);
+  setArabicFonts(l === "ar");
+  const rtl = isRtl(l);
+  if (Platform.OS === "web") {
+    if (typeof document !== "undefined") {
+      document.documentElement.lang = l;
+      document.documentElement.dir = rtl ? "rtl" : "ltr";
+    }
+  } else {
+    I18nManager.allowRTL(rtl);
+    I18nManager.forceRTL(rtl);
   }
-};
+}
 
 export function LangProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<Lang>(deviceLang);
+  // English until the saved choice loads (English is the default language).
+  const [lang, setLangState] = useState<Lang>(() => {
+    apply("en");
+    return "en";
+  });
   useEffect(() => {
-    load<Lang>(KEY).then((l) => l && setLangState(l));
+    load<Lang>(KEY).then((l) => {
+      if (l && l !== lang) {
+        apply(l);
+        setLangState(l);
+      }
+    });
+    // Read the saved choice once on start.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const setLang = useCallback((l: Lang) => {
+    apply(l);
     setLangState(l);
     void save(KEY, l);
   }, []);
-  const tr = useCallback<Tr>((text, vars) => fill(lang === "es" ? es[text] ?? plain(text) : plain(text), vars), [lang]);
-  return <Ctx.Provider value={{ lang, setLang, tr }}>{children}</Ctx.Provider>;
+  // A new function per language, so memoized screens that depend on it re-render too.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const tr = useMemo(() => ((text: string | undefined, vars?: Vars) => t(text, vars)) as Tr, [lang]);
+  const rtl = isRtl(lang);
+  return (
+    <Ctx.Provider value={{ lang, setLang, tr, rtl }}>
+      {/* Mirrors the layout right away, without waiting for the native RTL flag to apply on the
+          next launch. Screens re-render through useTr, which changes with the language. */}
+      <View style={{ flex: 1, direction: rtl ? "rtl" : "ltr" }}>
+        {children}
+      </View>
+    </Ctx.Provider>
+  );
 }
 
 export function useLang() {

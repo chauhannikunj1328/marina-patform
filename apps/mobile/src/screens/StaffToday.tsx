@@ -12,10 +12,11 @@ import { IncidentSheet } from "@/components/incident";
 import { useClock, useNow } from "@/lib/clock";
 import { useOpenParam } from "@/lib/useOpenParam";
 import { useStore } from "@/store";
-import { useTheme } from "@/theme";
+import { flipRtl, useTheme } from "@/theme";
 import { useTr } from "@/lib/i18n";
 
 function BookingRow({ bk, onOpen, action }: { bk: Booking; onOpen: () => void; action?: React.ReactNode }) {
+  const tr = useTr();
   const { ix } = useStore();
   const { t } = useTheme();
   return (
@@ -26,10 +27,10 @@ function BookingRow({ bk, onOpen, action }: { bk: Booking; onOpen: () => void; a
         </View>
         <View style={{ flex: 1 }}>
           <Txt weight="semibold" numberOfLines={1}>{ix.boat(bk.boatId)?.name}</Txt>
-          <Txt v="bodySm" color={t.text3} numberOfLines={1}>Berth {ix.berth(bk.berthId)?.code} · {ix.ownerOfBooking(bk)?.name}</Txt>
+          <Txt v="bodySm" color={t.text3} numberOfLines={1}>{tr("Berth")} {ix.berth(bk.berthId)?.code} · {ix.ownerOfBooking(bk)?.name}</Txt>
         </View>
       </Pressable>
-      {action ?? <ChevronRight size={20} color={t.text3} />}
+      {action ?? <ChevronRight style={flipRtl()} size={20} color={t.text3} />}
     </Card>
   );
 }
@@ -63,14 +64,14 @@ export function StaffToday() {
   return (
     <Screen>
       <Txt v="bodySm" color={t.text3}>{fmtDate(now)}</Txt>
-      <Txt v="h1">{greeting}, {user?.name.split(" ")[0]}</Txt>
+      <Txt v="h1">{tr("{greeting}, {name}", { greeting, name: user?.name.split(" ")[0] })}</Txt>
 
       <View style={{ marginTop: 16, marginBottom: 24, borderRadius: 16, padding: 16, backgroundColor: working ? t.accentSoft : t.surface, borderWidth: working ? 0 : 1, borderColor: t.border }}>
         {me ? (
           working ? (
             <>
-              <Txt><Txt weight="semibold">{tr("{shift} shift", { shift: tr(me.shift) })}</Txt> · {SHIFT_HOURS[me.shift]}</Txt>
-              <Txt v="bodySm" color={t.text2}>{ix.marina(me.marinaId)?.name} · {me.position}{plan?.working && plan.covering ? ` · covering for ${ix.staffMember(plan.covering.staffId)?.name}` : ""}</Txt>
+              <Txt><Txt weight="semibold">{tr("{shift} shift", { shift: tr(me.shift) })}</Txt> · {tr(SHIFT_HOURS[me.shift])}</Txt>
+              <Txt v="bodySm" color={t.text2}>{ix.marina(me.marinaId)?.name} · {tr(me.position)}{plan?.working && plan.covering ? tr(" · covering for {name}", { name: ix.staffMember(plan.covering.staffId)?.name }) : ""}</Txt>
             </>
           ) : (
             <>
@@ -107,7 +108,7 @@ export function StaffToday() {
         ].map((s) => (
           <Card key={s.label} onPress={s.go} style={{ flex: 1, alignItems: "center", padding: 12 }}>
             <Txt v="kpi" num>{s.value}</Txt>
-            <Txt v="caption" color={t.text3}>{s.label}</Txt>
+            <Txt v="caption" color={t.text3}>{tr(s.label)}</Txt>
           </Card>
         ))}
       </View>
@@ -163,15 +164,15 @@ export function StaffToday() {
               </View>
               <View style={{ flex: 1 }}>
                 <Txt weight="semibold" numberOfLines={1}>{x.title}</Txt>
-                <Txt v="bodySm" color={t.text3}>{x.berthId ? `Berth ${ix.berth(x.berthId)?.code}` : tr("Facility")} · due {relative(x.due).toLowerCase()}</Txt>
+                <Txt v="bodySm" color={t.text3}>{x.berthId ? tr("Berth {code}", { code: ix.berth(x.berthId)?.code }) : tr("Facility")} {tr("· due")} {relative(x.due).toLowerCase()}</Txt>
               </View>
-              <ChevronRight size={20} color={t.text3} />
+              <ChevronRight style={flipRtl()} size={20} color={t.text3} />
             </Card>
           ))}
         </Section>
       )}
 
-      <Txt v="caption" color={t.text3} style={{ textAlign: "center" }}>{m.occupied} of {m.berths} berths occupied · {m.available} free</Txt>
+      <Txt v="caption" color={t.text3} style={{ textAlign: "center" }}>{tr("{occupied} of {berths} berths occupied · {free} free", { occupied: m.occupied, berths: m.berths, free: m.available })}</Txt>
       {open && <BookingSheet booking={open} onClose={() => setOpenId(undefined)} />}
       {checkingIn && <CheckInSheet booking={checkingIn} onClose={() => setCheckingIn(undefined)} />}
       {incident && <IncidentSheet marinaId={marinaId} onClose={() => setIncident(false)} />}

@@ -7,6 +7,7 @@ import { useMe, useStore } from "../store";
 import { useTheme } from "../theme";
 import { Badge, Txt } from "./ui";
 import { useTr } from "../lib/i18n";
+import { tn } from "@marina/shared";
 
 export function useActivePatrol() {
   const { db, marinaId } = useStore();
@@ -24,9 +25,9 @@ export function PatrolSummary({ patrol: p, total }: { patrol: Patrol; total: num
     <View style={{ borderWidth: 1, borderColor: t.border, borderRadius: 14, padding: 12, gap: 4, backgroundColor: t.surface }}>
       <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 8 }}>
         <Txt v="bodySm" weight="semibold" style={{ flex: 1 }}>{p.by}</Txt>
-        {issues.length ? <Badge tone="maintenance" label={`${issues.length} ${issues.length === 1 ? "issue" : "issues"}`} /> : <Badge tone="success" label={tr("All clear")} />}
+        {issues.length ? <Badge tone="maintenance" label={tn(issues.length, "{n} issue", "{n} issues")} /> : <Badge tone="success" label={tr("All clear")} />}
       </View>
-      <Txt v="caption" color={t.text3}>{fmtDateTime(p.startedAt)} · {minutes} min · {p.checks.length} of {total} checked</Txt>
+      <Txt v="caption" color={t.text3}>{fmtDateTime(p.startedAt)} · {tr("{minutes} min · {done} of {total} checked", { minutes, done: p.checks.length, total })}</Txt>
       {issues.map((c) => c.note ? <Txt key={c.id} v="caption" color={t.text2}>• {c.note}</Txt> : null)}
     </View>
   );

@@ -15,6 +15,7 @@ import { pickPhoto, takePhoto } from "../lib/photos";
 import { BerthBadge, BookingBadge, PriorityBadge, TaskBadge } from "./status";
 import { Badge, Button, Chip, DayChips, Field, Input, Row, Segmented, Sheet, Stepper, Txt } from "./ui";
 import { useTr } from "../lib/i18n";
+import { tn } from "@marina/shared";
 
 /** Check in / check out, with Undo and an activity log entry. */
 export function useBookingStatus() {
@@ -52,8 +53,8 @@ export function BookingSheet({ booking, onClose }: { booking: Booking; onClose: 
     <Sheet
       open
       onClose={onClose}
-      title={boat?.name ?? "Booking"}
-      subtitle={`${b.code} · Berth ${berth?.code}`}
+      title={boat?.name ?? tr("Booking")}
+      subtitle={tr("{code} · Berth {code2}", { code: b.code, code2: berth?.code })}
       footer={
         office && canEdit && b.status === "pending" ? (
           <View style={{ flexDirection: "row", gap: 8 }}>
@@ -61,7 +62,7 @@ export function BookingSheet({ booking, onClose }: { booking: Booking; onClose: 
             <Button style={{ flex: 1 }} variant="primary" size="lg" label={tr("Approve")} disabled={!ix.isFree(b.berthId, b.start, b.end, b.id)} onPress={() => {
               const before = db;
               update((d) => withInvoice({ ...d, bookings: d.bookings.map((x) => (x.id === b.id ? { ...x, status: "confirmed" as const } : x)) }, b.id, ix.amount(b)), { text: `Approved booking ${b.code} for ${boat?.name}`, to: `/bookings?q=${b.code}`, marinaId: berth?.marinaId });
-              toast(`${boat?.name} approved and invoiced`, before);
+              toast(tr("{name} approved and invoiced", { name: boat?.name }), before);
             }} />
           </View>
         )
@@ -72,10 +73,10 @@ export function BookingSheet({ booking, onClose }: { booking: Booking; onClose: 
     >
       <View style={{ marginBottom: 16 }}><BookingBadge status={b.status} /></View>
       <Row label={tr("Boat")} value={`${boat?.type} · ${boat?.length} ft`} sub={boat?.registration} />
-      <Row label={tr("Dates")} value={`${fmtShort(b.start)} – ${fmtShort(b.end)}`} sub={`${daysBetween(b.start, b.end)} ${daysBetween(b.start, b.end) === 1 ? "night" : "nights"} · ${b.guests} ${b.guests === 1 ? "guest" : "guests"}`} />
+      <Row label={tr("Dates")} value={`${fmtShort(b.start)} – ${fmtShort(b.end)}`} sub={`${tn(daysBetween(b.start, b.end), "{n} night", "{n} nights")} · ${tn(b.guests, "{n} guest", "{n} guests")}`} />
       <Row label={tr("Berth")} value={`${berth?.code} · up to ${berth?.maxLength} ft`} sub={`${berth?.type}${berth?.power ? " · power" : ""}${berth?.water ? " · water" : ""}`} />
       {owner && can("owners") !== "none" ? (
-        <Pressable accessibilityRole="button" accessibilityLabel={`Boat owner ${owner.name}. Open their details`} onPress={() => setOwnerOpen(true)}>
+        <Pressable accessibilityRole="button" accessibilityLabel={tr("Boat owner {name}. Open their details", { name: owner.name })} onPress={() => setOwnerOpen(true)}>
           <Row label={tr("Boat owner")} value={`${owner.name} ›`} sub={owner.email} />
         </Pressable>
       ) : (
@@ -83,7 +84,7 @@ export function BookingSheet({ booking, onClose }: { booking: Booking; onClose: 
       )}
       {b.status === "pending" && (
         <View style={{ backgroundColor: t.status.pending.bg, borderRadius: 12, padding: 12, marginBottom: 12 }}>
-          <Txt v="bodySm" color={t.status.pending.fg}>Waiting for a manager to approve this booking.</Txt>
+          <Txt v="bodySm" color={t.status.pending.fg}>{tr("Waiting for a manager to approve this booking.")}</Txt>
         </View>
       )}
       {canEdit && b.status === "confirmed" && b.start <= addDays(today(), 2) && <PrepChecklist booking={b} />}
@@ -97,7 +98,7 @@ export function BookingSheet({ booking, onClose }: { booking: Booking; onClose: 
       )}
       {canEdit && (b.status === "pending" || b.status === "confirmed" || b.status === "checked-in") && (
         <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
-          <Button style={{ flex: 1 }} size="sm" icon={CalendarCog} label={b.status === "checked-in" ? "Extend or move" : "Change"} onPress={() => setChanging(true)} />
+          <Button style={{ flex: 1 }} size="sm" icon={CalendarCog} label={b.status === "checked-in" ? tr("Extend or move") : tr("Change")} onPress={() => setChanging(true)} />
           {b.status === "checked-in" && <Button style={{ flex: 1 }} size="sm" icon={Fuel} label={tr("Add service")} onPress={() => setServicing(true)} />}
           {b.status !== "checked-in" && <Button style={{ flex: 1 }} size="sm" icon={CircleX} label={tr("Cancel")} onPress={() => setCancelling(true)} />}
         </View>
@@ -124,8 +125,8 @@ function InvoiceRow({ bookingId, onPay }: { bookingId: string; onPay: (inv: Invo
     <View style={{ borderWidth: 1, borderColor: t.border, borderRadius: 16, padding: 12, marginBottom: 12, gap: 8 }}>
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
         <View>
-          <Txt v="bodySm" weight="medium">Invoice {inv.number}</Txt>
-          <Txt v="caption" num color={t.text3}>{money2(inv.amount)} · paid {money2(ix.paidSoFar(inv))}</Txt>
+          <Txt v="bodySm" weight="medium">{tr("Invoice")} {inv.number}</Txt>
+          <Txt v="caption" num color={t.text3}>{tr("{amount} · paid {paid}", { amount: money2(inv.amount), paid: money2(ix.paidSoFar(inv)) })}</Txt>
         </View>
         {inv.status === "paid" ? <Badge tone="success" icon={CircleCheck} label={tr("Paid")} />
           : inv.status === "overdue" ? <Badge tone="cancelled" label={`${money2(owed)} overdue`} />
@@ -133,7 +134,7 @@ function InvoiceRow({ bookingId, onPay }: { bookingId: string; onPay: (inv: Invo
       </View>
       {(inv.lines ?? []).map((l, i) => (
         <View key={i} style={{ flexDirection: "row", justifyContent: "space-between" }}>
-          <Txt v="caption" color={t.text2}>{l.label} · {l.qty} {l.unit} · {fmtShort(l.at.slice(0, 10))}</Txt>
+          <Txt v="caption" color={t.text2}>{tr(l.label)} · {l.qty} {l.unit} · {fmtShort(l.at.slice(0, 10))}</Txt>
           <Txt v="caption" num color={t.text2}>{money2(l.amount)}</Txt>
         </View>
       ))}
@@ -155,8 +156,8 @@ export function PaymentSheet({ invoice, onClose }: { invoice: Invoice; onClose: 
   const [error, setError] = useState("");
   const save = () => {
     const value = Math.round(Number(amount.replace(/[^\d.]/g, "")) * 100) / 100;
-    if (!(value > 0)) return setError("Enter an amount above zero.");
-    if (value > balance) return setError(`That's more than the ${money2(balance)} still owed.`);
+    if (!(value > 0)) return setError(tr("Enter an amount above zero."));
+    if (value > balance) return setError(tr("That's more than the {amount} still owed.", { amount: money2(balance) }));
     const before = db;
     const full = value >= balance;
     const now = today();
@@ -164,20 +165,20 @@ export function PaymentSheet({ invoice, onClose }: { invoice: Invoice; onClose: 
       (d) => ({ ...d, invoices: d.invoices.map((i) => (i.id === invoice.id ? { ...i, payments: [...i.payments, { date: now, amount: value, method }], ...(full ? { status: "paid" as const, paidAt: now, method } : {}) } : i)) }),
       { text: `Recorded ${money2(value)} ${full ? "payment" : "part payment"} for ${invoice.number} (${method})`, to: `/billing?open=${invoice.id}`, marinaId: ix.marinaOfInvoice(invoice) },
     );
-    toast(full ? `${invoice.number} is paid` : `${money2(value)} taken. ${money2(balance - value)} still owed.`, before);
+    toast(full ? tr("{number} is paid", { number: invoice.number }) : tr("{amount} taken. {amount2} still owed.", { amount: money2(value), amount2: money2(balance - value) }), before);
     onClose();
   };
   return (
-    <Sheet open onClose={onClose} title={tr("Take payment")} subtitle={`${invoice.number} · ${money2(balance)} owed`} footer={<Button variant="primary" size="lg" label={`Record ${money2(Number(amount) || 0)}`} onPress={save} />}>
+    <Sheet open onClose={onClose} title={tr("Take payment")} subtitle={tr("{number} · {amount} owed", { number: invoice.number, amount: money2(balance) })} footer={<Button variant="primary" size="lg" label={tr("Record {amount}", { amount: money2(Number(amount) || 0) })} onPress={save} />}>
       <View style={{ gap: 16 }}>
         <Field label={tr("Amount")} error={error}>
-          <Input value={amount} onChangeText={(v) => { setAmount(v); setError(""); }} keyboardType="decimal-pad" inputMode="decimal" invalid={!!error} accessibilityLabel="Amount" />
+          <Input value={amount} onChangeText={(v) => { setAmount(v); setError(""); }} keyboardType="decimal-pad" inputMode="decimal" invalid={!!error} accessibilityLabel={tr("Amount")} />
         </Field>
         <View style={{ flexDirection: "row", gap: 8 }}>
           <Chip label={tr("Full balance")} on={Number(amount) === balance} onPress={() => setAmount(balance.toFixed(2))} />
           <Chip label={tr("Half")} on={Number(amount) === Math.round(balance * 50) / 100} onPress={() => setAmount((Math.round(balance * 50) / 100).toFixed(2))} />
         </View>
-        <Field label={tr("Paid by")} hint={method === "Card" ? "Run the card on the marina's card reader first, then record it here." : method === "Check" ? "Write the invoice number on the back of the check." : method === "Bank transfer" ? "Record it once the money shows in the bank account." : "Hand the cash to the front desk at the end of your shift."}>
+        <Field label={tr("Paid by")} hint={method === "Card" ? tr("Run the card on the marina's card reader first, then record it here.") : method === "Check" ? tr("Write the invoice number on the back of the check.") : method === "Bank transfer" ? tr("Record it once the money shows in the bank account.") : tr("Hand the cash to the front desk at the end of your shift.")}>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
             {methods.map((m) => <Chip key={m} label={m} on={method === m} onPress={() => setMethod(m)} />)}
           </View>
@@ -225,20 +226,20 @@ export function NewBookingSheet({ onClose, onDone }: { onClose: () => void; onDo
   const set = (k: keyof typeof f, v: string) => { setF({ ...f, [k]: v }); setErrors({}); };
 
   const save = () => {
-    if (closed) return toast(`${ix.marina(marinaId)?.name} is closed to new bookings.`, undefined, "warning");
+    if (closed) return toast(tr("{name} is closed to new bookings.", { name: ix.marina(marinaId)?.name }), undefined, "warning");
     const e: Record<string, string> = {};
     if (mode === "existing") {
-      if (!boat) e.boat = "Find the boat, or add a new one.";
+      if (!boat) e.boat = tr("Find the boat, or add a new one.");
       // A boat can't hold two berths for the same nights.
       const clash = boat && db.bookings.find((b) => b.boatId === boat.id && ["pending", "confirmed", "checked-in"].includes(b.status) && b.start < end && b.end > now);
-      if (clash) e.boat = `${boat?.name} already has ${clash.code} at berth ${ix.berth(clash.berthId)?.code} (${fmtShort(clash.start)} – ${fmtShort(clash.end)}).`;
+      if (clash) e.boat = tr("{name} already has {code} at berth {code2} ({date} – {date2}).", { name: boat?.name, code: clash.code, code2: ix.berth(clash.berthId)?.code, date: fmtShort(clash.start), date2: fmtShort(clash.end) });
     } else {
-      if (!f.owner.trim()) e.owner = "Enter the owner's name.";
-      if (!f.phone.trim() && !f.email.trim()) e.contact = "Add a phone number or email so we can reach them.";
-      if (!f.boat.trim()) e.newBoat = "Enter the boat name.";
-      if (!(Number(f.length) >= 10)) e.length = "Enter the boat length in feet (10 or more).";
+      if (!f.owner.trim()) e.owner = tr("Enter the owner's name.");
+      if (!f.phone.trim() && !f.email.trim()) e.contact = tr("Add a phone number or email so we can reach them.");
+      if (!f.boat.trim()) e.newBoat = tr("Enter the boat name.");
+      if (!(Number(f.length) >= 10)) e.length = tr("Enter the boat length in feet (10 or more).");
     }
-    if (!berth) e.berth = free.length ? "Choose a berth." : `No berth is free and big enough ${arrivingToday ? "tonight" : "for those nights"}.`;
+    if (!berth) e.berth = free.length ? tr("Choose a berth.") : (arrivingToday ? tr("No berth is free and big enough tonight.") : tr("No berth is free and big enough for those nights."));
     setErrors(e);
     if (Object.keys(e).length || !berth) return;
     const id = nextId("bk", db.bookings);
@@ -256,45 +257,45 @@ export function NewBookingSheet({ onClose, onDone }: { onClose: () => void; onDo
       const booking: Booking = { id, code: `BK-${String(Number(id.split("-")[1])).padStart(4, "0")}`, boatId: bId, berthId: berth.id, start: now, end, guests, status, createdAt: today(), price };
       return withInvoice({ ...d, owners, boats, bookings: [...d.bookings, booking] }, id, price);
     }, { text: `${arrivingToday ? "Walk-in booking" : "New booking"} for ${name} at berth ${berth.code}, ${fmtShort(now)}, ${nights} ${nights === 1 ? "night" : "nights"}`, marinaId });
-    toast(checkIn ? `${name} booked. Now check them in.` : `${name} booked for ${fmtShort(now)} and invoiced`);
+    toast(checkIn ? tr("{name} booked. Now check them in.", { name: name }) : tr("{name} booked for {date} and invoiced", { name: name, date: fmtShort(now) }));
     onDone(id, checkIn);
   };
 
   return (
-    <Sheet open onClose={onClose} title={tr("New booking")} subtitle={arrivingToday ? "Arriving today, or pick a later day" : `Arriving ${fmtShort(start)}`} footer={<Button variant="primary" size="lg" icon={checkIn ? LogIn : undefined} label={berth ? `${checkIn ? "Book, then check in" : "Book"} · ${money2(price)}` : "Book"} onPress={save} />}>
+    <Sheet open onClose={onClose} title={tr("New booking")} subtitle={arrivingToday ? tr("Arriving today, or pick a later day") : tr("Arriving {date}", { date: fmtShort(start) })} footer={<Button variant="primary" size="lg" icon={checkIn ? LogIn : undefined} label={berth ? `${checkIn ? "Book, then check in" : "Book"} · ${money2(price)}` : tr("Book")} onPress={save} />}>
       <View style={{ gap: 16 }}>
         {current === ALL && <MarinaPicker openOnly value={marinaId} onChange={(id) => { setMarina(id); setBerthId(""); }} />}
         {closed && (
           <View style={{ backgroundColor: t.status.maintenance.bg, borderRadius: 12, padding: 12 }}>
-            <Txt v="bodySm" color={t.status.maintenance.fg}>{ix.marina(marinaId)?.name} is closed to new bookings. Ask an admin to reopen it.</Txt>
+            <Txt v="bodySm" color={t.status.maintenance.fg}>{tr("{name} is closed to new bookings. Ask an admin to reopen it.", { name: ix.marina(marinaId)?.name })}</Txt>
           </View>
         )}
-        <Segmented value={mode} onChange={(v) => { setMode(v); setErrors({}); }} items={[{ value: "existing", label: "Known boat" }, { value: "new", label: "New boat" }]} />
+        <Segmented value={mode} onChange={(v) => { setMode(v); setErrors({}); }} items={[{ value: "existing", label: tr("Known boat") }, { value: "new", label: tr("New boat") }]} />
         {mode === "existing" ? (
           <Field label={tr("Boat")} error={errors.boat}>
             {boat ? (
-              <Pressable accessibilityRole="button" accessibilityLabel={`${boat.name}. Change boat`} onPress={() => { setBoatId(""); setBerthId(""); }} style={{ flexDirection: "row", alignItems: "center", gap: 12, borderWidth: 1, borderColor: t.primary, borderRadius: 12, padding: 12 }}>
+              <Pressable accessibilityRole="button" accessibilityLabel={tr("{name}. Change boat", { name: boat.name })} onPress={() => { setBoatId(""); setBerthId(""); }} style={{ flexDirection: "row", alignItems: "center", gap: 12, borderWidth: 1, borderColor: t.primary, borderRadius: 12, padding: 12 }}>
                 <View style={{ flex: 1 }}>
                   <Txt weight="semibold">{boat.name}</Txt>
-                  <Txt v="caption" color={t.text3}>{boat.type} · {boat.length} ft · {ix.owner(boat.ownerId)?.name}</Txt>
+                  <Txt v="caption" color={t.text3}>{tr(boat.type)} · {boat.length} {tr("ft ·")} {ix.owner(boat.ownerId)?.name}</Txt>
                 </View>
-                <Txt v="bodySm" weight="semibold" color={t.greenText}>Change</Txt>
+                <Txt v="bodySm" weight="semibold" color={t.greenText}>{tr("Change")}</Txt>
               </Pressable>
             ) : (
               <View style={{ gap: 8 }}>
                 <View style={{ justifyContent: "center" }}>
-                  <Search size={18} color={t.text3} style={{ position: "absolute", left: 14, zIndex: 1 }} />
-                  <Input value={q} onChangeText={setQ} placeholder={tr("Boat name, registration or owner")} style={{ paddingLeft: 40 }} autoCorrect={false} invalid={!!errors.boat} />
+                  <Search size={18} color={t.text3} style={{ position: "absolute", start: 14, zIndex: 1 }} />
+                  <Input value={q} onChangeText={setQ} placeholder={tr("Boat name, registration or owner")} style={{ paddingStart: 40 }} autoCorrect={false} invalid={!!errors.boat} />
                 </View>
                 {matches.map((b) => (
                   <Pressable key={b.id} accessibilityRole="button" onPress={() => { setBoatId(b.id); setBerthId(""); setErrors({}); }} style={({ pressed }) => ({ borderWidth: 1, borderColor: t.border, borderRadius: 12, padding: 12, backgroundColor: pressed ? t.sidebar : t.surface })}>
                     <Txt weight="medium">{b.name}</Txt>
-                    <Txt v="caption" color={t.text3}>{b.type} · {b.length} ft · {b.registration} · {ix.owner(b.ownerId)?.name}</Txt>
+                    <Txt v="caption" color={t.text3}>{tr(b.type)} · {b.length} {tr("ft ·")} {b.registration} · {ix.owner(b.ownerId)?.name}</Txt>
                   </Pressable>
                 ))}
                 {s.length >= 2 && matches.length === 0 && (
                   <Pressable accessibilityRole="button" onPress={() => { setMode("new"); setF({ ...f, boat: q.trim() }); }}>
-                    <Txt v="bodySm" color={t.text3}>No boat matches. <Txt v="bodySm" weight="semibold" color={t.greenText}>Add it as a new boat</Txt></Txt>
+                    <Txt v="bodySm" color={t.text3}>{tr("No boat matches.")} <Txt v="bodySm" weight="semibold" color={t.greenText}>{tr("Add it as a new boat")}</Txt></Txt>
                   </Pressable>
                 )}
               </View>
@@ -319,10 +320,10 @@ export function NewBookingSheet({ onClose, onDone }: { onClose: () => void; onDo
         )}
         <Field label={tr("Arrival")}><DayChips days={Array.from({ length: 120 }, (_, i) => addDays(today(), i))} value={start} onChange={(d) => { setStart(d); setBerthId(""); setErrors({}); }} /></Field>
         <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 16 }}>
-          <Field label={tr("Nights")} hint={`Leaves ${fmtShort(end)}`}><Stepper label={tr("nights")} value={nights} onChange={(n) => { setNights(n); setBerthId(""); }} max={60} /></Field>
+          <Field label={tr("Nights")} hint={tr("Leaves {date}", { date: fmtShort(end) })}><Stepper label={tr("nights")} value={nights} onChange={(n) => { setNights(n); setBerthId(""); }} max={60} /></Field>
           <Field label={tr("Guests")}><Stepper label={tr("guests")} value={guests} onChange={setGuests} max={20} /></Field>
         </View>
-        <Field label={tr("Berth")} error={errors.berth} hint={length ? `Free ${arrivingToday ? "from tonight" : `from ${fmtShort(start)}`}${nights > 1 ? ` for ${nights} nights` : ""} and fits ${length} ft, smallest first.` : "Choose the boat first to see berths that fit."}>
+        <Field label={tr("Berth")} error={errors.berth} hint={length ? (arrivingToday ? tn(nights, "Free from tonight and fits {length} ft, smallest first.", "Free from tonight for {n} nights and fits {length} ft, smallest first.", { length }) : tn(nights, "Free from {date} and fits {length} ft, smallest first.", "Free from {date} for {n} nights and fits {length} ft, smallest first.", { date: fmtShort(start), length })) : tr("Choose the boat first to see berths that fit.")}>
           {length > 0 && (
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
               {free.slice(0, 12).map((b) => <Chip key={b.id} label={b.code} sub={`${b.maxLength} ft`} on={berthId === b.id} onPress={() => { setBerthId(b.id); setErrors({}); }} />)}
@@ -334,7 +335,7 @@ export function NewBookingSheet({ onClose, onDone }: { onClose: () => void; onDo
           <View style={{ width: 22, height: 22, borderRadius: 6, borderWidth: 1.5, borderColor: t.primary, backgroundColor: checkIn ? t.primary : "transparent", alignItems: "center", justifyContent: "center" }}>
             {checkIn && <CircleCheck size={14} color={t.onPrimary} />}
           </View>
-          <Txt v="bodySm">The boat is here: check it in now</Txt>
+          <Txt v="bodySm">{tr("The boat is here: check it in now")}</Txt>
         </Pressable>}
       </View>
     </Sheet>
@@ -352,32 +353,32 @@ export function BerthSheet({ berth, onClose, onReport }: { berth: Berth; onClose
   const next = ix.nextBooking(b.id);
   const tasks = db.tasks.filter((x) => x.berthId === b.id && x.status !== "done");
   const toggle = () => {
-    if (!b.underMaintenance && current) return toast("A boat is in this berth. Check it out or move it first.", undefined, "warning");
+    if (!b.underMaintenance && current) return toast(tr("A boat is in this berth. Check it out or move it first."), undefined, "warning");
     const before = db;
     update((d) => ({ ...d, berths: d.berths.map((x) => (x.id === b.id ? { ...x, underMaintenance: !x.underMaintenance } : x)) }), { text: `Berth ${b.code} ${b.underMaintenance ? "returned to service" : "taken out of service"}`, marinaId: b.marinaId });
-    toast(b.underMaintenance ? `Berth ${b.code} back in service` : `Berth ${b.code} out of service`, before);
+    toast(b.underMaintenance ? tr("Berth {code} back in service", { code: b.code }) : tr("Berth {code} out of service", { code: b.code }), before);
   };
   return (
     <Sheet
       open
       onClose={onClose}
-      title={`Berth ${b.code}`}
-      subtitle={`${b.maxLength} ft · ${b.type}${b.power ? " · power" : ""}${b.water ? " · water" : ""}`}
+      title={tr("Berth {code}", { code: b.code })}
+      subtitle={[tr("{n} ft", { n: b.maxLength }), tr(b.type), b.power && tr("power"), b.water && tr("water")].filter(Boolean).join(" · ")}
       footer={
         <View style={{ flexDirection: "row", gap: 8 }}>
-          {can("berths") !== "view" && <Button style={{ flex: 1 }} label={b.underMaintenance ? "Back in service" : "Out of service"} onPress={toggle} />}
+          {can("berths") !== "view" && <Button style={{ flex: 1 }} label={b.underMaintenance ? tr("Back in service") : tr("Out of service")} onPress={toggle} />}
           {can("maintenance") !== "view" && <Button style={{ flex: 1 }} variant="primary" icon={TriangleAlert} label={tr("Report")} onPress={onReport} />}
         </View>
       }
     >
       <View style={{ marginBottom: 16 }}><BerthBadge status={status} /></View>
-      {current && <Row label={tr("Boat here now")} value={ix.boat(current.boatId)?.name ?? ""} sub={`Leaves ${fmtShort(current.end)} · ${ix.ownerOfBooking(current)?.name}`} />}
+      {current && <Row label={tr("Boat here now")} value={ix.boat(current.boatId)?.name ?? ""} sub={tr("Leaves {date} · {name}", { date: fmtShort(current.end), name: ix.ownerOfBooking(current)?.name })} />}
       <Row label={tr("Next arrival")} value={next ? fmtShort(next.start) : "None booked"} sub={next ? `${ix.boat(next.boatId)?.name} · ${relative(next.start).toLowerCase()}` : undefined} />
       <Row label={tr("Open repairs")} value={tasks.length ? String(tasks.length) : "None"} sub={tasks.map((x) => x.title).join(", ") || undefined} />
       {current && can("bookings") !== "view" && (
-        <Button icon={ArrowRightLeft} label={`Move ${ix.boat(current.boatId)?.name} to another berth`} onPress={() => setMoving(true)} />
+        <Button icon={ArrowRightLeft} label={tr("Move {name} to another berth", { name: ix.boat(current.boatId)?.name })} onPress={() => setMoving(true)} />
       )}
-      {(b.power || b.water) && can("berths") !== "view" && <Button icon={Gauge} label="Read meters" onPress={() => setMetering(true)} style={{ marginTop: 8 }} />}
+      {(b.power || b.water) && can("berths") !== "view" && <Button icon={Gauge} label={tr("Read meters")} onPress={() => setMetering(true)} style={{ marginTop: 8 }} />}
       {moving && current && <ChangeBookingSheet booking={current} onClose={() => setMoving(false)} />}
       {metering && <MeterSheet berth={b} onClose={() => setMetering(false)} />}
     </Sheet>
@@ -385,25 +386,26 @@ export function BerthSheet({ berth, onClose, onReport }: { berth: Berth; onClose
 }
 
 export function PhotoPicker({ photos, onChange, max = 3 }: { photos: string[]; onChange: (p: string[]) => void; max?: number }) {
+  const tr = useTr();
   const { t } = useTheme();
   const { toast } = useStore();
   const add = async (from: "camera" | "library") => {
     try {
       const p = from === "camera" ? await takePhoto() : await pickPhoto();
       if (p) onChange([...photos, p]);
-      else if (from === "camera") toast("Camera not available. Choose a photo instead.", undefined, "warning");
+      else if (from === "camera") toast(tr("Camera not available. Choose a photo instead."), undefined, "warning");
     } catch {
-      toast("Couldn't add that photo. Try another.", undefined, "error");
+      toast(tr("Couldn't add that photo. Try another."), undefined, "error");
     }
   };
   return (
     <View style={{ gap: 8 }}>
-      <Txt v="bodySm" weight="medium">Photos <Txt v="bodySm" color={t.text3}>(optional, up to {max})</Txt></Txt>
+      <Txt v="bodySm" weight="medium">{tr("Photos")} <Txt v="bodySm" color={t.text3}>{tr("(optional, up to {n})", { n: max })}</Txt></Txt>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
         {photos.map((p, i) => (
           <View key={i}>
-            <Image source={{ uri: p }} style={{ width: 80, height: 80, borderRadius: 12 }} accessibilityLabel={`Photo ${i + 1}`} />
-            <Pressable accessibilityRole="button" accessibilityLabel={`Remove photo ${i + 1}`} onPress={() => onChange(photos.filter((_, j) => j !== i))} style={{ position: "absolute", top: -8, right: -8, width: 28, height: 28, borderRadius: 14, backgroundColor: t.primary, alignItems: "center", justifyContent: "center" }}>
+            <Image source={{ uri: p }} style={{ width: 80, height: 80, borderRadius: 12 }} accessibilityLabel={tr("Photo {v}", { v: i + 1 })} />
+            <Pressable accessibilityRole="button" accessibilityLabel={tr("Remove photo {v}", { v: i + 1 })} onPress={() => onChange(photos.filter((_, j) => j !== i))} style={{ position: "absolute", top: -8, end: -8, width: 28, height: 28, borderRadius: 14, backgroundColor: t.primary, alignItems: "center", justifyContent: "center" }}>
               <X size={16} color={t.onPrimary} />
             </Pressable>
           </View>
@@ -420,12 +422,13 @@ export function PhotoPicker({ photos, onChange, max = 3 }: { photos: string[]; o
 }
 
 function PhotoTile({ icon, onPress }: { icon: "camera" | "library"; onPress: () => void }) {
+  const tr = useTr();
   const { t } = useTheme();
   const IconCmp = icon === "camera" ? Camera : ImagePlus;
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={icon === "camera" ? "Take photo" : "Choose photo"} onPress={onPress} style={({ pressed }) => ({ width: 80, height: 80, borderRadius: 12, borderWidth: 1, borderStyle: "dashed", borderColor: t.borderStrong, alignItems: "center", justifyContent: "center", gap: 4, backgroundColor: pressed ? t.sidebar : "transparent" })}>
+    <Pressable accessibilityRole="button" accessibilityLabel={icon === "camera" ? tr("Take photo") : tr("Choose photo")} onPress={onPress} style={({ pressed }) => ({ width: 80, height: 80, borderRadius: 12, borderWidth: 1, borderStyle: "dashed", borderColor: t.borderStrong, alignItems: "center", justifyContent: "center", gap: 4, backgroundColor: pressed ? t.sidebar : "transparent" })}>
       <IconCmp size={20} color={t.text2} />
-      <Txt v="caption" color={t.text2}>{icon === "camera" ? "Camera" : "Library"}</Txt>
+      <Txt v="caption" color={t.text2}>{icon === "camera" ? tr("Camera") : tr("Library")}</Txt>
     </Pressable>
   );
 }
@@ -444,7 +447,7 @@ export function ReportProblem({ berthId, onClose }: { berthId?: string; onClose:
   const [photos, setPhotos] = useState<string[]>([]);
   const [error, setError] = useState("");
   const save = () => {
-    if (!title.trim()) return setError("Say what's wrong.");
+    if (!title.trim()) return setError(tr("Say what's wrong."));
     update((d) => {
       const task: MaintenanceTask = {
         id: nextId("t", d.tasks), code: `WO-${String(d.tasks.length + 1).padStart(3, "0")}`, title: title.trim(), marinaId, berthId: berth || undefined,
@@ -454,7 +457,7 @@ export function ReportProblem({ berthId, onClose }: { berthId?: string; onClose:
       const berths = takeOut && berth ? d.berths.map((b) => (b.id === berth ? { ...b, underMaintenance: true } : b)) : d.berths;
       return { ...d, tasks: [...d.tasks, task], berths };
     }, { text: `Reported a problem: ${title.trim()}`, to: "/maintenance", marinaId });
-    toast("Problem reported. Your manager can see it now.");
+    toast(tr("Problem reported. Your manager can see it now."));
     onClose();
   };
   return (
@@ -480,7 +483,7 @@ export function ReportProblem({ berthId, onClose }: { berthId?: string; onClose:
           <View style={{ flexDirection: "row", gap: 8 }}>
             {(["low", "medium", "high"] as Priority[]).map((p) => (
               <Pressable key={p} accessibilityRole="radio" accessibilityState={{ checked: priority === p }} onPress={() => setPriority(p)} style={{ flex: 1, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: priority === p ? t.primary : t.border, backgroundColor: priority === p ? t.primary : t.surface }}>
-                <Txt v="bodySm" weight="semibold" color={priority === p ? t.onPrimary : t.text}>{p === "high" ? "Urgent" : p === "medium" ? "Medium" : "Low"}</Txt>
+                <Txt v="bodySm" weight="semibold" color={priority === p ? t.onPrimary : t.text}>{p === "high" ? tr("Urgent") : p === "medium" ? tr("Medium") : tr("Low")}</Txt>
               </Pressable>
             ))}
           </View>
@@ -491,7 +494,7 @@ export function ReportProblem({ berthId, onClose }: { berthId?: string; onClose:
             <View style={{ width: 22, height: 22, borderRadius: 6, borderWidth: 1.5, borderColor: t.primary, backgroundColor: takeOut ? t.primary : "transparent", alignItems: "center", justifyContent: "center" }}>
               {takeOut && <CircleCheck size={14} color={t.onPrimary} />}
             </View>
-            <Txt v="bodySm">Take this berth out of service</Txt>
+            <Txt v="bodySm">{tr("Take this berth out of service")}</Txt>
           </Pressable>
         ) : null}
       </View>
@@ -521,7 +524,7 @@ export function TaskSheet({ task, onClose }: { task: MaintenanceTask; onClose: (
       }),
       log(status === "done" ? `Finished: ${x.title}` : `Started: ${x.title}`),
     );
-    toast(status === "done" ? "Marked as done" : "Started. It's now assigned to you.", before);
+    toast(status === "done" ? tr("Marked as done") : tr("Started. It's now assigned to you."), before);
   };
   const addUpdate = () => {
     if (!note.trim() && photos.length === 0) return;
@@ -531,7 +534,7 @@ export function TaskSheet({ task, onClose }: { task: MaintenanceTask; onClose: (
     }), log("Added an update"));
     setNote("");
     setPhotos([]);
-    toast("Update added");
+    toast(tr("Update added"));
   };
   return (
     <Sheet
@@ -549,17 +552,17 @@ export function TaskSheet({ task, onClose }: { task: MaintenanceTask; onClose: (
         <TaskBadge status={x.status} />
         <PriorityBadge priority={x.priority} />
       </View>
-      <Txt v="bodySm" color={t.text3} style={{ marginBottom: 16 }}>Due {fmtDate(x.due)} · {x.assigneeId ? `Assigned to ${ix.staffMember(x.assigneeId)?.name}` : "Unassigned"}</Txt>
+      <Txt v="bodySm" color={t.text3} style={{ marginBottom: 16 }}>{tr("Due")} {fmtDate(x.due)} · {x.assigneeId ? tr("Assigned to {name}", { name: ix.staffMember(x.assigneeId)?.name }) : tr("Unassigned")}</Txt>
       {office && canEdit && x.status !== "done" && (
         <View style={{ gap: 16, marginBottom: 16 }}>
           <Field label={tr("Priority")}>
             <View style={{ flexDirection: "row", gap: 8 }}>
               {(["low", "medium", "high"] as Priority[]).map((p) => (
-                <Chip key={p} label={p === "high" ? "Urgent" : p === "medium" ? "Medium" : "Low"} on={x.priority === p} onPress={() => {
+                <Chip key={p} label={p === "high" ? tr("Urgent") : p === "medium" ? tr("Medium") : tr("Low")} on={x.priority === p} onPress={() => {
                   if (x.priority === p) return;
                   const before = db;
                   update((d) => ({ ...d, tasks: d.tasks.map((y) => (y.id === x.id ? { ...y, priority: p } : y)) }), log(`Priority set to ${p === "high" ? "urgent" : p}: ${x.title}`));
-                  toast("Priority changed", before);
+                  toast(tr("Priority changed"), before);
                 }} />
               ))}
             </View>
@@ -568,7 +571,7 @@ export function TaskSheet({ task, onClose }: { task: MaintenanceTask; onClose: (
             <DayChips days={[...(x.due < today() ? [x.due] : []), ...Array.from({ length: 60 }, (_, i) => addDays(today(), i))]} value={x.due} onChange={(due) => {
               const before = db;
               update((d) => ({ ...d, tasks: d.tasks.map((y) => (y.id === x.id ? { ...y, due } : y)) }), log(`Due date set to ${fmtShort(due)}: ${x.title}`));
-              toast(`Due ${fmtShort(due)}`, before);
+              toast(tr("Due {date}", { date: fmtShort(due) }), before);
             }} />
           </Field>
         </View>
@@ -581,13 +584,13 @@ export function TaskSheet({ task, onClose }: { task: MaintenanceTask; onClose: (
                 <Chip
                   key={s.id}
                   label={s.name}
-                  sub={s.position}
+                  sub={tr(s.position)}
                   on={x.assigneeId === s.id}
                   onPress={() => {
                     if (x.assigneeId === s.id) return;
                     const before = db;
                     update((d) => ({ ...d, tasks: d.tasks.map((y) => (y.id === x.id ? { ...y, assigneeId: s.id } : y)) }), log(`Assigned to ${s.name}: ${x.title}`));
-                    toast(`Assigned to ${s.name}`, before);
+                    toast(tr("Assigned to {name}", { name: s.name }), before);
                   }}
                 />
               ))}
@@ -597,18 +600,18 @@ export function TaskSheet({ task, onClose }: { task: MaintenanceTask; onClose: (
       )}
       {(x.photos?.length ?? 0) > 0 && (
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
-          {x.photos!.map((p, i) => <Image key={i} source={{ uri: p }} style={{ width: 96, height: 96, borderRadius: 12 }} accessibilityLabel={`Task photo ${i + 1}`} />)}
+          {x.photos!.map((p, i) => <Image key={i} source={{ uri: p }} style={{ width: 96, height: 96, borderRadius: 12 }} accessibilityLabel={tr("Task photo {v}", { v: i + 1 })} />)}
         </View>
       )}
       {x.notes.map((n, i) => (
-        <View key={i} style={{ borderLeftWidth: 2, borderColor: t.border, paddingLeft: 12, marginBottom: 12 }}>
+        <View key={i} style={{ borderStartWidth: 2, borderColor: t.border, paddingStart: 12, marginBottom: 12 }}>
           <Txt v="bodySm">{n.text}</Txt>
           <Txt v="caption" color={t.text3}>{n.by} · {fmtShort(n.at)}</Txt>
         </View>
       ))}
       {canEdit && (
         <View style={{ gap: 12, borderWidth: 1, borderColor: t.border, borderRadius: 16, padding: 12, marginTop: 4 }}>
-          <Input multiline value={note} onChangeText={setNote} placeholder={tr("Add a note…")} accessibilityLabel="Add a note" />
+          <Input multiline value={note} onChangeText={setNote} placeholder={tr("Add a note…")} accessibilityLabel={tr("Add a note")} />
           <PhotoPicker photos={photos} onChange={setPhotos} />
           <Button size="sm" label={tr("Add update")} disabled={!note.trim() && photos.length === 0} onPress={addUpdate} style={{ alignSelf: "flex-start" }} />
         </View>
@@ -632,7 +635,7 @@ function TaskParts({ task: x, canEdit }: { task: MaintenanceTask; canEdit: boole
     if (!item) return;
     const before = db;
     update((d) => withPartsUsed(d, x.id, item.id, qty), { text: `Used ${qty} × ${item.name} on ${x.code}`, to: `/maintenance?open=${x.id}`, marinaId: x.marinaId });
-    toast(`${qty} × ${item.name} taken from stock`, before);
+    toast(tr("{qty} × {name} taken from stock", { qty: qty, name: item.name }), before);
     setItemId("");
     setQty(1);
   };
@@ -683,7 +686,7 @@ export function ChangeBookingSheet({ booking: b, onClose }: { booking: Booking; 
   const days = Array.from({ length: 120 }, (_, i) => addDays(now, i));
 
   const save = () => {
-    if (!fits) return setError(`Berth ${berth?.code} isn't free for these dates. Choose another berth.`);
+    if (!fits) return setError(tr("Berth {code} isn't free for these dates. Choose another berth.", { code: berth?.code }));
     const before = db;
     update(
       (d) => ({
@@ -699,22 +702,22 @@ export function ChangeBookingSheet({ booking: b, onClose }: { booking: Booking; 
   };
 
   return (
-    <Sheet open onClose={onClose} title={`Change ${b.code}`} subtitle={`${boat?.name} · ${boat?.length} ft`} footer={<Button variant="primary" size="lg" label={`Save · ${money2(amount)}`} disabled={!changed} onPress={save} />}>
+    <Sheet open onClose={onClose} title={tr("Change {code}", { code: b.code })} subtitle={tr("{name} · {n} ft", { name: boat?.name, n: boat?.length })} footer={<Button variant="primary" size="lg" label={tr("Save · {amount}", { amount: money2(amount) })} disabled={!changed} onPress={save} />}>
       <View style={{ gap: 16 }}>
-        <Field label={tr("Arrival")} hint={started ? "Already arrived" : undefined}>
+        <Field label={tr("Arrival")} hint={started ? tr("Already arrived") : undefined}>
           {started ? <Txt>{fmtShort(start)}</Txt> : <DayChips days={b.start < now ? [b.start, ...days] : days} value={start} onChange={(d) => { setStart(d); setError(""); }} />}
         </Field>
         <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 16 }}>
-          <Field label={tr("Nights")} hint={`Leaves ${fmtShort(end)}`}><Stepper label={tr("nights")} value={nights} onChange={(n) => { setNights(n); setError(""); }} min={started ? Math.max(1, daysBetween(b.start, now)) : 1} max={365} /></Field>
+          <Field label={tr("Nights")} hint={tr("Leaves {date}", { date: fmtShort(end) })}><Stepper label={tr("nights")} value={nights} onChange={(n) => { setNights(n); setError(""); }} min={started ? Math.max(1, daysBetween(b.start, now)) : 1} max={365} /></Field>
           <Field label={tr("Guests")}><Stepper label={tr("guests")} value={guests} onChange={setGuests} max={20} /></Field>
         </View>
-        <Field label={tr("Berth")} error={error} hint={fits ? `${free.length} free berths fit this boat` : `Berth ${berth?.code} isn't free for these dates`}>
+        <Field label={tr("Berth")} error={error} hint={fits ? tr("{n} free berths fit this boat", { n: free.length }) : tr("Berth {code} isn't free for these dates", { code: berth?.code })}>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
             {free.slice(0, 16).map((x) => <Chip key={x.id} label={x.code} sub={`${x.maxLength} ft`} on={berthId === x.id} onPress={() => { setBerthId(x.id); setError(""); }} />)}
           </View>
         </Field>
-        <Row label={tr("New total")} value={money2(amount)} sub={invoice ? (invoice.status === "paid" ? "The invoice is already paid. Adjust any difference in Billing." : `Invoice ${invoice.number} is updated to match.`) : undefined} />
-        {!fits && <Txt v="caption" color={t.error.fg}>Pick one of the free berths above to save.</Txt>}
+        <Row label={tr("New total")} value={money2(amount)} sub={invoice ? (invoice.status === "paid" ? tr("The invoice is already paid. Adjust any difference in Billing.") : tr("Invoice {number} is updated to match.", { number: invoice.number })) : undefined} />
+        {!fits && <Txt v="caption" color={t.error.fg}>{tr("Pick one of the free berths above to save.")}</Txt>}
       </View>
     </Sheet>
   );
@@ -722,6 +725,7 @@ export function ChangeBookingSheet({ booking: b, onClose }: { booking: Booking; 
 
 /** Cancel (or decline, when pending). The berth frees up and any unpaid invoice is voided, as on the web. */
 export function CancelBookingSheet({ booking: b, decline, onClose }: { booking: Booking; decline?: boolean; onClose: () => void }) {
+  const tr = useTr();
   const { db, ix, update, toast } = useStore();
   const { t } = useTheme();
   const boat = ix.boat(b.boatId);
@@ -741,11 +745,11 @@ export function CancelBookingSheet({ booking: b, decline, onClose }: { booking: 
     onClose();
   };
   return (
-    <Sheet open onClose={onClose} title={`${decline ? "Decline" : "Cancel"} ${b.code}?`} subtitle={`${boat?.name} · ${fmtShort(b.start)} – ${fmtShort(b.end)}`} footer={<Button variant="danger" size="lg" label={decline ? "Decline booking" : "Cancel booking"} onPress={confirm} />}>
+    <Sheet open onClose={onClose} title={`${decline ? "Decline" : "Cancel"} ${b.code}?`} subtitle={`${boat?.name} · ${fmtShort(b.start)} – ${fmtShort(b.end)}`} footer={<Button variant="danger" size="lg" label={decline ? tr("Decline booking") : tr("Cancel booking")} onPress={confirm} />}>
       <Txt v="bodySm" color={t.text2}>
-        {`Berth ${ix.berth(b.berthId)?.code} becomes free for those nights${decline ? "" : " and any unpaid invoice is voided"}. ${owner?.name} isn't told automatically: call or email them from the booking.`}
+        {(decline ? tr("Berth {code} becomes free for those nights. {name} isn't told automatically: call or email them from the booking.", { code: ix.berth(b.berthId)?.code, name: owner?.name }) : tr("Berth {code} becomes free for those nights and any unpaid invoice is voided. {name} isn't told automatically: call or email them from the booking.", { code: ix.berth(b.berthId)?.code, name: owner?.name }))}
       </Txt>
-      {paid && <Txt v="bodySm" color={t.error.fg} style={{ marginTop: 12 }}>{owner?.name} has already paid {money2(ix.paidSoFar(paid))}. Refund it from Billing in the web app.</Txt>}
+      {paid && <Txt v="bodySm" color={t.error.fg} style={{ marginTop: 12 }}>{tr("{name} has already paid {amount}. Refund it from Billing in the web app.", { name: owner?.name, amount: money2(ix.paidSoFar(paid)) })}</Txt>}
     </Sheet>
   );
 }
@@ -770,8 +774,8 @@ export function PrepChecklist({ booking: b }: { booking: Booking }) {
   return (
     <View style={{ borderWidth: 1, borderColor: ready ? t.success.fg : t.border, borderRadius: 16, padding: 12, marginBottom: 12, gap: 4 }}>
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-        <Txt v="bodySm" weight="semibold">Berth {berth?.code} ready check</Txt>
-        {ready ? <Badge tone="success" icon={CircleCheck} label={tr("Ready")} /> : <Txt v="caption" num color={t.text3}>{done.filter((d) => items.some((i) => i.id === d)).length} of {items.length}</Txt>}
+        <Txt v="bodySm" weight="semibold">{tr("Berth {code} ready check", { code: berth?.code })}</Txt>
+        {ready ? <Badge tone="success" icon={CircleCheck} label={tr("Ready")} /> : <Txt v="caption" num color={t.text3}>{done.filter((d) => items.some((i) => i.id === d)).length} {tr("of")} {items.length}</Txt>}
       </View>
       {items.map((i) => {
         const on = done.includes(i.id);
@@ -780,11 +784,11 @@ export function PrepChecklist({ booking: b }: { booking: Booking }) {
             <View style={{ width: 22, height: 22, borderRadius: 6, borderWidth: 1.5, borderColor: on ? t.primary : t.borderStrong, backgroundColor: on ? t.primary : "transparent", alignItems: "center", justifyContent: "center" }}>
               {on && <CircleCheck size={14} color={t.onPrimary} />}
             </View>
-            <Txt v="bodySm" style={{ flex: 1 }}>{i.label}</Txt>
+            <Txt v="bodySm" style={{ flex: 1 }}>{tr(i.label)}</Txt>
           </Pressable>
         );
       })}
-      {live.prep && <Txt v="caption" color={t.text3}>Last checked by {live.prep.by}, {fmtShort(live.prep.at.slice(0, 10))}</Txt>}
+      {live.prep && <Txt v="caption" color={t.text3}>{tr("Last checked by {name}, {date}", { name: live.prep.by, date: fmtShort(live.prep.at.slice(0, 10)) })}</Txt>}
       {!ready && <Button size="sm" icon={TriangleAlert} label={tr("Something's wrong: report it")} onPress={() => setReporting(true)} style={{ alignSelf: "flex-start", marginTop: 4 }} />}
       {reporting && <ReportProblem berthId={b.berthId} onClose={() => setReporting(false)} />}
     </View>
@@ -812,23 +816,23 @@ export function CheckInSheet({ booking: b, onClose }: { booking: Booking; onClos
   const [error, setError] = useState("");
   const boat = ix.boat(b.boatId);
   const save = () => {
-    if (condition !== "good" && !notes.trim() && photos.length === 0) return setError("Describe the marks or damage, or add a photo.");
-    if (!signature && !absent) return setError("Ask the owner to sign, or tick that they aren't here.");
+    if (condition !== "good" && !notes.trim() && photos.length === 0) return setError(tr("Describe the marks or damage, or add a photo."));
+    if (!signature && !absent) return setError(tr("Ask the owner to sign, or tick that they aren't here."));
     const before = db;
     const record: ArrivalRecord = { condition, notes: notes.trim(), photos, signature: absent ? undefined : signature, signedBy: absent ? undefined : owner?.name, unsigned: absent || undefined, by: me?.name ?? user?.name ?? "Staff", at: new Date().toISOString() };
     update(
       (d) => ({ ...d, bookings: d.bookings.map((x) => (x.id === b.id ? { ...x, status: "checked-in" as const, arrival: record } : x)) }),
       { text: `${boat?.name} checked in (${b.code})${condition !== "good" ? `, ${condition === "damage" ? "damage" : "minor marks"} noted` : ""}${absent ? ", not signed" : ", signed by owner"}`, to: `/bookings?q=${b.code}`, marinaId: ix.berth(b.berthId)?.marinaId },
     );
-    toast(`${boat?.name} checked in`, before);
+    toast(tr("{name} checked in", { name: boat?.name }), before);
     onClose();
   };
   return (
-    <Sheet open onClose={onClose} title={`Check in ${boat?.name}`} subtitle={`Berth ${ix.berth(b.berthId)?.code} · ${owner?.name}`} footer={<Button variant="primary" size="lg" icon={LogIn} label={tr("Check in")} onPress={save} />}>
+    <Sheet open onClose={onClose} title={tr("Check in {name}", { name: boat?.name })} subtitle={tr("Berth {code} · {name}", { code: ix.berth(b.berthId)?.code, name: owner?.name })} footer={<Button variant="primary" size="lg" icon={LogIn} label={tr("Check in")} onPress={save} />}>
       <View style={{ gap: 16 }}>
         <Field label={tr("Boat condition on arrival")}>
           <View style={{ flexDirection: "row", gap: 8 }}>
-            {CONDITIONS.map((c) => <Chip key={c.id} label={c.label} on={condition === c.id} onPress={() => { setCondition(c.id); setError(""); }} />)}
+            {CONDITIONS.map((c) => <Chip key={c.id} label={tr(c.label)} on={condition === c.id} onPress={() => { setCondition(c.id); setError(""); }} />)}
           </View>
         </Field>
         {condition !== "good" && (
@@ -837,18 +841,18 @@ export function CheckInSheet({ booking: b, onClose }: { booking: Booking; onClos
           </Field>
         )}
         <PhotoPicker photos={photos} onChange={setPhotos} max={4} />
-        <Field label={`${owner?.name ?? "Owner"}'s signature`} hint={tr("Confirms the boat's condition and the marina rules.")}>
+        <Field label={tr("{name}'s signature", { name: owner?.name ?? tr("Owner") })} hint={tr("Confirms the boat's condition and the marina rules.")}>
           {absent ? (
-            <Txt v="bodySm" color={t.text3}>Owner not here. The check-in is recorded without a signature.</Txt>
+            <Txt v="bodySm" color={t.text3}>{tr("Owner not here. The check-in is recorded without a signature.")}</Txt>
           ) : (
-            <SignaturePad label={`${owner?.name ?? "Owner"}'s signature`} value={signature} onChange={(s) => { setSignature(s); setError(""); }} />
+            <SignaturePad label={tr("{name}'s signature", { name: owner?.name ?? tr("Owner") })} value={signature} onChange={(s) => { setSignature(s); setError(""); }} />
           )}
         </Field>
         <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: absent }} onPress={() => { setAbsent(!absent); setError(""); }} style={{ flexDirection: "row", alignItems: "center", gap: 12, borderWidth: 1, borderColor: t.border, borderRadius: 12, padding: 12 }}>
           <View style={{ width: 22, height: 22, borderRadius: 6, borderWidth: 1.5, borderColor: t.primary, backgroundColor: absent ? t.primary : "transparent", alignItems: "center", justifyContent: "center" }}>
             {absent && <CircleCheck size={14} color={t.onPrimary} />}
           </View>
-          <Txt v="bodySm">The owner isn&apos;t here to sign</Txt>
+          <Txt v="bodySm">{tr("The owner isn't here to sign")}</Txt>
         </Pressable>
         {error ? <Txt v="bodySm" weight="medium" color={t.error.fg}>{error}</Txt> : null}
       </View>
@@ -858,21 +862,22 @@ export function CheckInSheet({ booking: b, onClose }: { booking: Booking; onClos
 
 /** The saved check-in record on a booking. */
 function ArrivalSummary({ record }: { record: ArrivalRecord }) {
+  const tr = useTr();
   const { t } = useTheme();
   return (
     <View style={{ borderWidth: 1, borderColor: t.border, borderRadius: 16, padding: 12, marginBottom: 12, gap: 8 }}>
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-        <Txt v="bodySm" weight="semibold">Arrival record</Txt>
-        <Badge tone={record.condition === "good" ? "success" : record.condition === "marks" ? "pending" : "maintenance"} label={CONDITIONS.find((c) => c.id === record.condition)?.label ?? ""} />
+        <Txt v="bodySm" weight="semibold">{tr("Arrival record")}</Txt>
+        <Badge tone={record.condition === "good" ? "success" : record.condition === "marks" ? "pending" : "maintenance"} label={tr(CONDITIONS.find((c) => c.id === record.condition)?.label ?? "")} />
       </View>
       {record.notes ? <Txt v="bodySm">{record.notes}</Txt> : null}
       {record.photos.length > 0 && (
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-          {record.photos.map((p, i) => <Image key={i} source={{ uri: p }} style={{ width: 72, height: 72, borderRadius: 10 }} accessibilityLabel={`Arrival photo ${i + 1}`} />)}
+          {record.photos.map((p, i) => <Image key={i} source={{ uri: p }} style={{ width: 72, height: 72, borderRadius: 10 }} accessibilityLabel={tr("Arrival photo {v}", { v: i + 1 })} />)}
         </View>
       )}
-      {record.signature ? <SignatureView value={record.signature} /> : <Txt v="caption" color={t.text3}>Not signed: owner wasn&apos;t there.</Txt>}
-      <Txt v="caption" color={t.text3}>{record.signedBy ? `Signed by ${record.signedBy} · ` : ""}Checked in by {record.by}, {fmtShort(record.at.slice(0, 10))}</Txt>
+      {record.signature ? <SignatureView value={record.signature} /> : <Txt v="caption" color={t.text3}>{tr("Not signed: owner wasn't there.")}</Txt>}
+      <Txt v="caption" color={t.text3}>{record.signedBy ? tr("Signed by {signedBy} · ", { signedBy: record.signedBy }) : ""}{tr("Checked in by {name}, {date}", { name: record.by, date: fmtShort(record.at.slice(0, 10)) })}</Txt>
     </View>
   );
 }
@@ -897,25 +902,25 @@ export function ServiceSheet({ booking: b, onClose }: { booking: Booking; onClos
     const before = db;
     const line = { label: service.label, qty, unit: service.unit, unitPrice: service.price, amount, at: new Date().toISOString(), by: me?.name ?? user?.name ?? "Staff" };
     update((d) => withServiceCharge(d, b.id, ix.amount(b), line), { text: `${service.label} for ${boat?.name}: ${qty} ${service.unit}, ${money2(amount)} added to the invoice`, to: `/bookings?q=${b.code}`, marinaId: ix.berth(b.berthId)?.marinaId });
-    toast(`${money2(amount)} added to ${boat?.name}'s invoice`, before);
+    toast(tr("{amount} added to {name}'s invoice", { amount: money2(amount), name: boat?.name }), before);
     onClose();
   };
   return (
-    <Sheet open onClose={onClose} title={tr("Add a service")} subtitle={`${boat?.name} · berth ${ix.berth(b.berthId)?.code}`} footer={<Button variant="primary" size="lg" label={`Add ${money2(amount)} to invoice`} onPress={save} />}>
+    <Sheet open onClose={onClose} title={tr("Add a service")} subtitle={tr("{name} · berth {code}", { name: boat?.name, code: ix.berth(b.berthId)?.code })} footer={<Button variant="primary" size="lg" label={tr("Add {amount} to invoice", { amount: money2(amount) })} onPress={save} />}>
       <View style={{ gap: 16 }}>
         <Field label={tr("Service")}>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
             {SERVICES.map((x) => <Chip key={x.id} label={x.label} sub={`${money2(x.price)} / ${x.unit}`} on={serviceId === x.id} onPress={() => pick(x.id)} />)}
           </View>
         </Field>
-        <Field label={service.unit === "gal" ? "Gallons" : "How many?"}>
+        <Field label={service.unit === "gal" ? tr("Gallons") : tr("How many?")}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
             <Stepper label={service.unit} value={qty} onChange={setQty} max={service.unit === "gal" ? 500 : 20} unit={service.unit} />
             {service.unit === "gal" && [10, 50, 100].map((n) => <Chip key={n} label={`+${n}`} on={false} onPress={() => setQty(Math.min(500, qty + n))} />)}
           </View>
         </Field>
         <Row label={tr("Charge")} value={money2(amount)} sub={`${qty} × ${money2(service.price)}`} />
-        <Txt v="caption" color={t.text3}>Added to the stay&apos;s invoice. If it was already paid, the extra becomes due.</Txt>
+        <Txt v="caption" color={t.text3}>{tr("Added to the stay's invoice. If it was already paid, the extra becomes due.")}</Txt>
       </View>
     </Sheet>
   );
@@ -923,6 +928,7 @@ export function ServiceSheet({ booking: b, onClose }: { booking: Booking; onClos
 
 /** Read the power and water meters on a berth; usage since the last reading goes on the boat's invoice. */
 export function MeterSheet({ berth, onClose }: { berth: Berth; onClose: () => void }) {
+  const tr = useTr();
   const { db, ix, update, toast, user } = useStore();
   const me = useMe();
   const { t } = useTheme();
@@ -939,9 +945,9 @@ export function MeterSheet({ berth, onClose }: { berth: Berth; onClose: () => vo
   const save = () => {
     for (const k of kinds) {
       const prev = lastReading(db, berth.id, k);
-      if (values[k] && prev && Number(values[k]) < prev.value) return setError(`The ${k} reading is lower than last time (${prev.value.toLocaleString()}). Check the meter.`);
+      if (values[k] && prev && Number(values[k]) < prev.value) return setError(tr("The {k} reading is lower than last time ({toLocaleString}). Check the meter.", { k: k, toLocaleString: prev.value.toLocaleString() }));
     }
-    if (!kinds.some((k) => values[k])) return setError("Enter at least one reading.");
+    if (!kinds.some((k) => values[k])) return setError(tr("Enter at least one reading."));
     const before = db;
     let total = 0;
     update((d) => {
@@ -954,18 +960,18 @@ export function MeterSheet({ berth, onClose }: { berth: Berth; onClose: () => vo
       }
       return next;
     }, { text: `Meter readings for berth ${berth.code}${cur ? `, billed to ${ix.boat(cur.boatId)?.name}` : ""}`, marinaId: berth.marinaId });
-    toast(cur && total > 0 ? `Saved. ${money2(total)} added to ${ix.boat(cur.boatId)?.name}'s invoice.` : "Readings saved", before);
+    toast(cur && total > 0 ? tr("Saved. {amount} added to {name}'s invoice.", { amount: money2(total), name: ix.boat(cur.boatId)?.name }) : tr("Readings saved"), before);
     onClose();
   };
   return (
-    <Sheet open onClose={onClose} title={`Meters · berth ${berth.code}`} subtitle={cur ? `Usage is billed to ${ix.boat(cur.boatId)?.name}` : "No boat here: this sets the starting point"} footer={<Button variant="primary" size="lg" icon={Gauge} label="Save readings" onPress={save} />}>
+    <Sheet open onClose={onClose} title={tr("Meters · berth {code}", { code: berth.code })} subtitle={cur ? tr("Usage is billed to {name}", { name: ix.boat(cur.boatId)?.name }) : tr("No boat here: this sets the starting point")} footer={<Button variant="primary" size="lg" icon={Gauge} label={tr("Save readings")} onPress={save} />}>
       <View style={{ gap: 16 }}>
         {kinds.map((k) => {
           const prev = lastReading(db, berth.id, k);
           const usage = usageOf(k);
           const rate = k === "power" ? rates.powerPerKwh : rates.waterPerGallon;
           return (
-            <Field key={k} label={`${k === "power" ? "Power" : "Water"} (${METER_UNIT[k]})`} hint={usage !== undefined ? `${usage.toLocaleString()} ${METER_UNIT[k]} used · ${money2(Math.round(usage * rate * 100) / 100)}` : prev ? `Last ${prev.value.toLocaleString()}, ${fmtShort(prev.at.slice(0, 10))}` : "First reading"}>
+            <Field key={k} label={`${k === "power" ? tr("Power") : tr("Water")} (${tr(METER_UNIT[k])})`} hint={usage !== undefined ? tr("{n} {unit} used · {amount}", { n: usage.toLocaleString(), unit: tr(METER_UNIT[k]), amount: money2(Math.round(usage * rate * 100) / 100) }) : prev ? tr("Last {n}, {date}", { n: prev.value.toLocaleString(), date: fmtShort(prev.at.slice(0, 10)) }) : tr("First reading")}>
               <Input value={values[k]} onChangeText={(v) => { setValues({ ...values, [k]: v.replace(/[^\d.]/g, "") }); setError(""); }} keyboardType="number-pad" placeholder={prev ? String(prev.value) : "0"} />
             </Field>
           );

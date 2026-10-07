@@ -31,12 +31,12 @@ export function RequestSheet({ onClose }: { onClose: () => void }) {
   const send = () => {
     if (kind === "leave") {
       const clash = db.requests.find((r) => r.staffId === me.id && r.kind === "leave" && r.status !== "declined" && r.start <= end && r.end >= start);
-      if (clash) return setError(`You already asked for ${fmtShort(clash.start)}${clash.end !== clash.start ? ` – ${fmtShort(clash.end)}` : ""} off.`);
+      if (clash) return setError(tr("You already asked for {dates} off.", { dates: clash.end !== clash.start ? `${fmtShort(clash.start)} – ${fmtShort(clash.end)}` : fmtShort(clash.start) }));
     } else {
-      if (!swapDay) return setError("Choose the shift you want covered.");
-      if (!cover) return setError("Choose who will cover it.");
+      if (!swapDay) return setError(tr("Choose the shift you want covered."));
+      if (!cover) return setError(tr("Choose who will cover it."));
     }
-    if (!reason.trim()) return setError("Add a short reason for your manager.");
+    if (!reason.trim()) return setError(tr("Add a short reason for your manager."));
     const what = kind === "leave" ? `time off ${fmtShort(start)}${days > 1 ? ` – ${fmtShort(end)}` : ""}` : `a shift swap on ${fmtShort(swapDay)} with ${ix.staffMember(cover)?.name}`;
     update(
       (d) => ({
@@ -48,41 +48,41 @@ export function RequestSheet({ onClose }: { onClose: () => void }) {
       }),
       { text: `${me.name} asked for ${what}`, to: "/staff?tab=requests", marinaId: me.marinaId },
     );
-    toast(`Request sent to ${manager?.name ?? "your manager"}`);
+    toast((manager ? tr("Request sent to {name}", { name: manager.name }) : tr("Request sent to your manager")));
     onClose();
   };
 
   return (
-    <Sheet open onClose={onClose} title={tr("New request")} subtitle={`Goes to ${manager?.name ?? "your marina manager"} to approve`} footer={<Button variant="primary" size="lg" label={tr("Send request")} onPress={send} />}>
+    <Sheet open onClose={onClose} title={tr("New request")} subtitle={(manager ? tr("Goes to {name} to approve", { name: manager.name }) : tr("Goes to your marina manager to approve"))} footer={<Button variant="primary" size="lg" label={tr("Send request")} onPress={send} />}>
       <View style={{ gap: 16 }}>
-        <Segmented value={kind} onChange={(k) => { setKind(k); setError(""); }} items={[{ value: "leave", label: "Time off" }, { value: "swap", label: "Swap a shift" }]} />
+        <Segmented value={kind} onChange={(k) => { setKind(k); setError(""); }} items={[{ value: "leave", label: tr("Time off") }, { value: "swap", label: tr("Swap a shift") }]} />
         {kind === "leave" ? (
           <>
             <Field label={tr("First day off")}><DayChips days={upcoming} value={start} onChange={(d) => { setStart(d); setError(""); }} /></Field>
             <Field label={tr("How many days?")} hint={days > 1 ? `${fmtShort(start)} – ${fmtShort(end)}` : fmtShort(start)}>
-              <Stepper label={tr("days off")} value={days} onChange={setDays} max={21} unit={days === 1 ? "day" : "days"} />
+              <Stepper label={tr("days off")} value={days} onChange={setDays} max={21} unit={days === 1 ? tr("day") : tr("days")} />
             </Field>
           </>
         ) : (
           <>
-            <Field label={tr("Shift to swap")} hint={`Your ${me.shift} shift, ${SHIFT_HOURS[me.shift]}`}>
+            <Field label={tr("Shift to swap")} hint={tr("Your {shift} shift, {hours}", { shift: tr(me.shift), hours: tr(SHIFT_HOURS[me.shift]) })}>
               <DayChips days={working} value={swapDay} onChange={(d) => { setSwapDay(d); setCover(""); setError(""); }} />
             </Field>
             {swapDay ? (
-              <Field label={tr("Who will cover?")} hint={colleagues.length ? "Colleagues at your marina who are off that day." : undefined}>
+              <Field label={tr("Who will cover?")} hint={colleagues.length ? tr("Colleagues at your marina who are off that day.") : undefined}>
                 {colleagues.length ? (
                   <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-                    {colleagues.map((s) => <Chip key={s.id} label={s.name} sub={s.position} on={cover === s.id} onPress={() => { setCover(s.id); setError(""); }} />)}
+                    {colleagues.map((s) => <Chip key={s.id} label={s.name} sub={tr(s.position)} on={cover === s.id} onPress={() => { setCover(s.id); setError(""); }} />)}
                   </View>
                 ) : (
-                  <Txt v="bodySm" color={t.text3}>Nobody at your marina is off that day. Ask for time off instead, or message your manager.</Txt>
+                  <Txt v="bodySm" color={t.text3}>{tr("Nobody at your marina is off that day. Ask for time off instead, or message your manager.")}</Txt>
                 )}
               </Field>
             ) : null}
           </>
         )}
         <Field label={tr("Reason")} error={error}>
-          <Input value={reason} onChangeText={(v) => { setReason(v); setError(""); }} placeholder={kind === "leave" ? "e.g. Family wedding" : "e.g. Doctor's appointment"} invalid={!!error && !reason.trim()} />
+          <Input value={reason} onChangeText={(v) => { setReason(v); setError(""); }} placeholder={kind === "leave" ? tr("e.g. Family wedding") : tr("e.g. Doctor's appointment")} invalid={!!error && !reason.trim()} />
         </Field>
       </View>
     </Sheet>
@@ -98,9 +98,9 @@ export function ProfileSheet({ onClose }: { onClose: () => void }) {
   const [error, setError] = useState("");
   if (!me) return null;
   const save = () => {
-    if (phone.replace(/\D/g, "").length < 7) return setError("Enter a phone number your manager can reach you on.");
+    if (phone.replace(/\D/g, "").length < 7) return setError(tr("Enter a phone number your manager can reach you on."));
     update((d) => ({ ...d, staff: d.staff.map((s) => (s.id === me.id ? { ...s, phone: phone.trim() } : s)) }), { text: `${me.name} updated their phone number`, marinaId: me.marinaId });
-    toast("Profile saved");
+    toast(tr("Profile saved"));
     onClose();
   };
   return (
@@ -112,7 +112,7 @@ export function ProfileSheet({ onClose }: { onClose: () => void }) {
         <View style={{ backgroundColor: t.surface3, borderRadius: 12, padding: 12, gap: 2 }}>
           <Txt v="bodySm" weight="medium">{user?.name}</Txt>
           <Txt v="bodySm" color={t.text2}>{user?.email}</Txt>
-          <Txt v="caption" color={t.text3} style={{ marginTop: 4 }}>Your name, email, role and marina are managed by your marina manager.</Txt>
+          <Txt v="caption" color={t.text3} style={{ marginTop: 4 }}>{tr("Your name, email, role and marina are managed by your marina manager.")}</Txt>
         </View>
       </View>
     </Sheet>
@@ -128,17 +128,17 @@ export function PasswordSheet({ onClose }: { onClose: () => void }) {
   const set = (k: keyof typeof f, v: string) => { setF({ ...f, [k]: v }); setErrors({}); };
   const save = async () => {
     const e: Record<string, string> = {};
-    if (!f.current) e.current = "Enter your current password.";
-    if (f.next.length < 8) e.next = "Use at least 8 characters.";
-    else if (f.next === f.current) e.next = "Choose a password you haven't used here.";
-    if (f.confirm !== f.next) e.confirm = "The two new passwords don't match.";
+    if (!f.current) e.current = tr("Enter your current password.");
+    if (f.next.length < 8) e.next = tr("Use at least 8 characters.");
+    else if (f.next === f.current) e.next = tr("Choose a password you haven't used here.");
+    if (f.confirm !== f.next) e.confirm = tr("The two new passwords don't match.");
     setErrors(e);
     if (Object.keys(e).length) return;
     setBusy(true);
     const err = await changePassword(f.current, f.next);
     setBusy(false);
     if (err) return setErrors({ current: err });
-    toast("Password changed");
+    toast(tr("Password changed"));
     onClose();
   };
   return (

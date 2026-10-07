@@ -43,7 +43,7 @@ export function HandoverSheet({ marinaId, title = "Note for the next shift", onC
   const save = () => {
     if (!text.trim()) return onClose();
     update((d) => ({ ...d, handovers: [...(d.handovers ?? []), { id: nextId("ho", d.handovers ?? []), marinaId, text: text.trim(), by: me?.name ?? user?.name ?? "Staff", shift: me?.shift, at: new Date().toISOString() }] }), { text: `Hand-over note left at ${ix.marina(marinaId)?.name}`, marinaId });
-    toast("Note saved for the next shift");
+    toast(tr("Note saved for the next shift"));
     onClose();
   };
   return (
@@ -57,7 +57,7 @@ export function HandoverSheet({ marinaId, title = "Note for the next shift", onC
       <Field label={tr("Note")} hint={tr("Shown on the Today screen for the next 24 hours.")}>
         <Input multiline value={text} onChangeText={setText} placeholder={tr("e.g. Boat on B-03 leaves early tomorrow. Pump-out is low on fuel.")} />
       </Field>
-      <Txt v="caption" color={t.text3} style={{ marginTop: 8 }}>Your manager sees it too.</Txt>
+      <Txt v="caption" color={t.text3} style={{ marginTop: 8 }}>{tr("Your manager sees it too.")}</Txt>
     </Sheet>
   );
 }

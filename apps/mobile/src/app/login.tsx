@@ -88,7 +88,7 @@ export default function Login() {
               <Pressable
                 key={role}
                 accessibilityRole="button"
-                accessibilityLabel={`Use the demo ${role.toLowerCase()} account`}
+                accessibilityLabel={tr("Use the demo {role} account", { role: role.toLowerCase() })}
                 onPress={() => { setEmail(mail); setPassword(pw); setError(""); }}
                 style={({ pressed }) => ({ flex: 1, borderWidth: 1, borderColor: t.border, borderRadius: 12, padding: 10, backgroundColor: pressed ? t.sidebar : t.surface })}
               >
@@ -98,7 +98,7 @@ export default function Login() {
             ))}
           </View>
 
-          <Txt v="caption" color={t.text3} style={{ textAlign: "center", marginTop: 32 }}>Marina · version {Constants.expoConfig?.version ?? "1.0.0"}</Txt>
+          <Txt v="caption" color={t.text3} style={{ textAlign: "center", marginTop: 32 }}>{tr("Marina · version {version}", { version: Constants.expoConfig?.version ?? "1.0.0" })}</Txt>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

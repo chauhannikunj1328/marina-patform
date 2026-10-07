@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { View } from "react-native";
 import { CalendarClock, Plus, Search } from "lucide-react-native";
-import { daysBetween, fmtShort, today } from "@marina/shared";
+import { daysBetween, fmtShort, today , tn } from "@marina/shared";
 import { Button, Card, EmptyState, Screen, SearchBox, Segmented, Txt } from "@/components/ui";
 import { BookingBadge } from "@/components/status";
 import { BookingSheet, CheckInSheet, NewBookingSheet } from "@/components/sheets";
@@ -49,7 +49,7 @@ export default function Bookings() {
         />
       )}
       {rows.length === 0 ? (
-        <EmptyState icon={s ? Search : CalendarClock} title={s ? `Nothing matches “${q}”` : tr("Nothing here")} body={s ? tr("Try a boat name, owner or berth number.") : undefined} />
+        <EmptyState icon={s ? Search : CalendarClock} title={s ? tr("Nothing matches “{q}”", { q: q }) : tr("Nothing here")} body={s ? tr("Try a boat name, owner or berth number.") : undefined} />
       ) : (
         <View style={{ gap: 8 }}>
           {rows.map((b) => (
@@ -57,11 +57,11 @@ export default function Bookings() {
               <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 12 }}>
                 <View style={{ flex: 1 }}>
                   <Txt weight="semibold" numberOfLines={1}>{ix.boat(b.boatId)?.name}</Txt>
-                  <Txt v="bodySm" color={t.text3} numberOfLines={1}>Berth {ix.berth(b.berthId)?.code}{ids.length > 1 ? ` · ${ix.marinaOfBerth(b.berthId)?.name}` : ""} · {ix.ownerOfBooking(b)?.name}</Txt>
+                  <Txt v="bodySm" color={t.text3} numberOfLines={1}>{tr("Berth")} {ix.berth(b.berthId)?.code}{ids.length > 1 ? ` · ${ix.marinaOfBerth(b.berthId)?.name}` : ""} · {ix.ownerOfBooking(b)?.name}</Txt>
                 </View>
                 <BookingBadge status={b.status} />
               </View>
-              <Txt v="bodySm" num color={t.text2} style={{ marginTop: 8 }}>{fmtShort(b.start)} – {fmtShort(b.end)} · {daysBetween(b.start, b.end)} {daysBetween(b.start, b.end) === 1 ? "night" : "nights"}</Txt>
+              <Txt v="bodySm" num color={t.text2} style={{ marginTop: 8 }}>{fmtShort(b.start)} – {fmtShort(b.end)} · {tn(daysBetween(b.start, b.end), "{n} night", "{n} nights")}</Txt>
             </Card>
           ))}
         </View>

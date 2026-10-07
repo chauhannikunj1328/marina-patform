@@ -7,6 +7,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Poppins_400Regular, Poppins_500Medium, Poppins_600SemiBold, useFonts } from "@expo-google-fonts/poppins";
 import { Inter_500Medium, Inter_600SemiBold } from "@expo-google-fonts/inter";
+import { IBMPlexSansArabic_400Regular, IBMPlexSansArabic_500Medium, IBMPlexSansArabic_600SemiBold } from "@expo-google-fonts/ibm-plex-sans-arabic";
 import { StoreProvider, useStore } from "@/store";
 import { ThemeProvider, useTheme } from "@/theme";
 import { Toasts } from "@/components/ui";
@@ -19,7 +20,7 @@ SplashScreen.setOptions({ duration: 300, fade: true });
 function Shell() {
   const { t } = useTheme();
   const { ready } = useStore();
-  const [fontsLoaded, fontError] = useFonts({ Poppins_400Regular, Poppins_500Medium, Poppins_600SemiBold, Inter_500Medium, Inter_600SemiBold });
+  const [fontsLoaded, fontError] = useFonts({ Poppins_400Regular, Poppins_500Medium, Poppins_600SemiBold, Inter_500Medium, Inter_600SemiBold, IBMPlexSansArabic_400Regular, IBMPlexSansArabic_500Medium, IBMPlexSansArabic_600SemiBold });
   const loaded = (fontsLoaded || !!fontError) && ready;
 
   useEffect(() => {

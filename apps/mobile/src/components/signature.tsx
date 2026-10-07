@@ -4,10 +4,12 @@ import { PanResponder, Pressable, View, type LayoutChangeEvent } from "react-nat
 import Svg, { Path } from "react-native-svg";
 import { useTheme } from "../theme";
 import { Txt } from "./ui";
+import { useTr } from "@/lib/i18n";
 
 export type Signature = { d: string; w: number; h: number };
 
 export function SignaturePad({ value, onChange, label }: { value?: Signature; onChange: (s?: Signature) => void; label: string }) {
+  const tr = useTr();
   const { t } = useTheme();
   const [size, setSize] = useState({ w: 300, h: 160 });
   const [live, setLive] = useState("");
@@ -54,7 +56,7 @@ export function SignaturePad({ value, onChange, label }: { value?: Signature; on
     <View style={{ gap: 6 }}>
       <View
         accessibilityLabel={label}
-        accessibilityHint="Draw a signature with your finger"
+        accessibilityHint={tr("Draw a signature with your finger")}
         onLayout={onLayout}
         {...responder.panHandlers}
         style={{ height: 160, borderRadius: 12, borderWidth: 1, borderColor: t.borderStrong, borderStyle: value ? "solid" : "dashed", backgroundColor: "#FFFFFF", overflow: "hidden" }}
@@ -62,12 +64,12 @@ export function SignaturePad({ value, onChange, label }: { value?: Signature; on
         <Svg width={size.w} height={size.h} pointerEvents="none">
           {d ? <Path d={d} stroke="#17191E" strokeWidth={2.5} fill="none" strokeLinecap="round" strokeLinejoin="round" /> : null}
         </Svg>
-        {!d && <Txt v="bodySm" color="#8A8F98" style={{ position: "absolute", top: 68, left: 0, right: 0, textAlign: "center" }} >Sign here</Txt>}
-        <View pointerEvents="none" style={{ position: "absolute", left: 16, right: 16, bottom: 32, height: 1, backgroundColor: "#D7D7D2" }} />
+        {!d && <Txt v="bodySm" color="#8A8F98" style={{ position: "absolute", top: 68, start: 0, end: 0, textAlign: "center" }} >{tr("Sign here")}</Txt>}
+        <View pointerEvents="none" style={{ position: "absolute", start: 16, end: 16, bottom: 32, height: 1, backgroundColor: "#D7D7D2" }} />
       </View>
       {value && (
         <Pressable accessibilityRole="button" onPress={() => onChange(undefined)} hitSlop={8} style={{ alignSelf: "flex-end" }}>
-          <Txt v="caption" weight="semibold" color={t.greenText}>Clear signature</Txt>
+          <Txt v="caption" weight="semibold" color={t.greenText}>{tr("Clear signature")}</Txt>
         </Pressable>
       )}
     </View>

@@ -9,6 +9,7 @@ import { useInbox } from "@/lib/role";
 import { useStore } from "@/store";
 import { useTheme } from "@/theme";
 import { useTr } from "@/lib/i18n";
+import { tx } from "@marina/shared";
 
 const ICONS: Record<InboxKind, Icon> = { message: MessageSquare, task: ClipboardList, request: CalendarClock, arrival: LogIn, late: TriangleAlert, schedule: CalendarDays, booking: CalendarCheck, invoice: Receipt };
 
@@ -26,10 +27,10 @@ export default function Inbox() {
     <View style={{ flex: 1, backgroundColor: t.bg }}>
       <StackHeader
         title={tr("Notifications")}
-        subtitle={unread.length ? `${unread.length} new` : "All caught up"}
+        subtitle={unread.length ? tr("{n} new", { n: unread.length }) : tr("All caught up")}
         right={unread.length ? (
           <Pressable accessibilityRole="button" onPress={markAll} hitSlop={8} style={{ paddingHorizontal: 12 }}>
-            <Txt v="bodySm" weight="semibold" color={t.greenText}>Mark all read</Txt>
+            <Txt v="bodySm" weight="semibold" color={t.greenText}>{tr("Mark all read")}</Txt>
           </Pressable>
         ) : undefined}
       />
@@ -45,7 +46,7 @@ export default function Inbox() {
                 <Pressable
                   key={n.id}
                   accessibilityRole="button"
-                  accessibilityLabel={`${isNew ? "New. " : ""}${n.title}. ${n.body}`}
+                  accessibilityLabel={`${isNew ? tr("New.") + " " : ""}${tx(n.title)}. ${tx(n.body)}`}
                   onPress={() => {
                     if (isNew) update((d) => ({ ...d, readNotifications: [...d.readNotifications, n.id] }));
                     router.navigate(n.open || n.view ? { pathname: n.path, params: { ...(n.open ? { open: n.open } : {}), ...(n.view ? { view: n.view } : {}), at: String(Date.now()) } } : n.path);
@@ -56,8 +57,8 @@ export default function Inbox() {
                     <IconCmp size={18} color={n.urgent ? t.status.maintenance.fg : t.text2} strokeWidth={1.75} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Txt weight={isNew ? "semibold" : "regular"}>{n.title}</Txt>
-                    <Txt v="bodySm" color={t.text3} numberOfLines={2}>{n.body}</Txt>
+                    <Txt weight={isNew ? "semibold" : "regular"}>{tx(n.title)}</Txt>
+                    <Txt v="bodySm" color={t.text3} numberOfLines={2}>{tx(n.body)}</Txt>
                   </View>
                   {isNew && <View accessibilityElementsHidden style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: t.green, marginTop: 8 }} />}
                 </Pressable>

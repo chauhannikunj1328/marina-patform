@@ -8,9 +8,10 @@ import {
   addDays, DAYS, fmtDuration, fmtMonth, fmtTime, fromISO, minutesWorked, moneyShort, openEntry, pct, planFor, SHIFT_HOURS, today, type Staff,
 } from "@marina/shared";
 import { useStore } from "../store";
-import { useTheme } from "../theme";
+import { flipRtl, useTheme } from "../theme";
 import { Badge, Button, Card, Chip, Field, Row, Sheet, Txt, type Icon } from "./ui";
 import { EditScheduleSheet } from "./schedule";
+import { useTr } from "@/lib/i18n";
 
 export function Kpi({ label, value, sub, trend, onPress }: { label: string; value: string; sub?: string; trend?: { value: string; up: boolean; good: boolean }; onPress?: () => void }) {
   const { t } = useTheme();
@@ -62,7 +63,7 @@ export function AlertRow({ icon: IconCmp, title, body, tone = "neutral", onPress
         <Txt weight="medium">{title}</Txt>
         {body ? <Txt v="bodySm" color={t.text3} numberOfLines={2}>{body}</Txt> : null}
       </View>
-      {onPress && <ChevronRight size={18} color={t.text3} />}
+      {onPress && <ChevronRight style={flipRtl()} size={18} color={t.text3} />}
     </Pressable>
   );
 }
@@ -74,21 +75,22 @@ export function List({ children }: { children: React.ReactNode }) {
 
 /** One marina with today's occupancy bar and this month's revenue. */
 export function MarinaRow({ id, first }: { id: string; first?: boolean }) {
+  const tr = useTr();
   const { ix } = useStore();
   const { t } = useTheme();
   const m = ix.metrics([id]);
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={`${ix.marina(id)?.name}, ${pct(m.occupancy)} occupied, ${moneyShort(m.revenue)} this month`} onPress={() => router.push({ pathname: "/marina/[id]", params: { id } })} style={({ pressed }) => ({ padding: 14, gap: 8, borderTopWidth: first ? 0 : 1, borderColor: t.border, backgroundColor: pressed ? t.sidebar : "transparent" })}>
+    <Pressable accessibilityRole="button" accessibilityLabel={tr("{name}, {occupancy} occupied, {revenue} this month", { name: ix.marina(id)?.name, occupancy: pct(m.occupancy), revenue: moneyShort(m.revenue) })} onPress={() => router.push({ pathname: "/marina/[id]", params: { id } })} style={({ pressed }) => ({ padding: 14, gap: 8, borderTopWidth: first ? 0 : 1, borderColor: t.border, backgroundColor: pressed ? t.sidebar : "transparent" })}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
         <View style={{ flex: 1 }}>
           <Txt weight="medium" numberOfLines={1}>{ix.marina(id)?.name}</Txt>
-          <Txt v="caption" color={t.text3}>{ix.marina(id)?.status === "inactive" ? "Closed to bookings · " : ""}{ix.cityOfMarina(id)?.name} · {m.berths} berths{m.pending ? ` · ${m.pending} pending` : ""}</Txt>
+          <Txt v="caption" color={t.text3}>{ix.marina(id)?.status === "inactive" ? tr("Closed to bookings · ") : ""}{ix.cityOfMarina(id)?.name} · {tr("{n} berths", { n: m.berths })}{m.pending ? tr(" · {pending} pending", { pending: m.pending }) : ""}</Txt>
         </View>
         <View style={{ alignItems: "flex-end" }}>
           <Txt v="bodySm" num weight="semibold">{pct(m.occupancy)}</Txt>
           <Txt v="caption" num color={t.text3}>{moneyShort(m.revenue)}</Txt>
         </View>
-        <ChevronRight size={18} color={t.text3} />
+        <ChevronRight style={flipRtl()} size={18} color={t.text3} />
       </View>
       <View style={{ height: 6, borderRadius: 3, backgroundColor: t.surface3, overflow: "hidden" }}>
         <View style={{ width: `${Math.round(m.occupancy * 100)}%`, height: "100%", backgroundColor: t.tealStrong }} />
@@ -99,10 +101,11 @@ export function MarinaRow({ id, first }: { id: string; first?: boolean }) {
 
 /** For sheets opened on "All marinas": choose which marina the new record belongs to. */
 export function MarinaPicker({ value, onChange, openOnly }: { value: string; onChange: (id: string) => void; openOnly?: boolean }) {
+  const tr = useTr();
   const { ix, scope: all } = useStore();
   const scope = openOnly ? all.filter((id) => ix.marina(id)?.status !== "inactive") : all;
   return (
-    <Field label="Marina">
+    <Field label={tr("Marina")}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
         {scope.map((id) => <Chip key={id} label={ix.marina(id)?.name ?? id} on={value === id} onPress={() => onChange(id)} />)}
       </ScrollView>
@@ -111,6 +114,7 @@ export function MarinaPicker({ value, onChange, openOnly }: { value: string; onC
 }
 
 export function StaffSheet({ staff, onClose }: { staff: Staff; onClose: () => void }) {
+  const tr = useTr();
   const { db, ix, can } = useStore();
   const [editing, setEditing] = useState(false);
   const { t } = useTheme();
@@ -125,20 +129,20 @@ export function StaffSheet({ staff, onClose }: { staff: Staff; onClose: () => vo
       open
       onClose={onClose}
       title={s.name}
-      subtitle={`${s.position} · ${ix.marina(s.marinaId)?.name}`}
-      footer={<Button variant="primary" size="lg" icon={MessageSquare} label={`Message ${s.name.split(" ")[0]}`} onPress={() => { onClose(); router.push({ pathname: "/chat", params: { staff: s.id } }); }} />}
+      subtitle={`${tr(s.position)} · ${ix.marina(s.marinaId)?.name}`}
+      footer={<Button variant="primary" size="lg" icon={MessageSquare} label={tr("Message {v}", { v: s.name.split(" ")[0] })} onPress={() => { onClose(); router.push({ pathname: "/chat", params: { staff: s.id } }); }} />}
     >
       <View style={{ flexDirection: "row", gap: 8, marginBottom: 16 }}>
-        {entry ? <Badge tone="success" label={`On the clock since ${fmtTime(entry.start)}`} /> : s.status === "on-leave" ? <Badge tone="neutral" label="On leave" /> : planFor(s, today(), db.requests).working ? <Badge tone="pending" label="Not clocked in" /> : <Badge tone="outline" label="Off today" />}
+        {entry ? <Badge tone="success" label={tr("On the clock since {start}", { start: fmtTime(entry.start) })} /> : s.status === "on-leave" ? <Badge tone="neutral" label={tr("On leave")} /> : planFor(s, today(), db.requests).working ? <Badge tone="pending" label={tr("Not clocked in")} /> : <Badge tone="outline" label={tr("Off today")} />}
       </View>
-      <Row label="Shift" value={`${s.shift} · ${SHIFT_HOURS[s.shift]}`} sub={s.department} />
-      <Row label="This week" value={`${fmtDuration(minutesWorked(db.timeEntries, s.id, start, addDays(start, 7)))} worked`} sub={week.map((d, i) => (planFor(s, d, db.requests).working ? DAYS[i] : null)).filter(Boolean).join(", ") || "Not working"} />
-      <Row label="Open work orders" value={tasks.length ? String(tasks.length) : "None"} sub={tasks.slice(0, 3).map((x) => x.title).join(", ") || undefined} />
+      <Row label={tr("Shift")} value={`${s.shift} · ${SHIFT_HOURS[s.shift]}`} sub={s.department} />
+      <Row label={tr("This week")} value={tr("{time} worked", { time: fmtDuration(minutesWorked(db.timeEntries, s.id, start, addDays(start, 7))) })} sub={week.map((d, i) => (planFor(s, d, db.requests).working ? DAYS[i] : null)).filter(Boolean).join(", ") || tr("Not working")} />
+      <Row label={tr("Open work orders")} value={tasks.length ? String(tasks.length) : "None"} sub={tasks.slice(0, 3).map((x) => x.title).join(", ") || undefined} />
       <View style={{ flexDirection: "row", gap: 8 }}>
-        <Button style={{ flex: 1 }} icon={Phone} label="Call" disabled={!tel} onPress={() => Linking.openURL(`tel:${tel}`)} />
-        <Button style={{ flex: 1 }} icon={Mail} label="Email" onPress={() => Linking.openURL(`mailto:${s.email}`)} />
+        <Button style={{ flex: 1 }} icon={Phone} label={tr("Call")} disabled={!tel} onPress={() => Linking.openURL(`tel:${tel}`)} />
+        <Button style={{ flex: 1 }} icon={Mail} label={tr("Email")} onPress={() => Linking.openURL(`mailto:${s.email}`)} />
       </View>
-      {can("staff") !== "view" && s.position !== "Marina Manager" && <Button icon={CalendarCog} label="Edit schedule" onPress={() => setEditing(true)} style={{ marginTop: 8 }} />}
+      {can("staff") !== "view" && s.position !== "Marina Manager" && <Button icon={CalendarCog} label={tr("Edit schedule")} onPress={() => setEditing(true)} style={{ marginTop: 8 }} />}
       <Txt v="caption" color={t.text3} style={{ marginTop: 12 }}>{s.email} · {s.phone}</Txt>
       {editing && <EditScheduleSheet staff={s} onClose={() => setEditing(false)} />}
     </Sheet>

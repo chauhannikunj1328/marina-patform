@@ -46,7 +46,7 @@ export default function Berths() {
               style={{ flex: 1, alignItems: "center", paddingVertical: 8, borderRadius: 12, borderWidth: on ? 2 : 1, borderColor: on ? t.primary : t.border, backgroundColor: t.surface }}
             >
               <Txt v="h3" num weight="semibold">{berths.filter((x) => x.st === s).length}</Txt>
-              <Txt v="label" color={t.text3} numberOfLines={1}>{s === "maintenance" ? tr("Repair") : berthLabel[s]}</Txt>
+              <Txt v="label" color={t.text3} numberOfLines={1}>{s === "maintenance" ? tr("Repair") : tr(berthLabel[s])}</Txt>
             </Pressable>
           );
         })}
@@ -57,10 +57,10 @@ export default function Berths() {
             const here = berths.filter((x) => x.b.marinaId === id);
             const n = (st: BerthStatus) => here.filter((x) => x.st === st).length;
             return (
-              <Pressable key={id} accessibilityRole="button" accessibilityLabel={`${ix.marina(id)?.name}: open its dock map`} onPress={() => setMarinaId(id)} style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: 12, padding: 14, borderTopWidth: i ? 1 : 0, borderColor: t.border, backgroundColor: pressed ? t.sidebar : "transparent" })}>
+              <Pressable key={id} accessibilityRole="button" accessibilityLabel={tr("{name}: open its dock map", { name: ix.marina(id)?.name })} onPress={() => setMarinaId(id)} style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: 12, padding: 14, borderTopWidth: i ? 1 : 0, borderColor: t.border, backgroundColor: pressed ? t.sidebar : "transparent" })}>
                 <View style={{ flex: 1 }}>
                   <Txt weight="medium" numberOfLines={1}>{ix.marina(id)?.name}</Txt>
-                  <Txt v="caption" num color={t.text3}>{n("available")} free · {n("occupied")} occupied · {n("reserved")} reserved{n("maintenance") ? ` · ${n("maintenance")} in repair` : ""}</Txt>
+                  <Txt v="caption" num color={t.text3}>{tr("{free} free · {occupied} occupied · {reserved} reserved", { free: n("available"), occupied: n("occupied"), reserved: n("reserved") })}{n("maintenance") ? tr(" · {n} in repair", { n: n("maintenance") }) : ""}</Txt>
                 </View>
                 <Txt v="bodySm" weight="semibold" color={t.greenText}>{tr("Dock map")}</Txt>
               </Pressable>
@@ -75,7 +75,7 @@ export default function Berths() {
               <Txt v="label">{ix.marina(id)?.name}</Txt>
               <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
                 {shown.filter((x) => x.b.marinaId === id).map(({ b, st }) => (
-                  <Pressable key={b.id} accessibilityRole="button" accessibilityLabel={`Berth ${b.code} at ${ix.marina(id)?.name}, ${berthLabel[st]}`} onPress={() => setOpenId(b.id)} style={{ minWidth: 72, paddingHorizontal: 12, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: fill[st].bg, borderWidth: 1, borderColor: fill[st].border, borderStyle: fill[st].dashed ? "dashed" : "solid" }}>
+                  <Pressable key={b.id} accessibilityRole="button" accessibilityLabel={tr("Berth {code} at {name}, {status}", { code: b.code, name: ix.marina(id)?.name, status: tr(berthLabel[st]) })} onPress={() => setOpenId(b.id)} style={{ minWidth: 72, paddingHorizontal: 12, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: fill[st].bg, borderWidth: 1, borderColor: fill[st].border, borderStyle: fill[st].dashed ? "dashed" : "solid" }}>
                     <Txt v="bodySm" weight="semibold" num color={fill[st].fg}>{b.code}</Txt>
                   </Pressable>
                 ))}
@@ -86,7 +86,7 @@ export default function Berths() {
       )}
       {!allMarinas && [...docks.entries()].map(([dock, list]) => (
         <View key={dock} style={{ marginBottom: 20 }}>
-          <Txt v="label" style={{ marginBottom: 8 }}>Dock {dock}</Txt>
+          <Txt v="label" style={{ marginBottom: 8 }}>{tr("Dock")} {dock}</Txt>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
             {list.map(({ b, st }) => {
               const f = fill[st];
@@ -94,12 +94,12 @@ export default function Berths() {
                 <Pressable
                   key={b.id}
                   accessibilityRole="button"
-                  accessibilityLabel={`Berth ${b.code}, ${b.maxLength} feet, ${berthLabel[st]}`}
+                  accessibilityLabel={tr("Berth {code}, {maxLength} feet, {status}", { code: b.code, maxLength: b.maxLength, status: tr(berthLabel[st]) })}
                   onPress={() => setOpenId(b.id)}
                   style={({ pressed }) => ({ width: "23%", height: 64, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: f.bg, borderWidth: 1, borderColor: f.border, borderStyle: f.dashed ? "dashed" : "solid", transform: [{ scale: pressed ? 0.95 : 1 }] })}
                 >
                   <Txt weight="semibold" num color={f.fg}>{b.code.split("-")[1]}</Txt>
-                  <Txt v="caption" num color={f.fg} style={{ opacity: 0.8 }}>{b.maxLength} ft</Txt>
+                  <Txt v="caption" num color={f.fg} style={{ opacity: 0.8 }}>{b.maxLength} {tr("ft")}</Txt>
                 </Pressable>
               );
             })}

@@ -9,7 +9,7 @@ import { Bell, CalendarCheck, CalendarDays, Check, ChevronDown, ClipboardList, H
 import type { ComponentType } from "react";
 import { IconButton, Logomark, OfflineBanner, Sheet, Txt } from "@/components/ui";
 import { useInbox, useRole, useUnreadChat } from "@/lib/role";
-import { useTr } from "@/lib/i18n";
+import { useLang, useTr } from "@/lib/i18n";
 import { syncShiftReminders } from "@/lib/reminders";
 import { ALL, useMe, useStore } from "@/store";
 import { fonts, useTheme } from "@/theme";
@@ -26,15 +26,15 @@ function Header() {
   const read = new Set(db.readNotifications);
   const unreadInbox = inbox.filter((n) => !read.has(n.id)).length;
   const tr = useTr();
-  const label = marinaId === ALL ? "All marinas" : ix.marina(marinaId)?.name;
+  const label = marinaId === ALL ? tr("All marinas") : ix.marina(marinaId)?.name;
   const choices = office && many ? [ALL, ...scope] : scope;
   return (
     <View style={{ paddingTop: insets.top, backgroundColor: t.surface, borderBottomWidth: 1, borderColor: t.border }}>
-      <View style={{ height: 56, flexDirection: "row", alignItems: "center", gap: 12, paddingLeft: 16, paddingRight: 8 }}>
+      <View style={{ height: 56, flexDirection: "row", alignItems: "center", gap: 12, paddingStart: 16, paddingEnd: 8 }}>
         <Logomark size={20} />
         <Pressable
           accessibilityRole={many ? "button" : "text"}
-          accessibilityLabel={many ? `Showing ${label}. Change marina` : label}
+          accessibilityLabel={many ? tr("Showing {label}. Change marina", { label: label }) : label}
           disabled={!many}
           onPress={() => setOpen(true)}
           style={{ flexDirection: "row", alignItems: "center", gap: 4, flexShrink: 1 }}
@@ -58,8 +58,8 @@ function Header() {
             style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 14, borderBottomWidth: 1, borderColor: t.border, backgroundColor: pressed ? t.sidebar : "transparent" })}
           >
             <View>
-              <Txt weight="medium">{id === ALL ? "All marinas" : ix.marina(id)?.name}</Txt>
-              <Txt v="caption" color={t.text3}>{id === ALL ? `${scope.length} marinas together` : ix.city(ix.marina(id)?.cityId ?? "")?.name}</Txt>
+              <Txt weight="medium">{id === ALL ? tr("All marinas") : ix.marina(id)?.name}</Txt>
+              <Txt v="caption" color={t.text3}>{id === ALL ? tr("{n} marinas together", { n: scope.length }) : ix.city(ix.marina(id)?.cityId ?? "")?.name}</Txt>
             </View>
             {id === marinaId && <Check size={20} color={t.green} />}
           </Pressable>
@@ -73,13 +73,14 @@ function Header() {
 function ReminderSync() {
   const { db, ix, reminders } = useStore();
   const me = useMe();
+  const { lang } = useLang();
   const marinaName = ix.marina(me?.marinaId ?? "")?.name ?? "the marina";
   const key = me ? JSON.stringify([me.shift, me.daysOff, me.status, db.requests.filter((r) => r.status === "approved" && (r.staffId === me.id || r.swapWithId === me.id)).map((r) => r.id)]) : "";
   useEffect(() => {
     void syncShiftReminders(me, db, marinaName, reminders).catch(() => undefined);
-    // Re-sync only when the schedule itself changes, not on every data update.
+    // Re-sync only when the schedule (or the language of the reminder text) changes, not on every data update.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, reminders, marinaName]);
+  }, [key, reminders, marinaName, lang]);
   return null;
 }
 
@@ -118,12 +119,12 @@ export default function TabsLayout() {
         sceneStyle: { backgroundColor: t.bg },
       }}
     >
-      <Tabs.Screen name="index" options={{ title: office ? "Overview" : tr("Today"), tabBarIcon: icon(office ? LayoutDashboard : House) }} />
-      <Tabs.Screen name="approvals" options={{ title: "Approvals", tabBarIcon: icon(CalendarCheck), tabBarBadge: waiting ? (waiting > 99 ? "99+" : waiting) : undefined, tabBarBadgeStyle: { backgroundColor: t.error.base, fontFamily: fonts.numBold, fontSize: 10 }, ...officeOnly }} />
+      <Tabs.Screen name="index" options={{ title: office ? tr("Overview") : tr("Today"), tabBarIcon: icon(office ? LayoutDashboard : House) }} />
+      <Tabs.Screen name="approvals" options={{ title: tr("Approvals"), tabBarIcon: icon(CalendarCheck), tabBarBadge: waiting ? (waiting > 99 ? "99+" : waiting) : undefined, tabBarBadgeStyle: { backgroundColor: t.error.base, fontFamily: fonts.numBold, fontSize: 10 }, ...officeOnly }} />
       <Tabs.Screen name="bookings" options={{ title: tr("Bookings"), tabBarIcon: icon(CalendarDays), ...hidden("bookings") }} />
       <Tabs.Screen name="berths" options={{ title: tr("Berths"), tabBarIcon: icon(Warehouse), ...staffOnly, ...hidden("berths") }} />
       <Tabs.Screen name="tasks" options={{ title: tr("Tasks"), tabBarIcon: icon(ClipboardList), ...staffOnly, ...hidden("maintenance") }} />
-      <Tabs.Screen name="team" options={{ title: "Team", tabBarIcon: icon(Users), ...officeOnly }} />
+      <Tabs.Screen name="team" options={{ title: tr("Team"), tabBarIcon: icon(Users), ...officeOnly }} />
       <Tabs.Screen name="me" options={{ title: tr("Me"), tabBarIcon: icon(UserRound) }} />
     </Tabs>
     </>

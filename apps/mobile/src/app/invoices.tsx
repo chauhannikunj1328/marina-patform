@@ -9,8 +9,11 @@ import { Badge, Button, Card, EmptyState, Screen, Segmented, Sheet, StackHeader,
 import { useViewParam } from "@/lib/useOpenParam";
 import { useStore } from "@/store";
 import { useTheme } from "@/theme";
+import { useTr } from "@/lib/i18n";
+import { tn } from "@marina/shared";
 
 export default function Invoices() {
+  const tr = useTr();
   const { db, ix, ids, user, can, update, toast } = useStore();
   const { t } = useTheme();
   const [view, setView] = useViewParam(["overdue", "due", "paid"] as const, "overdue");
@@ -44,19 +47,19 @@ export default function Invoices() {
         }, d),
       { text: todo.length === 1 ? `Payment reminder for ${todo[0].number} recorded` : `${todo.length} payment reminders recorded`, to: "/billing?status=overdue", marinaId: ids.length === 1 ? ids[0] : undefined },
     );
-    toast(todo.length === 1 ? `Reminder recorded for ${ix.ownerOfBooking(ix.booking(todo[0].bookingId)!)?.name}` : `${todo.length} reminders recorded`);
+    toast(todo.length === 1 ? tr("Reminder recorded for {name}", { name: ix.ownerOfBooking(ix.booking(todo[0].bookingId)!)?.name }) : tr("{n} reminders recorded", { n: todo.length }));
   };
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
-      <StackHeader title="Invoices" subtitle={`${money2(total(lists.overdue))} overdue · ${money2(lists.due.reduce((s, i) => s + ix.balance(i), 0))} due`} />
+      <StackHeader title={tr("Invoices")} subtitle={tr("{amount} overdue · {amount2} due", { amount: money2(total(lists.overdue)), amount2: money2(lists.due.reduce((s, i) => s + ix.balance(i), 0)) })} />
       <Screen>
-        <Segmented value={view} onChange={setView} items={[{ value: "overdue", label: "Overdue", count: lists.overdue.length }, { value: "due", label: "Due", count: lists.due.length }, { value: "paid", label: "Paid" }]} />
+        <Segmented value={view} onChange={setView} items={[{ value: "overdue", label: tr("Overdue"), count: lists.overdue.length }, { value: "due", label: tr("Due"), count: lists.due.length }, { value: "paid", label: tr("Paid") }]} />
         {view === "overdue" && canEdit && lists.overdue.some((i) => !remindedToday(i)) && (
-          <Button icon={Send} label={`Remind all ${lists.overdue.filter((i) => !remindedToday(i)).length}`} onPress={() => setConfirmAll(true)} style={{ marginBottom: 12 }} />
+          <Button icon={Send} label={tr("Remind all {n}", { n: lists.overdue.filter((i) => !remindedToday(i)).length })} onPress={() => setConfirmAll(true)} style={{ marginBottom: 12 }} />
         )}
         {rows.length === 0 ? (
-          <EmptyState icon={Receipt} title={view === "overdue" ? "Nothing overdue" : view === "due" ? "No unpaid invoices" : "No payments in the last 30 days"} />
+          <EmptyState icon={Receipt} title={view === "overdue" ? tr("Nothing overdue") : view === "due" ? tr("No unpaid invoices") : tr("No payments in the last 30 days")} />
         ) : (
           <View style={{ gap: 8 }}>
             {rows.map((i) => {
@@ -72,17 +75,17 @@ export default function Invoices() {
                     </View>
                     <View style={{ alignItems: "flex-end" }}>
                       <Txt num weight="semibold">{money2(view === "paid" ? i.amount : owed)}</Txt>
-                      {view !== "paid" && ix.paidSoFar(i) > 0 && <Txt v="caption" num color={t.text3}>of {money2(i.amount)}</Txt>}
+                      {view !== "paid" && ix.paidSoFar(i) > 0 && <Txt v="caption" num color={t.text3}>{tr("of")} {money2(i.amount)}</Txt>}
                     </View>
                   </View>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                    {i.status === "overdue" ? <Badge tone="cancelled" label={`Due ${fmtShort(i.due)}`} /> : i.status === "paid" ? <Badge tone="success" label={`Paid ${fmtShort(i.paidAt ?? i.due)}`} /> : <Badge tone="pending" label={`Due ${fmtShort(i.due)}`} />}
-                    {i.reminders.length > 0 && <Txt v="caption" color={t.text3}>{i.reminders.length} {i.reminders.length === 1 ? "reminder" : "reminders"}, last {fmtShort(i.reminders[i.reminders.length - 1])}</Txt>}
+                    {i.status === "overdue" ? <Badge tone="cancelled" label={tr("Due {date}", { date: fmtShort(i.due) })} /> : i.status === "paid" ? <Badge tone="success" label={tr("Paid {date}", { date: fmtShort(i.paidAt ?? i.due) })} /> : <Badge tone="pending" label={tr("Due {date}", { date: fmtShort(i.due) })} />}
+                    {i.reminders.length > 0 && <Txt v="caption" color={t.text3}>{tn(i.reminders.length, "{n} reminder, last {date}", "{n} reminders, last {date}", { date: fmtShort(i.reminders[i.reminders.length - 1]) })}</Txt>}
                   </View>
                   {canEdit && owed > 0 && (
                     <View style={{ flexDirection: "row", gap: 8, marginTop: 4 }}>
-                      <Button style={{ flex: 1 }} size="sm" icon={Send} label={remindedToday(i) ? "Reminded" : "Remind"} disabled={remindedToday(i)} onPress={() => remind([i])} />
-                      <Button style={{ flex: 1 }} size="sm" variant="primary" icon={Banknote} label="Payment" onPress={() => setPaying(i)} />
+                      <Button style={{ flex: 1 }} size="sm" icon={Send} label={remindedToday(i) ? tr("Reminded") : tr("Remind")} disabled={remindedToday(i)} onPress={() => remind([i])} />
+                      <Button style={{ flex: 1 }} size="sm" variant="primary" icon={Banknote} label={tr("Payment")} onPress={() => setPaying(i)} />
                     </View>
                   )}
                 </Card>
@@ -93,9 +96,9 @@ export default function Invoices() {
       </Screen>
       {paying && <PaymentSheet invoice={paying} onClose={() => setPaying(undefined)} />}
       {confirmAll && (
-        <Sheet open onClose={() => setConfirmAll(false)} title={`Remind ${lists.overdue.filter((i) => !remindedToday(i)).length} boat owners?`} subtitle={`${money2(total(lists.overdue))} is overdue.`}
-          footer={<Button variant="primary" size="lg" icon={Send} label="Record reminders" onPress={() => { remind(lists.overdue); setConfirmAll(false); }} />}>
-          <Txt v="bodySm" color={t.text2}>{"Each overdue invoice gets today's reminder date, and the reminder is added to Messages in the web app. Owners already reminded today are skipped."}</Txt>
+        <Sheet open onClose={() => setConfirmAll(false)} title={tr("Remind {n} boat owners?", { n: lists.overdue.filter((i) => !remindedToday(i)).length })} subtitle={tr("{amount} is overdue.", { amount: money2(total(lists.overdue)) })}
+          footer={<Button variant="primary" size="lg" icon={Send} label={tr("Record reminders")} onPress={() => { remind(lists.overdue); setConfirmAll(false); }} />}>
+          <Txt v="bodySm" color={t.text2}>{tr("Each overdue invoice gets today's reminder date, and the reminder is added to Messages in the web app. Owners already reminded today are skipped.")}</Txt>
         </Sheet>
       )}
     </View>

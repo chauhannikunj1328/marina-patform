@@ -7,8 +7,10 @@ import { palette } from "@marina/shared";
 import { biometricInfo, biometricUnlock } from "../lib/biometrics";
 import { useStore } from "../store";
 import { Button, Logomark, Txt } from "./ui";
+import { useTr } from "@/lib/i18n";
 
 export function LockScreen() {
+  const tr = useTr();
   const { locked, unlock, signOut, user } = useStore();
   const [label, setLabel] = useState("Face ID or fingerprint");
   const [failed, setFailed] = useState(false);
@@ -31,12 +33,12 @@ export function LockScreen() {
   return (
     <View style={[StyleSheet.absoluteFill, { backgroundColor: palette.slate[800], alignItems: "center", justifyContent: "center", padding: 32, gap: 16, zIndex: 100 }]} accessibilityViewIsModal>
       <Logomark size={56} color="#FFFFFF" />
-      <Txt v="h2" color="#FFFFFF">Marina is locked</Txt>
-      <Txt v="bodySm" color={palette.teal[200]} style={{ textAlign: "center" }}>{user?.name}. Use {label} to open the app.</Txt>
-      {failed && <Txt v="bodySm" color="#FFFFFF">That didn&apos;t work. Try again.</Txt>}
-      <Button variant="secondary" size="lg" icon={Fingerprint} label={`Unlock with ${label}`} onPress={tryUnlock} style={{ alignSelf: "stretch" }} />
+      <Txt v="h2" color="#FFFFFF">{tr("Marina is locked")}</Txt>
+      <Txt v="bodySm" color={palette.teal[200]} style={{ textAlign: "center" }}>{tr("{name}. Use {method} to open the app.", { name: user?.name, method: label })}</Txt>
+      {failed && <Txt v="bodySm" color="#FFFFFF">{tr("That didn't work. Try again.")}</Txt>}
+      <Button variant="secondary" size="lg" icon={Fingerprint} label={tr("Unlock with {label}", { label: label })} onPress={tryUnlock} style={{ alignSelf: "stretch" }} />
       <Pressable accessibilityRole="button" onPress={() => { signOut(); unlock(); router.replace("/login"); }} hitSlop={8}>
-        <Txt v="bodySm" weight="semibold" color={palette.teal[200]}>Sign out instead</Txt>
+        <Txt v="bodySm" weight="semibold" color={palette.teal[200]}>{tr("Sign out instead")}</Txt>
       </Pressable>
     </View>
   );

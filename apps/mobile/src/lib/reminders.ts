@@ -2,7 +2,7 @@
 // Scheduled on the phone itself, so it works without a server (not available in the web preview).
 import { Platform } from "react-native";
 import * as Notifications from "expo-notifications";
-import { addDays, SHIFT_HOURS, SHIFT_START_HOUR, shiftOn, today, fromISO, type Db, type Staff } from "@marina/shared";
+import { addDays, t, SHIFT_HOURS, SHIFT_START_HOUR, shiftOn, today, fromISO, type Db, type Staff } from "@marina/shared";
 
 export const remindersSupported = Platform.OS !== "web";
 const LEAD_MINUTES = 30;
@@ -37,7 +37,7 @@ export async function syncShiftReminders(me: Staff | undefined, db: Db, marinaNa
     at.setHours(SHIFT_START_HOUR[shift], -LEAD_MINUTES, 0, 0);
     if (at.getTime() <= Date.now()) continue;
     await Notifications.scheduleNotificationAsync({
-      content: { title: `Your ${shift} shift starts in ${LEAD_MINUTES} minutes`, body: `${SHIFT_HOURS[shift]} at ${marinaName}. Clock in from the Today tab.`, data: { tag: TAG } },
+      content: { title: t("Your {shift} shift starts in {n} minutes", { shift: t(shift), n: LEAD_MINUTES }), body: t("{hours} at {marina}. Clock in from the Today tab.", { hours: t(SHIFT_HOURS[shift]), marina: marinaName }), data: { tag: TAG } },
       trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: at },
     });
     count++;

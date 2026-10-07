@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { AppState, Platform } from "react-native";
 import * as Crypto from "expo-crypto";
 import NetInfo from "@react-native-community/netinfo";
-import { withRecurringTasks,
+import { withRecurringTasks, t, tn,
   BUILT_IN_USERS, createSeed, DEFAULT_PERMISSIONS, diffDb, Index, levelFor, nextId, PASSWORD_HASHES, sendOwnerEmail, SIGN_IN_ERROR, setCurrency, setTimeZone, today,
   type Area, type Db, type Level, type SystemUser,
 } from "@marina/shared";
@@ -178,7 +178,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         const now = state.isConnected !== false && state.isInternetReachable !== false;
         const queued = outboxRef.current.length;
         if (now && !onlineRef.current) {
-          toast(queued ? `Back online. ${queued} ${queued === 1 ? "change" : "changes"} made offline ${queued === 1 ? "is" : "are"} saved.` : "Back online");
+          toast(queued ? tn(queued, "Back online. {n} change made offline is saved.", "Back online. {n} changes made offline are saved.") : t("Back online"));
           setOutbox([]);
         }
         onlineRef.current = now;

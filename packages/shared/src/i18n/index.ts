@@ -85,7 +85,8 @@ function templates(): Template[] {
         const m = p.match(/^\{(\w+)\}$/);
         if (!m) return escapeRe(p);
         names.push(m[1]);
-        return "(.+?)";
+        // Counts only match numbers, so "{n} ft" can't swallow a whole list ending in "25 ft".
+        return /^n\d?$/.test(m[1]) ? "([\\d.,]+)" : "(.+?)";
       }).join("");
       return { re: new RegExp(`^${src}$`), names, key, weight: plain(key).replace(/\{\w+\}/g, "").length };
     })

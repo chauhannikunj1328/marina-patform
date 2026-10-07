@@ -108,7 +108,7 @@ The app opens with the brand splash screen, then sign-in. Staff get five tabs. S
 - **Scan:** point the camera at a berth's QR label (or type the berth number) to open it. Labels are printed from the web app (Berths → QR labels) and link to `marinastaff://berth/<id>` (the app answers to both `marina://` and `marinastaff://`), so the phone camera opens the app too.
 - **Messages:** conversation with the marina's managers
 - **Notifications:** new and overdue work orders, manager messages, request decisions, colleagues asking you to cover, late departures, today's arrivals and tomorrow's shift
-- **Also:** **shift reminders** 30 minutes before each shift (phone notification), a **berth ready check** before arrivals, **check-in sign-off** (boat condition, photos, the owner's signature on screen), **Add service** (fuel, pump-out, ice, laundry) and **Read meters** charged to the boat's invoice, **hand-over notes** at clock-out, **dock patrol** rounds (scan a berth label on each dock, safety checklist), **incident reports**, **Face ID / fingerprint unlock**, **Español**
+- **Also:** **shift reminders** 30 minutes before each shift (phone notification), a **berth ready check** before arrivals, **check-in sign-off** (boat condition, photos, the owner's signature on screen), **Add service** (fuel, pump-out, ice, laundry) and **Read meters** charged to the boat's invoice, **hand-over notes** at clock-out, **dock patrol** rounds (scan a berth label on each dock, safety checklist), **incident reports**, **Face ID / fingerprint unlock**, **English, Español and العربية**
 - **Offline:** a banner shows when there's no connection. Everything keeps working and is saved on the phone; changes made offline are queued and cleared when the connection returns (they'll be sent to the server once there is one).
 
 What staff can do follows Access Control (e.g. View only hides check-in and edit actions; billing set to No access hides Take payment). Settings are in `apps/mobile/app.json`.
@@ -148,6 +148,17 @@ What staff can do follows Access Control (e.g. View only hides check-in and edit
 - First sign-in **welcome steps**, a soft glow on your **first booking**, an **offline** banner, branded **404 / error / no-access** pages, loading **skeletons**, and **phone-friendly tables** (rows become cards).
 - Home-screen icons, a web app manifest and a 1200 × 630 **link preview image** (`public/`).
 
+## Languages
+
+Both apps run in **English** (default), **Spanish** and **Arabic**. Switch from the language button in the web app's top bar, or **Me → Language** on the phone; the choice is remembered.
+
+- **Arabic reads right to left:** the layout is mirrored (sidebar and tab order on the right, arrows and chevrons flipped, chart axes reversed) and text uses **IBM Plex Sans Arabic**. Numbers stay in Western digits (0–9), and codes, emails, phone numbers and amounts keep reading left to right.
+- Dates, times, currency and plurals follow the language (Arabic has its own forms for 1, 2, 3–10 and 11+).
+- Text is written in English in the code (`t("Check in")` on the web, `tr("Check in")` on mobile, where `t` is the theme). Translations live in `packages/shared/src/i18n/es.ts` and `ar.ts`, keyed by the English text; anything missing falls back to English.
+- The activity log and notifications are stored in English and shown in the reader's language.
+- Names, addresses and text people type (work order titles, notes, messages) are shown as entered.
+- On a phone, switching to or from Arabic mirrors the layout right away; the system's right-to-left setting is applied the next time the app opens.
+
 ## How the numbers stay consistent
 
 Every figure is calculated from one data set (`packages/shared/src/seed.ts`) by the functions in `packages/shared/src/selectors.ts`. Totals on one page always match the same totals on another, because nothing is typed in by hand.
@@ -165,7 +176,7 @@ The UI follows the **Marina Brand to Product Handoff Guide v1**. Web tokens live
 - **Shape:** pill buttons and badges, 12 px inputs, 16 px cards, 20 px dialogs; borders instead of shadows.
 - **Status badges:** section 07 colors (ocean blue, amber, red, coral, slate), always with an icon.
 - **Charts:** section 10 palette, horizontal dashed gridlines, legend top right.
-- **Formats:** dates "3 Oct 2026", relative times under 24 hours, invoices with 2 decimals.
+- **Formats:** dates "3 Oct 2026" (localized month names in Spanish and Arabic), relative times under 24 hours, invoices with 2 decimals.
 - **Logo:** source files in `brand/logo/`; the logomark paths are shared in `packages/shared/src/brand.ts`; wordmark "Marina".
 
 Icons are from [Lucide](https://lucide.dev) (`lucide-react` on the web, `lucide-react-native` on mobile), set to a 1.5 px rounded stroke to match the guide's icon style.
@@ -187,7 +198,6 @@ brand/          logo SVGs and the brand guide
 - Real backend, database and authentication. Until then each app keeps its own copy of the sample data, so a check-in, clock-in, request or message on the phone doesn't show up in the web app (and the other way round). A password changed in the staff app only works on that phone. Demo password hashes live in `packages/shared/src/accounts.ts`.
 - Push notifications from the server (shift reminders are local phone notifications; everything else is in-app for now)
 - Scheduled report emails are saved but not sent
-- Spanish covers the staff screens; dates, relative times and the manager/admin screens are English
 - Card payments in the app (Stripe Terminal / Tap to Pay); staff record payments taken on the marina's card reader
 - Payments (Stripe) and real email/SMS delivery: reminders, invites and booking emails are recorded in the system and the audit log, but not actually sent
 - Public website and boat-owner booking portal (`apps/website`)
