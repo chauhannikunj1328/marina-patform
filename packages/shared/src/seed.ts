@@ -99,20 +99,20 @@ export function createSeed(): Db {
   ];
 
   const marinaDefs = [
-    { id: "m-gg", name: "Golden Gate Marina", cityId: "ct-sf", phone: "(415) 555-0123", berths: 36, docks: "ABC", address: "1 Marina Blvd" },
-    { id: "m-bh", name: "Bay Harbor Marina", cityId: "ct-sf", phone: "(415) 555-0456", berths: 28, docks: "AB", address: "400 Embarcadero" },
-    { id: "m-mbh", name: "Miami Bay Harbor", cityId: "ct-mia", phone: "(305) 555-0789", berths: 32, docks: "ABC", address: "301 Biscayne Blvd" },
-    { id: "m-bp", name: "Biscayne Point Marina", cityId: "ct-mb", phone: "(305) 555-0341", berths: 24, docks: "AB", address: "1800 West Ave" },
-    { id: "m-sw", name: "Seattle Waterfront", cityId: "ct-sea", phone: "(206) 555-0321", berths: 30, docks: "ABC", address: "2601 Alaskan Way" },
-    { id: "m-lw", name: "Lake Washington Marina", cityId: "ct-kir", phone: "(425) 555-0198", berths: 20, docks: "AB", address: "25 Lake St" },
-    { id: "m-sau", name: "Sausalito Yacht Harbor", cityId: "ct-sau", phone: "(415) 555-0612", berths: 26, docks: "AB", address: "300 Bridgeway" },
-    { id: "m-mb", name: "Mission Bay Moorings", cityId: "ct-sf", phone: "(415) 555-0733", berths: 22, docks: "AB", address: "650 Terry Francois Blvd" },
-    { id: "m-pl", name: "Point Loma Harbor", cityId: "ct-sd", phone: "(619) 555-0144", berths: 34, docks: "ABC", address: "2600 Shelter Island Dr" },
-    { id: "m-cb", name: "Coronado Bay Marina", cityId: "ct-cor", phone: "(619) 555-0277", berths: 22, docks: "AB", address: "1715 Strand Way" },
-    { id: "m-lo", name: "Las Olas Harbor", cityId: "ct-ftl", phone: "(954) 555-0390", berths: 30, docks: "ABC", address: "240 E Las Olas Cir" },
-    { id: "m-nr", name: "New River Moorings", cityId: "ct-ftl", phone: "(954) 555-0518", berths: 18, docks: "AB", address: "15 SW 1st Ave" },
-    { id: "m-kw", name: "Southernmost Harbor", cityId: "ct-kw", phone: "(305) 555-0921", berths: 24, docks: "AB", address: "201 William St" },
-    { id: "m-sp", name: "Shilshole Point Marina", cityId: "ct-sea", phone: "(206) 555-0466", berths: 28, docks: "AB", address: "7001 Seaview Ave NW" },
+    { id: "m-gg", name: "Golden Gate Marina", cityId: "ct-sf", phone: "(415) 555-0123", berths: 36, docks: "ABC", address: "1 Marina Blvd", lat: 37.8067, lng: -122.443 },
+    { id: "m-bh", name: "Bay Harbor Marina", cityId: "ct-sf", phone: "(415) 555-0456", berths: 28, docks: "AB", address: "400 Embarcadero", lat: 37.7955, lng: -122.3937 },
+    { id: "m-mbh", name: "Miami Bay Harbor", cityId: "ct-mia", phone: "(305) 555-0789", berths: 32, docks: "ABC", address: "301 Biscayne Blvd", lat: 25.7783, lng: -80.1866 },
+    { id: "m-bp", name: "Biscayne Point Marina", cityId: "ct-mb", phone: "(305) 555-0341", berths: 24, docks: "AB", address: "1800 West Ave", lat: 25.793, lng: -80.143 },
+    { id: "m-sw", name: "Seattle Waterfront", cityId: "ct-sea", phone: "(206) 555-0321", berths: 30, docks: "ABC", address: "2601 Alaskan Way", lat: 47.6162, lng: -122.3557 },
+    { id: "m-lw", name: "Lake Washington Marina", cityId: "ct-kir", phone: "(425) 555-0198", berths: 20, docks: "AB", address: "25 Lake St", lat: 47.6756, lng: -122.2079 },
+    { id: "m-sau", name: "Sausalito Yacht Harbor", cityId: "ct-sau", phone: "(415) 555-0612", berths: 26, docks: "AB", address: "300 Bridgeway", lat: 37.858, lng: -122.4805 },
+    { id: "m-mb", name: "Mission Bay Moorings", cityId: "ct-sf", phone: "(415) 555-0733", berths: 22, docks: "AB", address: "650 Terry Francois Blvd", lat: 37.7713, lng: -122.3866 },
+    { id: "m-pl", name: "Point Loma Harbor", cityId: "ct-sd", phone: "(619) 555-0144", berths: 34, docks: "ABC", address: "2600 Shelter Island Dr", lat: 32.7166, lng: -117.2263 },
+    { id: "m-cb", name: "Coronado Bay Marina", cityId: "ct-cor", phone: "(619) 555-0277", berths: 22, docks: "AB", address: "1715 Strand Way", lat: 32.687, lng: -117.166 },
+    { id: "m-lo", name: "Las Olas Harbor", cityId: "ct-ftl", phone: "(954) 555-0390", berths: 30, docks: "ABC", address: "240 E Las Olas Cir", lat: 26.1189, lng: -80.1067 },
+    { id: "m-nr", name: "New River Moorings", cityId: "ct-ftl", phone: "(954) 555-0518", berths: 18, docks: "AB", address: "15 SW 1st Ave", lat: 26.1189, lng: -80.144 },
+    { id: "m-kw", name: "Southernmost Harbor", cityId: "ct-kw", phone: "(305) 555-0921", berths: 24, docks: "AB", address: "201 William St", lat: 24.5612, lng: -81.8 },
+    { id: "m-sp", name: "Shilshole Point Marina", cityId: "ct-sea", phone: "(206) 555-0466", berths: 28, docks: "AB", address: "7001 Seaview Ave NW", lat: 47.6806, lng: -122.4061 },
   ];
   const AMENITIES = ["Wi-Fi", "Shore power", "Fresh water", "Fuel dock", "Pump-out", "Showers", "Laundry", "Security", "Parking"];
 
@@ -123,6 +123,8 @@ export function createSeed(): Db {
     phone: m.phone,
     email: `office@${m.name.toLowerCase().replace(/[^a-z]+/g, "")}.com`,
     address: m.address,
+    lat: m.lat,
+    lng: m.lng,
     status: "active",
     amenities: AMENITIES.filter(() => r() > 0.3),
   }));

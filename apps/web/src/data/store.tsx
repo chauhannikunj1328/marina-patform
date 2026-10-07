@@ -1,6 +1,6 @@
 import { useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { StoreContext } from "./context";
-import { withRecurringTasks, diffDb, setTimeZone, today } from "@marina/shared";
+import { withMarinaPoints, withRecurringTasks, diffDb, setTimeZone, today } from "@marina/shared";
 import { setCurrency } from "@marina/shared";
 import { notifyOwner } from "@/lib/notify";
 import { DEFAULT_PERMISSIONS, levelFor, type Area, type Level } from "@marina/shared";
@@ -101,12 +101,16 @@ function loadDb(): Db {
 }
 
 /** Derived states that depend on today's date. */
+/** Sample marinas, for filling in data saved before newer fields existed. */
+let sample: Db["marinas"] | undefined;
+const sampleMarinas = () => (sample ??= createSeed().marinas);
+
 function normalize(db: Db): Db {
   const now = today();
   const missing = [...BUILT_IN_USERS(), ...readAccounts().map(toUser)].filter((b) => !db.users.some((u) => u.email.toLowerCase() === b.email.toLowerCase()));
   // Recurring maintenance creates the work orders it owes whenever data loads.
   return withRecurringTasks({
-    ...db,
+    ...withMarinaPoints(db, sampleMarinas()),
     // Data saved before permissions existed gets the defaults.
     settings: { ...db.settings, permissions: { ...DEFAULT_PERMISSIONS, ...db.settings.permissions } },
     users: [...db.users, ...missing],

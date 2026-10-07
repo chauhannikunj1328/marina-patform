@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { Anchor, ArrowLeft, CalendarDays, CalendarPlus, DollarSign, Eye, Gauge, Mail, MapPin, Pencil, Phone, Plus, Trash, Warehouse } from "lucide-react";
+import { Anchor, ArrowLeft, CalendarDays, CalendarPlus, DollarSign, Eye, Gauge, List, Mail, Map as MapIcon, MapPin, Navigation, Pencil, Phone, Plus, Trash, Warehouse } from "lucide-react";
 import { nextId, useStore } from "@/data/store";
 import type { Berth, Marina } from "@marina/shared";
 import { BerthDetail } from "@/components/BerthDetail";
-import { t, count, money, pct } from "@marina/shared";
+import { t, count, directionsUrl, marinaPoint, money, pct, validPoint } from "@marina/shared";
+import { MapView, type MapMarker } from "@/components/MapView";
 import { lastMonths, fmtShort } from "@marina/shared";
 import { Badge, Button, Card, CardHeader, ConfirmDialog, EmptyState, Field, IconButton, Input, Meter, Modal, PageHeader, SearchInput, Select, StatCard, Table, Toolbar, useDirty, useSort } from "@/components/ui";
 import { ActiveBadge, BerthBadge, BookingBadge } from "@/components/status";
@@ -19,7 +20,9 @@ export function MarinaForm({ open, onClose, marina }: { open: boolean; onClose: 
       marina ?? { name: "", cityId: db.cities[0]?.id ?? "", phone: "", email: "", address: "", status: "active", amenities: ["Wi-Fi", "Shore power", "Fresh water"] },
   );
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const dirty = useDirty(form);
+  // Position as typed; empty means "use the city's center".
+  const [pos, setPos] = useState({ lat: marina?.lat !== undefined ? String(marina.lat) : "", lng: marina?.lng !== undefined ? String(marina.lng) : "" });
+  const dirty = useDirty({ form, pos });
   const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) => setForm((f) => ({ ...f, [k]: v }));
 
   const save = () => {
@@ -28,15 +31,18 @@ export function MarinaForm({ open, onClose, marina }: { open: boolean; onClose: 
     else if (db.marinas.some((m) => m.name.toLowerCase() === form.name.trim().toLowerCase() && m.id !== marina?.id)) e.name = t("A marina with this name already exists.");
     if (!form.address.trim()) e.address = t("Enter the street address.");
     if (form.email && !/^\S+@\S+\.\S+$/.test(form.email)) e.email = t("Enter a valid email.");
+    const hasPos = pos.lat.trim() !== "" || pos.lng.trim() !== "";
+    if (hasPos && !validPoint(Number(pos.lat), Number(pos.lng))) e.pos = t("Enter latitude (−90 to 90) and longitude (−180 to 180).");
     setErrors(e);
     if (Object.keys(e).length) return;
+    const point = hasPos ? { lat: Number(pos.lat), lng: Number(pos.lng) } : { lat: undefined, lng: undefined };
     update((d) =>
       marina
-        ? { ...d, marinas: d.marinas.map((m) => (m.id === marina.id ? { ...m, ...form, name: form.name.trim() } : m)) }
-        : { ...d, marinas: [...d.marinas, { ...form, name: form.name.trim(), id: nextId("m", d.marinas) }] },
+        ? { ...d, marinas: d.marinas.map((m) => (m.id === marina.id ? { ...m, ...form, ...point, name: form.name.trim() } : m)) }
+        : { ...d, marinas: [...d.marinas, { ...form, ...point, name: form.name.trim(), id: nextId("m", d.marinas) }] },
       { text: `${marina ? "Updated" : "Added"} marina ${form.name.trim()}`, marinaId: marina?.id },
     );
-    toast(marina ? `${form.name} updated` : `${form.name} added`);
+    toast(marina ? t("{name} updated", { name: form.name }) : t("{name} added", { name: form.name }));
     onClose();
   };
 
@@ -76,6 +82,9 @@ export function MarinaForm({ open, onClose, marina }: { open: boolean; onClose: 
         <div className="sm:col-span-2">
           <Field label={t("Street address")} error={errors.address}>{(id) => <Input id={id} value={form.address} onChange={(e) => set("address", e.target.value)} />}</Field>
         </div>
+        <div className="sm:col-span-2">
+          <LocationPicker cityId={form.cityId} pos={pos} onChange={setPos} error={errors.pos} />
+        </div>
         <Field label={t("Phone")}>{(id) => <Input id={id} value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="(415) 555-0100" />}</Field>
         <Field label={t("Office email")} error={errors.email}>{(id) => <Input id={id} type="email" value={form.email} onChange={(e) => set("email", e.target.value)} />}</Field>
         <fieldset className="sm:col-span-2">
@@ -91,7 +100,7 @@ export function MarinaForm({ open, onClose, marina }: { open: boolean; onClose: 
                   onClick={() => set("amenities", on ? form.amenities.filter((x) => x !== a) : [...form.amenities, a])}
                   className={`rounded-full border px-3 py-1 text-xs font-medium cursor-pointer ${on ? "border-transparent bg-primary text-on-primary" : "border-line text-ink-2 hover:bg-row-hover"}`}
                 >
-                  {a}
+                  {t(a)}
                 </button>
               );
             })}
@@ -99,6 +108,35 @@ export function MarinaForm({ open, onClose, marina }: { open: boolean; onClose: 
         </fieldset>
       </div>
     </Modal>
+  );
+}
+
+/** Where the marina is: click the map or type coordinates. Left empty, the city's center is used. */
+function LocationPicker({ cityId, pos, onChange, error }: { cityId: string; pos: { lat: string; lng: string }; onChange: (p: { lat: string; lng: string }) => void; error?: string }) {
+  const { ix } = useStore();
+  const city = ix.city(cityId);
+  // The map follows typed coordinates and city changes, but not its own clicks (so it doesn't jump).
+  const [typed, setTyped] = useState(0);
+  const type = (p: { lat: string; lng: string }) => { onChange(p); setTyped((n) => n + 1); };
+  const own = validPoint(Number(pos.lat), Number(pos.lng)) && pos.lat.trim() !== "" && pos.lng.trim() !== "";
+  const point = own ? { lat: Number(pos.lat), lng: Number(pos.lng) } : city ? { lat: city.lat, lng: city.lng } : undefined;
+  return (
+    <fieldset>
+      <legend className="mb-1 text-[13px] font-medium">{t("Location on the map")}</legend>
+      <p className="mb-2 text-xs text-ink-3">{own ? t("Click the map to move the pin.") : t("Click the map where the marina is. Until then it shows at the city's center.")}</p>
+      <MapView
+        label={t("Choose the marina's location")}
+        markers={point ? [{ id: "here", ...point, label: t("Marina location"), muted: !own }] : []}
+        onPick={(p) => onChange({ lat: String(p.lat), lng: String(p.lng) })}
+        height={220}
+        zoom={own ? 15 : 12}
+        fitKey={`${cityId}:${typed}`}
+      />
+      <div className="mt-3 grid grid-cols-2 gap-3">
+        <Field label={t("Latitude")} error={error}>{(id) => <Input id={id} inputMode="decimal" value={pos.lat} onChange={(e) => type({ ...pos, lat: e.target.value })} placeholder={city ? String(city.lat) : "37.8067"} />}</Field>
+        <Field label={t("Longitude")}>{(id) => <Input id={id} inputMode="decimal" value={pos.lng} onChange={(e) => type({ ...pos, lng: e.target.value })} placeholder={city ? String(city.lng) : "-122.4430"} />}</Field>
+      </div>
+    </fieldset>
   );
 }
 
@@ -110,6 +148,8 @@ export function Marinas() {
   const [cityId, setCityId] = useState("all");
   const [editing, setEditing] = useState<Marina | undefined>();
   const [deleting, setDeleting] = useState<Marina | undefined>();
+  const view = params.get("view") === "map" ? "map" : "list";
+  const setView = (v: "list" | "map") => setParams(v === "map" ? { view: "map" } : {}, { replace: true });
   const adding = params.get("new") === "1";
 
   const rows = useMemo(() => {
@@ -148,7 +188,41 @@ export function Marinas() {
             <option value="all">{t("All cities")}</option>
             {db.cities.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </Select>
+          <div role="group" aria-label={t("View")} className="flex shrink-0 rounded-full bg-surface-3 p-1 sm:ms-auto">
+            {([["list", List, t("List")], ["map", MapIcon, t("Map")]] as const).map(([v, Icon, name]) => (
+              <button key={v} type="button" aria-pressed={view === v} onClick={() => setView(v)} className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold cursor-pointer ${view === v ? "bg-surface text-ink shadow-sm" : "text-ink-3 hover:text-ink"}`}>
+                <Icon className="size-3.5" aria-hidden /> {name}
+              </button>
+            ))}
+          </div>
         </Toolbar>
+        {view === "map" ? (
+          <div className="p-4">
+            <MapView
+              label={t("Map of marinas")}
+              height={520}
+              zoom={12}
+              markers={rows.flatMap((m): MapMarker[] => {
+                const p = marinaPoint(m, ix.city(m.cityId));
+                if (!p) return [];
+                const met = ix.metrics([m.id]);
+                return [{
+                  id: m.id, ...p, label: m.name, muted: m.status === "inactive",
+                  popup: (
+                    <div className="min-w-48">
+                      <Link to={`/marinas/${m.id}`} className="font-semibold text-ink underline-offset-2 hover:underline">{m.name}</Link>
+                      <p className="text-xs text-ink-3">{m.address}, {ix.city(m.cityId)?.name}</p>
+                      <p className="mt-2 num">{t("{occupied} of {berths} berths", { occupied: met.occupied, berths: met.berths })} · {pct(met.occupancy)}</p>
+                      <p className="num">{t("{amount} this month", { amount: money(met.revenue) })}</p>
+                      {m.status === "inactive" && <p className="mt-1 text-xs font-semibold text-ink-3">{t("Inactive")}</p>}
+                    </div>
+                  ),
+                }];
+              })}
+            />
+            {rows.length === 0 && <p className="mt-3 text-[13px] text-ink-3">{t("Nothing matches these filters. Try a different search or clear the filters.")}</p>}
+          </div>
+        ) : (
         <Table sort={sort} head={[{ label: t("Marina"), sortKey: "name" }, { label: t("Location"), sortKey: "city" }, "Status", { label: t("Occupancy today"), sortKey: "occupancy" }, { label: t("Revenue (month)"), sortKey: "revenue" }, "Actions"]} empty={rows.length === 0}>
           {sorted.map((m) => {
             const met = ix.metrics([m.id]);
@@ -184,6 +258,7 @@ export function Marinas() {
             );
           })}
         </Table>
+        )}
       </Card>
 
       {adding && <MarinaForm open onClose={() => setParams({})} />}
@@ -208,7 +283,7 @@ export function Marinas() {
               : { ...d, marinas: d.marinas.filter((m) => m.id !== deleting.id) },
             { text: `${hasBerths ? "Deactivated" : "Deleted"} marina ${deleting.name}`, marinaId: deleting.id },
           );
-          toast(hasBerths ? t("{name} set to inactive", { name: deleting.name }) : `${deleting.name} deleted`, before);
+          toast(hasBerths ? t("{name} set to inactive", { name: deleting.name }) : t("{name} deleted", { name: deleting.name }), before);
         }}
       />
     </>
@@ -228,6 +303,7 @@ export function MarinaDetail() {
   const m = ix.metrics([marina.id]);
   const months = lastMonths(6);
   const city = ix.city(marina.cityId);
+  const point = marinaPoint(marina, city);
   const berths = db.berths.filter((b) => b.marinaId === marina.id);
   const staff = db.staff.filter((s) => s.marinaId === marina.id);
   const upcoming = ix
@@ -253,7 +329,7 @@ export function MarinaDetail() {
       />
       <div className="space-y-4">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 min-[1400px]:grid-cols-4">
-          <StatCard label={t("Berths occupied")} icon={Gauge} value={`${m.occupied} / ${m.berths}`} sub={`${m.available} available`} to={`/berths?marina=${marina.id}`} />
+          <StatCard label={t("Berths occupied")} icon={Gauge} value={`${m.occupied} / ${m.berths}`} sub={t("{n} available", { n: m.available })} to={`/berths?marina=${marina.id}`} />
           <StatCard to={`/berths?marina=${marina.id}`} label={t("Occupancy rate")} icon={CalendarDays} value={pct(m.occupancy)} />
           <StatCard to="/billing" label={t("Revenue booked this month")} icon={DollarSign} value={money(m.revenue)} trend={{ value: m.revenueChange }} />
           <StatCard label={t("Awaiting approval")} icon={CalendarPlus} value={m.pending} to={`/bookings?status=pending&marina=${marina.id}`} />
@@ -269,9 +345,17 @@ export function MarinaDetail() {
               <div className="flex gap-3"><MapPin className="size-4 shrink-0 text-ink-3" aria-hidden /><span>{marina.address}, {city?.name}, {t(ix.county(city?.countyId ?? "")?.state)}</span></div>
               <div className="flex gap-3"><Phone className="size-4 shrink-0 text-ink-3" aria-hidden /><span>{marina.phone || t("No phone")}</span></div>
               <div className="flex gap-3"><Mail className="size-4 shrink-0 text-ink-3" aria-hidden /><span className="break-all">{marina.email || t("No email")}</span></div>
-              <div className="flex flex-wrap gap-1.5 pt-1">{marina.amenities.map((a) => <Badge key={a} tone="outline">{a}</Badge>)}</div>
+              <div className="flex flex-wrap gap-1.5 pt-1">{marina.amenities.map((a) => <Badge key={a} tone="outline">{t(a)}</Badge>)}</div>
               <div className="pt-1"><ActiveBadge status={marina.status} /></div>
             </dl>
+            {point && (
+              <div className="px-5 pb-5">
+                <MapView label={t("Map of {name}", { name: marina.name })} markers={[{ id: marina.id, ...point, label: marina.name, selected: true }]} height={200} zoom={15} />
+                <a href={directionsUrl(point)} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-semibold text-green-text hover:underline">
+                  <Navigation className="size-4" aria-hidden /> {t("Directions")}
+                </a>
+              </div>
+            )}
           </Card>
         </div>
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">

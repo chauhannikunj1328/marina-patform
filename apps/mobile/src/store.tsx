@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { AppState, Platform } from "react-native";
 import * as Crypto from "expo-crypto";
 import NetInfo from "@react-native-community/netinfo";
-import { withRecurringTasks, t, tn,
+import { withMarinaPoints, withRecurringTasks, t, tn,
   BUILT_IN_USERS, createSeed, DEFAULT_PERMISSIONS, diffDb, Index, levelFor, nextId, PASSWORD_HASHES, sendOwnerEmail, SIGN_IN_ERROR, setCurrency, setTimeZone, today,
   type Area, type Db, type Level, type SystemUser,
 } from "@marina/shared";
@@ -70,11 +70,15 @@ const RELOCK_MS = 60_000;
 
 const sha256 = (v: string) => Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, v);
 
+/** Sample marinas, for filling in data saved before newer fields existed. */
+let sample: Db["marinas"] | undefined;
+const sampleMarinas = () => (sample ??= createSeed().marinas);
+
 function normalize(db: Db): Db {
   const missing = BUILT_IN_USERS().filter((b) => !db.users.some((u) => u.email.toLowerCase() === b.email));
   // Recurring maintenance creates the work orders it owes whenever data loads.
   return withRecurringTasks({
-    ...db,
+    ...withMarinaPoints(db, sampleMarinas()),
     users: [...db.users, ...missing],
     // Data saved before these existed.
     timeEntries: db.timeEntries ?? [],

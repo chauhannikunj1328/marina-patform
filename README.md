@@ -64,11 +64,11 @@ Changes you make are saved on that device until midnight; then fresh sample data
 |---|---|---|
 | Login, Forgot password | `/login`, `/forgot-password` | Validation, show/hide password, reset-link confirmation |
 | Global / County / City dashboards | `/`, `/county/:id`, `/city/:id` | KPIs, revenue and occupancy charts, rankings, today's to-dos, recent activity, CSV export |
-| Marinas | `/marinas`, `/marinas/:id` | Add, edit, deactivate; detail page with bookings, staff and clickable berth status |
+| Marinas | `/marinas`, `/marinas/:id` | Add, edit, deactivate; **List / Map** views (street map with a pin per marina, nearby pins grouped); set a marina's position by clicking the map or typing coordinates; detail page with bookings, staff, clickable berth status, a map and **Directions** |
 | Berths & Slips | `/berths` | List, dock map and **Meters** (power and water readings billed to the boat in the berth); berth detail; add/edit/delete; maintenance toggle; printable **QR labels** |
 | Bookings | `/bookings` | New booking (only free berths that fit the boat, priced with the pricing rules), change dates or berth (re-prices unpaid invoices), approve, check in/out, cancel, email details, calendar, today's arrivals/departures, double-booking check, **Waitlist** (matches freed-up berths, offer, one-click book), CSV |
 | Contracts | `/contracts` | Monthly, seasonal and annual berth contracts held through a booking for the whole term and invoiced up front; renewal alerts (a week, a month or two months ahead); Renew / Don't renew |
-| Locations | `/locations` | Counties, cities and a map; add, edit, delete (admin only) |
+| Locations | `/locations` | Counties, cities and a street map of every marina (click a pin for its city's figures); add, edit, delete (admin only) |
 | Staff | `/staff` | Directory, weekly schedule (follows approved time off and swaps), shift coverage, **Requests** (approve or decline), **Hours** (pay, overtime, timesheet approval, payroll CSV/Excel), **Messages** with staff |
 | Maintenance | `/maintenance` | Work orders with notes and **parts used**, start/complete/reopen, filters; **Recurring jobs** (weekly, monthly, quarterly; work orders created a week ahead); **Parts & supplies** stock with low-stock flags and restocking |
 | Incidents | `/incidents` | Damage, injuries, theft and spills reported from the phone; investigate, follow-up notes, close with an outcome |
@@ -87,7 +87,7 @@ One app, **Marina**, for every role (bundle ID `com.marina.app`). The tabs depen
 ### Managers and admins
 
 - **Overview:** occupancy, revenue this month, arrivals and departures, staff on the clock; what needs attention; 6-month revenue (tap for **revenue by county, city and marina**); every marina ranked by occupancy with **Compare** (2–3 side by side); recent activity with a full **activity log**
-- **Marina page:** one marina's numbers, berths, revenue, people and contacts; admins can **close a marina to new bookings** and reopen it
+- **Marina page:** one marina's numbers, berths, revenue, people and contacts, with **Directions** that open the phone's map app; admins can **close a marina to new bookings** and reopen it
 - **Approvals:** pending bookings (approve creates the invoice) and staff time off / swaps; Approve all with a confirmation
 - **Bookings:** make future bookings, change dates or berth, extend, cancel, approve or decline, take payments, move a boat to another berth
 - **Team:** today (on the clock, scheduled, off, patrols, hand-over notes), **Week** (shift gaps, Find cover, edit someone's regular schedule), hours, chat, and **Message everyone** announcements
@@ -148,6 +148,16 @@ What staff can do follows Access Control (e.g. View only hides check-in and edit
 - First sign-in **welcome steps**, a soft glow on your **first booking**, an **offline** banner, branded **404 / error / no-access** pages, loading **skeletons**, and **phone-friendly tables** (rows become cards).
 - Home-screen icons, a web app manifest and a 1200 × 630 **link preview image** (`public/`).
 
+## Maps
+
+The web app's maps use [Leaflet](https://leafletjs.com) with OpenStreetMap tiles; dark mode tints them into a night map. Marinas saved without a position show at their city's center until one is set.
+
+OpenStreetMap's tiles are for light use only. For production, set these in `apps/web/.env` (or the Vercel project) to a tile provider you have an account with, such as MapTiler, Stadia Maps or Mapbox:
+
+- `VITE_MAP_TILES`: tile URL template, e.g. `https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=…`
+- `VITE_MAP_TILES_DARK` (optional): a dark style, used in dark mode instead of tinting
+- `VITE_MAP_ATTRIBUTION` (optional): the provider's credit line (HTML)
+
 ## Languages
 
 Both apps run in **English** (default), **Spanish** and **Arabic**. Switch from the language button in the web app's top bar, or **Me → Language** on the phone; the choice is remembered.
@@ -201,4 +211,3 @@ brand/          logo SVGs and the brand guide
 - Card payments in the app (Stripe Terminal / Tap to Pay); staff record payments taken on the marina's card reader
 - Payments (Stripe) and real email/SMS delivery: reminders, invites and booking emails are recorded in the system and the audit log, but not actually sent
 - Public website and boat-owner booking portal (`apps/website`)
-- Map view with real map tiles

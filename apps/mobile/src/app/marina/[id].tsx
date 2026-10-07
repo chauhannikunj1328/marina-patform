@@ -2,8 +2,8 @@
 import { useState } from "react";
 import { Linking, View } from "react-native";
 import { Redirect, router, useLocalSearchParams } from "expo-router";
-import { ArrowRight, Ban, CircleCheck, Mail, Phone } from "lucide-react-native";
-import { lastMonths, moneyShort, openEntry, pct, planFor, today , tn } from "@marina/shared";
+import { ArrowRight, Ban, CircleCheck, Mail, Navigation, Phone } from "lucide-react-native";
+import { directionsUrl, lastMonths, marinaPoint, moneyShort, openEntry, pct, planFor, today , tn } from "@marina/shared";
 import { Kpi, MiniBars } from "@/components/office";
 import { Badge, Button, Row, Screen, Section, Sheet, StackHeader, Txt } from "@/components/ui";
 import { useStore } from "@/store";
@@ -28,6 +28,7 @@ export default function MarinaDetail() {
   const months = lastMonths(6);
   const tel = (p: string) => `tel:${p.replace(/[^\d+]/g, "")}`;
   const closed = marina.status === "inactive";
+  const point = marinaPoint(marina, ix.cityOfMarina(id));
   const upcoming = ix.bookingsIn([id]).filter((b) => b.start > today() && (b.status === "confirmed" || b.status === "pending")).length;
   const toggle = () => {
     const before = db;
@@ -78,6 +79,7 @@ export default function MarinaDetail() {
             <Button style={{ flex: 1 }} icon={Mail} label={tr("Email")} onPress={() => Linking.openURL(`mailto:${marina.email}`)} />
           </View>
           {manager && manager.phone && <Button icon={Phone} label={tr("Call {v} (manager)", { v: manager.name.split(" ")[0] })} onPress={() => Linking.openURL(tel(manager.phone))} />}
+          {point && <Button icon={Navigation} label={tr("Directions")} onPress={() => Linking.openURL(directionsUrl(point))} />}
         </Section>
 
         <Button variant="primary" size="lg" icon={ArrowRight} label={tr("Show this marina in the app")} onPress={() => { setMarinaId(id); router.navigate("/"); }} />

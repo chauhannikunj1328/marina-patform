@@ -23,6 +23,9 @@ export interface Marina {
   phone: string;
   email: string;
   address: string;
+  /** Where the marina is (WGS84). Older records without it are shown at their city's center. */
+  lat?: number;
+  lng?: number;
   status: MarinaStatus;
   amenities: string[];
 }

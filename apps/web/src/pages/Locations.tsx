@@ -3,7 +3,8 @@ import { Link } from "react-router-dom";
 import { Building, Landmark, MapPin, Pencil, Plus, Trash, Warehouse } from "lucide-react";
 import { nextId, useStore } from "@/data/store";
 import type { City, County } from "@marina/shared";
-import { t, count, money, pct } from "@marina/shared";
+import { t, count, marinaPoint, money, pct } from "@marina/shared";
+import { MapView, type MapMarker } from "@/components/MapView";
 import { Button, Card, CardHeader, ConfirmDialog, Field, IconButton, Input, Meter, Modal, PageHeader, Select, StatCard, Table, Tabs, useDirty } from "@/components/ui";
 
 type Target = { kind: "city"; item?: City } | { kind: "county"; item?: County };
@@ -66,23 +67,14 @@ function LocationForm({ target, onClose }: { target: Target; onClose: () => void
   );
 }
 
-/** Plots cities on a simple projection of the continental US. No map tiles or external services. */
+/** Every marina on a street map; picking one shows its city's figures beside the map. */
 function LocationMap() {
   const { db, ix } = useStore();
   const [selected, setSelected] = useState<string | undefined>(db.cities[0]?.id);
-  const W = 800, H = 440;
-  const bounds = { west: -125, east: -66, north: 50, south: 24 };
-  const x = (lng: number) => ((lng - bounds.west) / (bounds.east - bounds.west)) * W;
-  const y = (lat: number) => ((bounds.north - lat) / (bounds.north - bounds.south)) * H;
-  // Rough outline of the lower 48 states for orientation only.
-  const outline: [number, number][] = [[-124.7, 48.4], [-123, 46], [-124.2, 42], [-124.4, 40.3], [-122.4, 37.2], [-120.6, 34.6], [-117.1, 32.5], [-114.7, 32.7], [-111, 31.3], [-108.2, 31.3], [-106.5, 31.8], [-103, 29], [-101.4, 29.8], [-99.5, 27.5], [-97.2, 25.9], [-97.4, 27.8], [-94.7, 29.4], [-91, 29.2], [-89.4, 29], [-88, 30.4], [-85.4, 29.7], [-83, 29], [-82.7, 27.5], [-81.2, 25.2], [-80.1, 25.8], [-80.5, 28.5], [-81.4, 30.7], [-79.2, 33.2], [-75.5, 35.2], [-76, 37], [-74, 40.5], [-71, 41.5], [-70, 43.7], [-67, 44.8], [-67.8, 47.1], [-69.2, 47.4], [-71.5, 45], [-75, 45], [-76.5, 43.6], [-79, 43.3], [-79.2, 42.5], [-82.5, 41.7], [-82.4, 43], [-83.5, 46.1], [-84.6, 46.5], [-88.4, 48.3], [-89.6, 48], [-95.2, 49], [-123, 49], [-124.7, 48.4]];
-  const path = outline.map(([lng, lat], i) => `${i ? "L" : "M"}${x(lng).toFixed(1)},${y(lat).toFixed(1)}`).join(" ") + "Z";
-  // Cities closer than ~30px are fanned out downward so markers and labels don't overlap.
-  const placed: { c: City; px: number; py: number; stack: number }[] = [];
-  for (const c of [...db.cities].sort((a, b) => b.lat - a.lat)) {
-    const stack = placed.filter((p) => Math.hypot(x(p.c.lng) - x(c.lng), y(p.c.lat) - y(c.lat)) < 30).length;
-    placed.push({ c, px: x(c.lng) + stack * 6, py: y(c.lat) + stack * 22, stack });
-  }
+  const markers: MapMarker[] = db.marinas.flatMap((mr) => {
+    const p = marinaPoint(mr, ix.city(mr.cityId));
+    return p ? [{ id: mr.id, ...p, label: `${mr.name}, ${ix.city(mr.cityId)?.name ?? ""}`, muted: mr.status === "inactive", selected: mr.cityId === selected }] : [];
+  });
   const city = db.cities.find((c) => c.id === selected);
   const ids = city ? ix.marinaIdsInCity(city.id) : [];
   const m = ix.metrics(ids);
@@ -90,22 +82,8 @@ function LocationMap() {
   return (
     <div className="grid grid-cols-1 xl:grid-cols-[1fr_300px]">
       <div className="p-4">
-        <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label={t("Map of cities with marinas")}>
-          <path d={path} fill="var(--surface-3)" stroke="var(--border-strong)" strokeWidth={1.5} />
-          {placed.map(({ c, px, py, stack }) => {
-            const n = ix.marinaIdsInCity(c.id).length;
-            const r = 6 + n * 3;
-            const on = c.id === selected;
-            return (
-              <g key={c.id} onClick={() => setSelected(c.id)} className="cursor-pointer" role="button" aria-label={t("{name}, {n} marinas", { name: c.name, n: n })} tabIndex={0} onKeyDown={(e) => e.key === "Enter" && setSelected(c.id)}>
-                {stack > 0 && <line x1={x(c.lng)} y1={y(c.lat)} x2={px} y2={py} stroke="var(--border-strong)" />}
-                <circle cx={px} cy={py} r={r} fill={on ? "var(--ring-1)" : "var(--surface)"} stroke="var(--ring-1)" strokeWidth={2} />
-                <text x={px + r + 4} y={py + 4} fontSize={12} fill="var(--text)" fontWeight={on ? 600 : 400} paintOrder="stroke" stroke="var(--surface-2)" strokeWidth={3}>{c.name}</text>
-              </g>
-            );
-          })}
-        </svg>
-        <p className="mt-2 text-xs text-ink-3">{t("Circle size shows the number of marinas. Click a city for details.")}</p>
+        <MapView label={t("Map of marinas")} markers={markers} onSelect={(id) => setSelected(ix.marina(id)?.cityId)} height={460} zoom={11} />
+        <p className="mt-2 text-xs text-ink-3">{t("Each pin is a marina. Click one to see its city.")}</p>
       </div>
       <div className="border-t border-line xl:border-t-0 xl:border-s">
         {city ? (

@@ -534,3 +534,29 @@
   unicode-bidi: isolate;
   direction: ltr;
 }
+
+/* ---- Map (Leaflet) ------------------------------------------------------- */
+.map-shell .leaflet-container { font: inherit; background: var(--surface-3); }
+/* Calmer street map that sits with the brand palette; dark mode inverts it into a night map. */
+.map-shell[data-tint="day"] .leaflet-tile-pane { filter: saturate(0.55) contrast(0.95); }
+.map-shell[data-tint="night"] .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) saturate(0.35) brightness(0.9) contrast(0.9); }
+.map-pin {
+  display: grid; place-items: center; border-radius: 9999px;
+  background: var(--surface); color: var(--text); border: 2.5px solid var(--ring-1);
+  font: 600 12px/1 Inter, system-ui, sans-serif; box-shadow: 0 1px 4px rgb(0 0 0 / 0.25);
+  transition: transform 120ms;
+}
+.map-pin:hover { transform: scale(1.08); }
+.map-pin--on { background: var(--primary); color: var(--on-primary); border-color: var(--primary); transform: scale(1.12); }
+.map-pin--muted { border-style: dashed; opacity: 0.7; }
+.map-shell .leaflet-popup-content-wrapper, .map-shell .leaflet-popup-tip { background: var(--raised, var(--surface)); color: var(--text); box-shadow: var(--shadow-2); }
+.map-shell .leaflet-popup-content-wrapper { border-radius: 12px; border: 1px solid var(--line, var(--border)); }
+.map-shell .leaflet-popup-content { margin: 12px 14px; font-size: 13px; line-height: 1.45; }
+/* Leaflet colors every link blue; popups use the app's own link styles. */
+.map-shell .leaflet-popup-content a { color: var(--text); }
+.map-shell .leaflet-popup-close-button { color: var(--text-3, #656565); }
+.map-shell .leaflet-control-zoom a { background: var(--surface); color: var(--text); border-color: var(--border); }
+.map-shell .leaflet-control-attribution { background: color-mix(in srgb, var(--surface) 85%, transparent); color: var(--text-3, #656565); font-size: 10px; }
+.map-shell .leaflet-control-attribution a { color: inherit; }
+.map-shell .leaflet-marker-icon:focus-visible { outline: 2px solid var(--ring-1); outline-offset: 2px; border-radius: 9999px; }
+.map-shell.picking .leaflet-container { cursor: crosshair; }
