@@ -437,7 +437,7 @@ function EditBooking({ booking: b, onDone }: { booking: Booking; onDone: () => v
       const invoices = d.invoices.map((i) => (i.bookingId === b.id && (i.status === "due" || i.status === "overdue") ? { ...i, amount: amount + linesTotal(i) } : i));
       return { ...d, bookings, invoices };
     }, { text: `Changed ${b.code}: ${fmtShort(f.start)}–${fmtShort(f.end)}, berth ${berth?.code}`, to: `/bookings?q=${b.code}`, marinaId });
-    toast(`${b.code} updated`, before);
+    toast(t("{name} updated", { name: b.code }), before);
     onDone();
   };
 

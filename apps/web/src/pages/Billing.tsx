@@ -208,7 +208,7 @@ function InvoiceDetail({ invoice: inv, onClose }: { invoice: Invoice; onClose: (
         onConfirm={() => {
           const before = db;
           update((d) => ({ ...d, invoices: d.invoices.map((i) => (i.id === live.id ? { ...i, status: "void" } : i)) }), { text: `Voided ${live.number}`, to: `/billing?open=${live.id}`, marinaId: ix.marinaOfInvoice(live) });
-          toast(`${live.number} voided`, before);
+          toast(t("{number} voided", { number: live.number }), before);
         }}
       />
     </Modal>

@@ -33,7 +33,7 @@ export default function MarinaDetail() {
   const toggle = () => {
     const before = db;
     update((d) => ({ ...d, marinas: d.marinas.map((x) => (x.id === id ? { ...x, status: closed ? "active" : "inactive" } : x)) }), { text: `${marina.name} ${closed ? "reopened" : "closed"} to new bookings`, to: `/marinas/${id}`, marinaId: id });
-    toast(`${marina.name} ${closed ? "is open for bookings again" : "is closed to new bookings"}`, before);
+    toast(closed ? tr("{name} is open for bookings again", { name: marina.name }) : tr("{name} is closed to new bookings", { name: marina.name }), before);
     setConfirming(false);
   };
 

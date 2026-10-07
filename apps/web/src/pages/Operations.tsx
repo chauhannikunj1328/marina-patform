@@ -36,7 +36,7 @@ function StaffForm({ member, onClose }: { member?: Staff; onClose: () => void })
       (d) => (member ? { ...d, staff: d.staff.map((s) => (s.id === member.id ? { ...s, ...f } : s)) } : { ...d, staff: [...d.staff, { ...f, id: nextId("s", d.staff) }] }),
       { text: `${member ? "Updated" : "Added"} staff member ${f.name} (${f.position})`, marinaId: f.marinaId },
     );
-    toast(member ? `${f.name} updated` : t("{name} added to staff", { name: f.name }));
+    toast(member ? t("{name} updated", { name: f.name }) : t("{name} added to staff", { name: f.name }));
     onClose();
   };
   return (
@@ -262,7 +262,7 @@ export function StaffPage() {
           if (!removing) return;
           const before = db;
           update((d) => ({ ...d, staff: d.staff.filter((s) => s.id !== removing.id), tasks: d.tasks.map((t) => (t.assigneeId === removing.id ? { ...t, assigneeId: undefined } : t)) }), { text: `Removed staff member ${removing.name}`, marinaId: removing.marinaId });
-          toast(`${removing.name} removed`, before);
+          toast(t("{name} removed", { name: removing.name }), before);
         }}
       />
     </>

@@ -697,7 +697,7 @@ export function ChangeBookingSheet({ booking: b, onClose }: { booking: Booking; 
       }),
       { text: `Changed ${b.code}: ${fmtShort(start)}–${fmtShort(end)}, berth ${berth?.code}`, to: `/bookings?q=${b.code}`, marinaId },
     );
-    toast(`${b.code} updated`, before);
+    toast(tr("{name} updated", { name: b.code }), before);
     onClose();
   };
 
@@ -741,7 +741,7 @@ export function CancelBookingSheet({ booking: b, decline, onClose }: { booking: 
       }),
       { text: `${decline ? "Declined" : "Cancelled"} booking ${b.code} for ${boat?.name}`, to: `/bookings?q=${b.code}`, marinaId: ix.berth(b.berthId)?.marinaId },
     );
-    toast(`${b.code} ${decline ? "declined" : "cancelled"}`, before);
+    toast(decline ? tr("{code} declined", { code: b.code }) : tr("{code} cancelled", { code: b.code }), before);
     onClose();
   };
   return (

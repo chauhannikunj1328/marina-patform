@@ -14,7 +14,7 @@ export function RecurringPlans({ ids, canEdit }: { ids: string[]; canEdit: boole
   const toggle = (p: MaintenancePlan) => {
     const before = db;
     update((d) => withRecurringTasks({ ...d, maintenancePlans: (d.maintenancePlans ?? []).map((x) => (x.id === p.id ? { ...x, active: !x.active } : x)) }), { text: `${p.active ? "Paused" : "Resumed"} recurring job: ${p.title}`, to: "/maintenance", marinaId: p.marinaId });
-    toast(p.active ? `${p.title} paused` : `${p.title} resumed`, before);
+    toast(p.active ? t("{name} paused", { name: p.title }) : t("{name} resumed", { name: p.title }), before);
   };
   return (
     <Card className="mt-4">
@@ -68,7 +68,7 @@ function PlanForm({ plan, ids, onClose }: { plan?: MaintenancePlan; ids: string[
       }),
       { text: `${plan ? "Updated" : "Added"} recurring job: ${data.title} (${RECURRENCE_LABEL[data.every].toLowerCase()})`, to: "/maintenance", marinaId: data.marinaId },
     );
-    toast(plan ? t("Recurring job saved") : t("Recurring job added. The first work order appears {v}.", { v: data.nextDue <= addDays(today(), 7) ? "now" : `on ${fmtDate(addDays(data.nextDue, -7))}` }));
+    toast(plan ? t("Recurring job saved") : data.nextDue <= addDays(today(), 7) ? t("Recurring job added. The first work order appears now.") : t("Recurring job added. The first work order appears on {date}.", { date: fmtDate(addDays(data.nextDue, -7)) }));
     onClose();
   };
   return (

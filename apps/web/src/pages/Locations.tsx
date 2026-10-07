@@ -43,7 +43,7 @@ function LocationForm({ target, onClose }: { target: Target; onClose: () => void
       const data = { name, state: f.state.trim() };
       return county ? { ...d, counties: d.counties.map((c) => (c.id === county.id ? { ...c, ...data } : c)) } : { ...d, counties: [...d.counties, { ...data, id: nextId("c", d.counties) }] };
     }, `${editing ? "Updated" : "Added"} ${kind} ${name}`);
-    toast(`${name} ${editing ? "updated" : "added"}`);
+    toast(editing ? t("{name} updated", { name }) : t("{name} added", { name }));
     onClose();
   };
   return (
@@ -116,10 +116,10 @@ export function Locations() {
   const [form, setForm] = useState<Target | undefined>();
   const [deleting, setDeleting] = useState<Target | undefined>();
 
-  const blocker = (t: Target) =>
-    t.kind === "city"
-      ? db.marinas.some((m) => m.cityId === t.item?.id) && "It still has marinas. Move or remove them first."
-      : db.cities.some((c) => c.countyId === t.item?.id) && "It still has cities. Move or remove them first.";
+  const blocker = (x: Target) =>
+    x.kind === "city"
+      ? db.marinas.some((m) => m.cityId === x.item?.id) && t("It still has marinas. Move or remove them first.")
+      : db.cities.some((c) => c.countyId === x.item?.id) && t("It still has cities. Move or remove them first.");
 
   return (
     <>
@@ -190,10 +190,10 @@ export function Locations() {
         onConfirm={() => {
           if (!deleting?.item) return;
           const why = blocker(deleting);
-          if (why) return toast(`${deleting.item.name} kept. ${why}`, undefined, "warning");
+          if (why) return toast(t("{name} kept. {why}", { name: deleting.item.name, why }), undefined, "warning");
           const id = deleting.item.id;
           update((d) => (deleting.kind === "city" ? { ...d, cities: d.cities.filter((c) => c.id !== id) } : { ...d, counties: d.counties.filter((c) => c.id !== id) }), `Deleted ${deleting.kind} ${deleting.item.name}`);
-          toast(`${deleting.item.name} deleted`);
+          toast(t("{name} deleted", { name: deleting.item.name }));
         }}
       />
     </>

@@ -35,7 +35,7 @@ export default function Approvals() {
       },
       { text: `${ok ? "Approved" : "Declined"} booking ${b.code} for ${boat}`, to: `/bookings?q=${b.code}`, marinaId: ix.berth(b.berthId)?.marinaId },
     );
-    toast(ok ? tr("{boat} approved and invoiced", { boat: boat }) : `${boat} declined`, before);
+    toast(ok ? tr("{boat} approved and invoiced", { boat: boat }) : tr("{boat} declined", { boat }), before);
   };
   const approveAll = () => {
     const ok = bookings.filter((b) => !clashes(b));

@@ -38,7 +38,7 @@ function OwnerForm({ owner, onClose, onSaved }: { owner?: BoatOwner; onClose: ()
         boats: [...d.boats, { id: nextId("bt", d.boats), ownerId: id, name: f.boat.trim(), type: f.type, length: Number(f.length), registration: f.registration.trim() || "Pending" }],
       };
     }, { text: `${owner ? "Updated" : "Added"} boat owner ${f.name.trim()}`, to: `/users?owner=${id}` });
-    toast(owner ? `${f.name} updated` : `${f.name} added`);
+    toast(owner ? t("{name} updated", { name: f.name }) : t("{name} added", { name: f.name }));
     onSaved?.(id);
     onClose();
   };
@@ -75,7 +75,7 @@ function BoatForm({ ownerId, boat, onClose }: { ownerId: string; boat?: Boat; on
     if (Object.keys(e).length) return;
     const data = { name: f.name.trim(), type: f.type, length: Number(f.length), registration: f.registration.trim() || "Pending" };
     update((d) => (boat ? { ...d, boats: d.boats.map((b) => (b.id === boat.id ? { ...b, ...data } : b)) } : { ...d, boats: [...d.boats, { ...data, id: nextId("bt", d.boats), ownerId }] }), `${boat ? "Updated" : "Added"} boat ${data.name}`);
-    toast(boat ? `${data.name} updated` : `${data.name} added`);
+    toast(boat ? t("{name} updated", { name: data.name }) : t("{name} added", { name: data.name }));
     onClose();
   };
   return (
@@ -181,7 +181,7 @@ function InviteForm({ user, onClose }: { user?: SystemUser; onClose: () => void 
       const next = { ...d, users: [...d.users, { ...data, id: nextId("u", d.users), lastActive: today(), status: "invited" as const }] };
       return withMessage(next, { to: data.email, subject: `You're invited to ${d.settings.company}`, kind: "invite" });
     }, user ? `Changed ${f.name}'s access to ${ROLE_LABEL[f.role]}` : `Invited ${f.name} as ${ROLE_LABEL[f.role]}`);
-    toast(user ? `${f.name} updated` : t("Invite sent to {email}", { email: f.email }));
+    toast(user ? t("{name} updated", { name: f.name }) : t("Invite sent to {email}", { email: f.email }));
     onClose();
   };
   return (
@@ -303,7 +303,7 @@ export function People() {
                         onClick={() => {
                           const before = db;
                           update((d) => ({ ...d, users: d.users.map((x) => (x.id === u.id ? { ...x, status: u.status === "disabled" ? "active" : "disabled" } : x)) }), `${u.status === "disabled" ? "Re-enabled" : "Disabled"} ${u.name}`);
-                          toast(u.status === "disabled" ? `${u.name} re-enabled` : t("{name} can no longer sign in", { name: u.name }), before);
+                          toast(u.status === "disabled" ? t("{name} re-enabled", { name: u.name }) : t("{name} can no longer sign in", { name: u.name }), before);
                         }}
                       />
                     </>

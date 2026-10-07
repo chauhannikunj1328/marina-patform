@@ -72,7 +72,7 @@ function ItemForm({ ids, onClose }: { ids: string[]; onClose: () => void }) {
     if (!f.name.trim()) return setError(t("Name the item."));
     if (!(Number(f.unitCost) >= 0) || f.unitCost === "") return setError(t("Enter the unit cost."));
     update((d) => ({ ...d, inventory: [...(d.inventory ?? []), { id: nextId("inv", d.inventory ?? []), marinaId: f.marinaId, name: f.name.trim(), unit: f.unit.trim() || "each", qty: Number(f.qty) || 0, reorderAt: Number(f.reorderAt) || 0, unitCost: Number(f.unitCost) }] }), { text: `Added ${f.name.trim()} to parts & supplies`, to: "/maintenance", marinaId: f.marinaId });
-    toast(`${f.name.trim()} added`);
+    toast(t("{name} added", { name: f.name.trim() }));
     onClose();
   };
   return (
