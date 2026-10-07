@@ -1,7 +1,7 @@
 // Detail sheets and actions shared by the staff tabs: bookings, berths, tasks, problem reports.
 import { useState } from "react";
 import { Image, Linking, Pressable, ScrollView, View } from "react-native";
-import { Banknote, Camera, CircleCheck, ImagePlus, LogIn, LogOut, Mail, Phone, Search, TriangleAlert, X } from "lucide-react-native";
+import { Banknote, CalendarCog, Camera, CircleCheck, CircleX, ImagePlus, LogIn, LogOut, Mail, Phone, Search, TriangleAlert, X } from "lucide-react-native";
 import {
   addDays, bookingAmount, daysBetween, fmtDate, fmtShort, money2, nextId, relative, today, withInvoice,
   type Berth, type Booking, type BookingStatus, type BoatType, type Invoice, type MaintenanceTask, type PaymentMethod, type Priority,
@@ -11,7 +11,7 @@ import { MarinaPicker } from "./office";
 import { useTheme } from "../theme";
 import { pickPhoto, takePhoto } from "../lib/photos";
 import { BerthBadge, BookingBadge, PriorityBadge, TaskBadge } from "./status";
-import { Badge, Button, Chip, Field, Input, Row, Segmented, Sheet, Stepper, Txt } from "./ui";
+import { Badge, Button, Chip, DayChips, Field, Input, Row, Segmented, Sheet, Stepper, Txt } from "./ui";
 
 /** Check in / check out, with Undo and an activity log entry. */
 export function useBookingStatus() {
@@ -30,6 +30,10 @@ export function BookingSheet({ booking, onClose }: { booking: Booking; onClose: 
   const { t } = useTheme();
   const setStatus = useBookingStatus();
   const [paying, setPaying] = useState<Invoice | undefined>();
+  const [changing, setChanging] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const { user, update, toast } = useStore();
+  const office = user?.role === "admin" || user?.role === "manager";
   const b = db.bookings.find((x) => x.id === booking.id) ?? booking;
   const boat = ix.boat(b.boatId);
   const owner = ix.ownerOfBooking(b);
@@ -44,7 +48,17 @@ export function BookingSheet({ booking, onClose }: { booking: Booking; onClose: 
       title={boat?.name ?? "Booking"}
       subtitle={`${b.code} · Berth ${berth?.code}`}
       footer={
-        canCheckIn ? <Button variant="primary" size="lg" icon={LogIn} label="Check in" onPress={() => { setStatus(b, "checked-in"); onClose(); }} />
+        office && canEdit && b.status === "pending" ? (
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            <Button style={{ flex: 1 }} size="lg" label="Decline" onPress={() => setCancelling(true)} />
+            <Button style={{ flex: 1 }} variant="primary" size="lg" label="Approve" disabled={!ix.isFree(b.berthId, b.start, b.end, b.id)} onPress={() => {
+              const before = db;
+              update((d) => withInvoice({ ...d, bookings: d.bookings.map((x) => (x.id === b.id ? { ...x, status: "confirmed" as const } : x)) }, b.id, ix.amount(b)), { text: `Approved booking ${b.code} for ${boat?.name}`, to: `/bookings?q=${b.code}`, marinaId: berth?.marinaId });
+              toast(`${boat?.name} approved and invoiced`, before);
+            }} />
+          </View>
+        )
+        : canCheckIn ? <Button variant="primary" size="lg" icon={LogIn} label="Check in" onPress={() => { setStatus(b, "checked-in"); onClose(); }} />
         : canCheckOut ? <Button variant="primary" size="lg" icon={LogOut} label="Check out" onPress={() => { setStatus(b, "completed"); onClose(); }} />
         : <Button size="lg" label="Close" onPress={onClose} />
       }
@@ -66,7 +80,15 @@ export function BookingSheet({ booking, onClose }: { booking: Booking; onClose: 
           <Button style={{ flex: 1 }} icon={Mail} label="Email" onPress={() => Linking.openURL(`mailto:${owner.email}?subject=${encodeURIComponent(`Your stay at ${ix.marinaOfBerth(b.berthId)?.name}`)}`)} />
         </View>
       )}
+      {canEdit && (b.status === "pending" || b.status === "confirmed" || b.status === "checked-in") && (
+        <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
+          <Button style={{ flex: 1 }} size="sm" icon={CalendarCog} label={b.status === "checked-in" ? "Extend or move" : "Change"} onPress={() => setChanging(true)} />
+          {b.status !== "checked-in" && <Button style={{ flex: 1 }} size="sm" icon={CircleX} label="Cancel booking" onPress={() => setCancelling(true)} />}
+        </View>
+      )}
       {paying && <PaymentSheet invoice={paying} onClose={() => setPaying(undefined)} />}
+      {changing && <ChangeBookingSheet booking={b} onClose={() => setChanging(false)} />}
+      {cancelling && <CancelBookingSheet booking={b} decline={b.status === "pending"} onClose={() => setCancelling(false)} />}
     </Sheet>
   );
 }
@@ -139,8 +161,11 @@ export function PaymentSheet({ invoice, onClose }: { invoice: Invoice; onClose: 
 
 const BOAT_TYPES: BoatType[] = ["Sailboat", "Motor Yacht", "Catamaran", "Center Console", "Trawler"];
 
-/** Book a boat that turns up without a booking: pick or add the boat, choose a free berth, check in. */
-export function WalkInSheet({ onClose, onDone }: { onClose: () => void; onDone: (bookingId: string) => void }) {
+/**
+ * New booking: pick or add the boat, choose the arrival day and a free berth that fits.
+ * Arriving today covers walk-ins, with the option to check the boat in straight away.
+ */
+export function NewBookingSheet({ onClose, onDone }: { onClose: () => void; onDone: (bookingId: string) => void }) {
   const { db, ix, update, toast, marinaId: current, scope } = useStore();
   const { t } = useTheme();
   const [marinaId, setMarina] = useState(current === ALL ? scope[0] : current);
@@ -151,9 +176,12 @@ export function WalkInSheet({ onClose, onDone }: { onClose: () => void; onDone: 
   const [nights, setNights] = useState(1);
   const [guests, setGuests] = useState(2);
   const [berthId, setBerthId] = useState("");
-  const [checkIn, setCheckIn] = useState(true);
+  const [checkInNow, setCheckIn] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const now = today();
+  const [start, setStart] = useState(today());
+  const now = start;
+  const arrivingToday = start === today();
+  const checkIn = arrivingToday && checkInNow;
   const end = addDays(now, nights);
   const s = q.trim().toLowerCase();
   const matches = s.length < 2 ? [] : db.boats.filter((b) => b.name.toLowerCase().includes(s) || b.registration.toLowerCase().includes(s) || ix.owner(b.ownerId)?.name.toLowerCase().includes(s)).slice(0, 6);
@@ -170,15 +198,16 @@ export function WalkInSheet({ onClose, onDone }: { onClose: () => void; onDone: 
     const e: Record<string, string> = {};
     if (mode === "existing") {
       if (!boat) e.boat = "Find the boat, or add a new one.";
-      const here = boat && db.bookings.find((b) => b.boatId === boat.id && b.status === "checked-in");
-      if (here) e.boat = `${boat?.name} is already checked in at berth ${ix.berth(here.berthId)?.code}.`;
+      // A boat can't hold two berths for the same nights.
+      const clash = boat && db.bookings.find((b) => b.boatId === boat.id && ["pending", "confirmed", "checked-in"].includes(b.status) && b.start < end && b.end > now);
+      if (clash) e.boat = `${boat?.name} already has ${clash.code} at berth ${ix.berth(clash.berthId)?.code} (${fmtShort(clash.start)} – ${fmtShort(clash.end)}).`;
     } else {
       if (!f.owner.trim()) e.owner = "Enter the owner's name.";
       if (!f.phone.trim() && !f.email.trim()) e.contact = "Add a phone number or email so we can reach them.";
       if (!f.boat.trim()) e.newBoat = "Enter the boat name.";
       if (!(Number(f.length) >= 10)) e.length = "Enter the boat length in feet (10 or more).";
     }
-    if (!berth) e.berth = free.length ? "Choose a berth." : "No berth is free and big enough tonight.";
+    if (!berth) e.berth = free.length ? "Choose a berth." : `No berth is free and big enough ${arrivingToday ? "tonight" : "for those nights"}.`;
     setErrors(e);
     if (Object.keys(e).length || !berth) return;
     const id = nextId("bk", db.bookings);
@@ -189,18 +218,18 @@ export function WalkInSheet({ onClose, onDone }: { onClose: () => void; onDone: 
       if (mode === "new") {
         const ownerId = nextId("o", d.owners);
         bId = nextId("bt", d.boats);
-        owners = [...owners, { id: ownerId, name: f.owner.trim(), email: f.email.trim(), phone: f.phone.trim(), since: now }];
+        owners = [...owners, { id: ownerId, name: f.owner.trim(), email: f.email.trim(), phone: f.phone.trim(), since: today() }];
         boats = [...boats, { id: bId, ownerId, name, type: f.type, length: Number(f.length), registration: "Pending" }];
       }
-      const booking: Booking = { id, code: `BK-${String(Number(id.split("-")[1])).padStart(4, "0")}`, boatId: bId, berthId: berth.id, start: now, end, guests, status, createdAt: now };
+      const booking: Booking = { id, code: `BK-${String(Number(id.split("-")[1])).padStart(4, "0")}`, boatId: bId, berthId: berth.id, start: now, end, guests, status, createdAt: today() };
       return withInvoice({ ...d, owners, boats, bookings: [...d.bookings, booking] }, id, price);
-    }, { text: `Walk-in booking for ${name} at berth ${berth.code}, ${nights} ${nights === 1 ? "night" : "nights"}${checkIn ? ", checked in" : ""}`, marinaId });
-    toast(checkIn ? `${name} booked and checked in` : `${name} booked`);
+    }, { text: `${arrivingToday ? "Walk-in booking" : "New booking"} for ${name} at berth ${berth.code}, ${fmtShort(now)}, ${nights} ${nights === 1 ? "night" : "nights"}${checkIn ? ", checked in" : ""}`, marinaId });
+    toast(checkIn ? `${name} booked and checked in` : `${name} booked for ${fmtShort(now)} and invoiced`);
     onDone(id);
   };
 
   return (
-    <Sheet open onClose={onClose} title="Walk-in booking" subtitle="Arriving today without a booking" footer={<Button variant="primary" size="lg" icon={checkIn ? LogIn : undefined} label={berth ? `${checkIn ? "Book and check in" : "Book"} · ${money2(price)}` : "Book"} onPress={save} />}>
+    <Sheet open onClose={onClose} title="New booking" subtitle={arrivingToday ? "Arriving today, or pick a later day" : `Arriving ${fmtShort(start)}`} footer={<Button variant="primary" size="lg" icon={checkIn ? LogIn : undefined} label={berth ? `${checkIn ? "Book and check in" : "Book"} · ${money2(price)}` : "Book"} onPress={save} />}>
       <View style={{ gap: 16 }}>
         {current === ALL && <MarinaPicker value={marinaId} onChange={(id) => { setMarina(id); setBerthId(""); }} />}
         <Segmented value={mode} onChange={(v) => { setMode(v); setErrors({}); }} items={[{ value: "existing", label: "Known boat" }, { value: "new", label: "New boat" }]} />
@@ -251,11 +280,12 @@ export function WalkInSheet({ onClose, onDone }: { onClose: () => void; onDone: 
             </Field>
           </>
         )}
+        <Field label="Arrival"><DayChips days={Array.from({ length: 120 }, (_, i) => addDays(today(), i))} value={start} onChange={(d) => { setStart(d); setBerthId(""); setErrors({}); }} /></Field>
         <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 16 }}>
           <Field label="Nights" hint={`Leaves ${fmtShort(end)}`}><Stepper label="nights" value={nights} onChange={(n) => { setNights(n); setBerthId(""); }} max={60} /></Field>
           <Field label="Guests"><Stepper label="guests" value={guests} onChange={setGuests} max={20} /></Field>
         </View>
-        <Field label="Berth" error={errors.berth} hint={length ? `Free tonight${nights > 1 ? ` for ${nights} nights` : ""} and fits ${length} ft, smallest first.` : "Choose the boat first to see berths that fit."}>
+        <Field label="Berth" error={errors.berth} hint={length ? `Free ${arrivingToday ? "from tonight" : `from ${fmtShort(start)}`}${nights > 1 ? ` for ${nights} nights` : ""} and fits ${length} ft, smallest first.` : "Choose the boat first to see berths that fit."}>
           {length > 0 && (
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
               {free.slice(0, 12).map((b) => <Chip key={b.id} label={b.code} sub={`${b.maxLength} ft`} on={berthId === b.id} onPress={() => { setBerthId(b.id); setErrors({}); }} />)}
@@ -263,12 +293,12 @@ export function WalkInSheet({ onClose, onDone }: { onClose: () => void; onDone: 
           )}
         </Field>
         {berth && <Row label="Price" value={money2(price)} sub={nights >= db.settings.monthlyFromNights ? "Monthly rate, prorated" : `${nights} × ${money2(berth.dailyRate)} a night`} />}
-        <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: checkIn }} onPress={() => setCheckIn(!checkIn)} style={{ flexDirection: "row", alignItems: "center", gap: 12, borderWidth: 1, borderColor: t.border, borderRadius: 12, padding: 12 }}>
+        {arrivingToday && <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: checkIn }} onPress={() => setCheckIn(!checkIn)} style={{ flexDirection: "row", alignItems: "center", gap: 12, borderWidth: 1, borderColor: t.border, borderRadius: 12, padding: 12 }}>
           <View style={{ width: 22, height: 22, borderRadius: 6, borderWidth: 1.5, borderColor: t.primary, backgroundColor: checkIn ? t.primary : "transparent", alignItems: "center", justifyContent: "center" }}>
             {checkIn && <CircleCheck size={14} color={t.onPrimary} />}
           </View>
           <Txt v="bodySm">The boat is here: check it in now</Txt>
-        </Pressable>
+        </Pressable>}
       </View>
     </Sheet>
   );
@@ -512,6 +542,98 @@ export function TaskSheet({ task, onClose }: { task: MaintenanceTask; onClose: (
           <Button size="sm" label="Add update" disabled={!note.trim() && photos.length === 0} onPress={addUpdate} style={{ alignSelf: "flex-start" }} />
         </View>
       )}
+    </Sheet>
+  );
+}
+
+/** Change arrival, departure, berth or guests. Unpaid invoices follow the new price (same rule as the web app). */
+export function ChangeBookingSheet({ booking: b, onClose }: { booking: Booking; onClose: () => void }) {
+  const { db, ix, update, toast } = useStore();
+  const { t } = useTheme();
+  const now = today();
+  const started = b.start <= now && b.status === "checked-in";
+  const [start, setStart] = useState(b.start);
+  const [nights, setNights] = useState(daysBetween(b.start, b.end));
+  const [guests, setGuests] = useState(b.guests);
+  const [berthId, setBerthId] = useState(b.berthId);
+  const [error, setError] = useState("");
+  const end = addDays(start, nights);
+  const boat = ix.boat(b.boatId);
+  const marinaId = ix.berth(b.berthId)?.marinaId;
+  const free = db.berths
+    .filter((x) => x.marinaId === marinaId && !x.underMaintenance && x.maxLength >= (boat?.length ?? 0) && ix.isFree(x.id, start, end, b.id))
+    .sort((x, y) => x.maxLength - y.maxLength || x.code.localeCompare(y.code));
+  const berth = ix.berth(berthId);
+  const fits = free.some((x) => x.id === berthId);
+  const amount = berth ? bookingAmount(start, end, berth, db.settings.monthlyFromNights) : 0;
+  const invoice = db.invoices.find((i) => i.bookingId === b.id && i.status !== "void");
+  const changed = start !== b.start || end !== b.end || berthId !== b.berthId || guests !== b.guests;
+  const days = Array.from({ length: 120 }, (_, i) => addDays(now, i));
+
+  const save = () => {
+    if (!fits) return setError(`Berth ${berth?.code} isn't free for these dates. Choose another berth.`);
+    const before = db;
+    update(
+      (d) => ({
+        ...d,
+        bookings: d.bookings.map((x) => (x.id === b.id ? { ...x, start, end, berthId, guests } : x)),
+        // Unpaid invoices follow the new price; paid ones are left as issued.
+        invoices: d.invoices.map((i) => (i.bookingId === b.id && (i.status === "due" || i.status === "overdue") ? { ...i, amount } : i)),
+      }),
+      { text: `Changed ${b.code}: ${fmtShort(start)}–${fmtShort(end)}, berth ${berth?.code}`, to: `/bookings?q=${b.code}`, marinaId },
+    );
+    toast(`${b.code} updated`, before);
+    onClose();
+  };
+
+  return (
+    <Sheet open onClose={onClose} title={`Change ${b.code}`} subtitle={`${boat?.name} · ${boat?.length} ft`} footer={<Button variant="primary" size="lg" label={`Save · ${money2(amount)}`} disabled={!changed} onPress={save} />}>
+      <View style={{ gap: 16 }}>
+        <Field label="Arrival" hint={started ? "Already arrived" : undefined}>
+          {started ? <Txt>{fmtShort(start)}</Txt> : <DayChips days={b.start < now ? [b.start, ...days] : days} value={start} onChange={(d) => { setStart(d); setError(""); }} />}
+        </Field>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 16 }}>
+          <Field label="Nights" hint={`Leaves ${fmtShort(end)}`}><Stepper label="nights" value={nights} onChange={(n) => { setNights(n); setError(""); }} min={started ? Math.max(1, daysBetween(b.start, now)) : 1} max={365} /></Field>
+          <Field label="Guests"><Stepper label="guests" value={guests} onChange={setGuests} max={20} /></Field>
+        </View>
+        <Field label="Berth" error={error} hint={fits ? `${free.length} free berths fit this boat` : `Berth ${berth?.code} isn't free for these dates`}>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+            {free.slice(0, 16).map((x) => <Chip key={x.id} label={x.code} sub={`${x.maxLength} ft`} on={berthId === x.id} onPress={() => { setBerthId(x.id); setError(""); }} />)}
+          </View>
+        </Field>
+        <Row label="New total" value={money2(amount)} sub={invoice ? (invoice.status === "paid" ? "The invoice is already paid. Adjust any difference in Billing." : `Invoice ${invoice.number} is updated to match.`) : undefined} />
+        {!fits && <Txt v="caption" color={t.error.fg}>Pick one of the free berths above to save.</Txt>}
+      </View>
+    </Sheet>
+  );
+}
+
+/** Cancel (or decline, when pending). The berth frees up and any unpaid invoice is voided, as on the web. */
+export function CancelBookingSheet({ booking: b, decline, onClose }: { booking: Booking; decline?: boolean; onClose: () => void }) {
+  const { db, ix, update, toast } = useStore();
+  const { t } = useTheme();
+  const boat = ix.boat(b.boatId);
+  const owner = ix.ownerOfBooking(b);
+  const paid = db.invoices.find((i) => i.bookingId === b.id && i.status !== "void" && i.payments.length > 0);
+  const confirm = () => {
+    const before = db;
+    update(
+      (d) => ({
+        ...d,
+        bookings: d.bookings.map((x) => (x.id === b.id ? { ...x, status: "cancelled" as const } : x)),
+        invoices: d.invoices.map((i) => (i.bookingId === b.id && i.status !== "paid" && i.payments.length === 0 ? { ...i, status: "void" as const } : i)),
+      }),
+      { text: `${decline ? "Declined" : "Cancelled"} booking ${b.code} for ${boat?.name}`, to: `/bookings?q=${b.code}`, marinaId: ix.berth(b.berthId)?.marinaId },
+    );
+    toast(`${b.code} ${decline ? "declined" : "cancelled"}`, before);
+    onClose();
+  };
+  return (
+    <Sheet open onClose={onClose} title={`${decline ? "Decline" : "Cancel"} ${b.code}?`} subtitle={`${boat?.name} · ${fmtShort(b.start)} – ${fmtShort(b.end)}`} footer={<Button variant="danger" size="lg" label={decline ? "Decline booking" : "Cancel booking"} onPress={confirm} />}>
+      <Txt v="bodySm" color={t.text2}>
+        {`Berth ${ix.berth(b.berthId)?.code} becomes free for those nights${decline ? "" : " and any unpaid invoice is voided"}. ${owner?.name} isn't told automatically: call or email them from the booking.`}
+      </Txt>
+      {paid && <Txt v="bodySm" color={t.error.fg} style={{ marginTop: 12 }}>{owner?.name} has already paid {money2(ix.paidSoFar(paid))}. Refund it from Billing in the web app.</Txt>}
     </Sheet>
   );
 }

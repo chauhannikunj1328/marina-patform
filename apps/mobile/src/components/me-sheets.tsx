@@ -1,18 +1,10 @@
 // Sheets opened from the Me tab: time off and shift swap requests, profile and password.
 import { useState } from "react";
-import { ScrollView, View } from "react-native";
-import { addDays, DAYS, fmtShort, fromISO, nextId, planFor, SHIFT_HOURS, today, type RequestKind } from "@marina/shared";
+import { View } from "react-native";
+import { addDays, fmtShort, nextId, planFor, SHIFT_HOURS, today, type RequestKind } from "@marina/shared";
 import { useMe, useStore } from "../store";
 import { useTheme } from "../theme";
-import { Button, Chip, Field, Input, Segmented, Sheet, Stepper, Txt } from "./ui";
-
-function DayChips({ days, value, onChange }: { days: string[]; value: string; onChange: (d: string) => void }) {
-  return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-      {days.map((d) => <Chip key={d} label={DAYS[fromISO(d).getDay()]} sub={fmtShort(d)} on={value === d} onPress={() => onChange(d)} />)}
-    </ScrollView>
-  );
-}
+import { Button, Chip, DayChips, Field, Input, Segmented, Sheet, Stepper, Txt } from "./ui";
 
 export function RequestSheet({ onClose }: { onClose: () => void }) {
   const { db, ix, update, toast } = useStore();

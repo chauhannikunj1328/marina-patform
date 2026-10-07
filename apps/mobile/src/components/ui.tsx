@@ -9,7 +9,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import { ArrowLeft, CircleAlert, Minus, Plus, CircleCheck, Eye, EyeOff, Search, TriangleAlert, WifiOff, X, type LucideProps } from "lucide-react-native";
 import { router } from "expo-router";
-import { LOGOMARK_PATHS, radius, type as typeScale } from "@marina/shared";
+import { DAYS, fmtShort, fromISO, LOGOMARK_PATHS, radius, type as typeScale } from "@marina/shared";
 import { fonts, useTheme } from "../theme";
 import { useStore } from "../store";
 
@@ -245,17 +245,26 @@ export function Stepper({ value, onChange, min = 1, max = 99, label, unit }: { v
     const IconCmp = icon;
     const off = next < min || next > max;
     return (
-      <Pressable accessibilityRole="button" accessibilityLabel={`${name} ${label}`} disabled={off} onPress={() => onChange(next)} style={({ pressed }) => ({ width: 44, height: 44, borderRadius: 22, borderWidth: 1, borderColor: t.border, alignItems: "center", justifyContent: "center", backgroundColor: pressed ? t.sidebar : t.surface, opacity: off ? 0.35 : 1 })}>
+      <Pressable accessibilityRole="button" accessibilityLabel={`${name} ${label}`} disabled={off} onPress={() => onChange(next)} hitSlop={4} style={({ pressed }) => ({ width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: t.border, alignItems: "center", justifyContent: "center", backgroundColor: pressed ? t.sidebar : t.surface, opacity: off ? 0.35 : 1 })}>
         <IconCmp size={18} color={t.text} />
       </Pressable>
     );
   };
   return (
-    <View accessibilityRole="adjustable" accessibilityLabel={label} accessibilityValue={{ text: `${value}${unit ? ` ${unit}` : ""}` }} style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+    <View accessibilityRole="adjustable" accessibilityLabel={label} accessibilityValue={{ text: `${value}${unit ? ` ${unit}` : ""}` }} style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
       {btn(Minus, value - 1, "Fewer")}
-      <Txt v="h3" num weight="semibold" style={{ minWidth: 72, textAlign: "center" }}>{value}{unit ? <Txt v="bodySm" color={t.text3}> {unit}</Txt> : null}</Txt>
+      <Txt v="h3" num weight="semibold" style={{ minWidth: unit ? 64 : 40, textAlign: "center" }}>{value}{unit ? <Txt v="bodySm" color={t.text3}> {unit}</Txt> : null}</Txt>
       {btn(Plus, value + 1, "More")}
     </View>
+  );
+}
+
+/** Horizontal row of day chips ("Thu 8 Oct") for picking a date. */
+export function DayChips({ days, value, onChange }: { days: string[]; value: string; onChange: (d: string) => void }) {
+  return (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+      {days.map((d) => <Chip key={d} label={DAYS[fromISO(d).getDay()]} sub={fmtShort(d)} on={value === d} onPress={() => onChange(d)} />)}
+    </ScrollView>
   );
 }
 

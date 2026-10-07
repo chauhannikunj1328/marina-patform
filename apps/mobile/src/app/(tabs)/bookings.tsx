@@ -5,7 +5,7 @@ import { CalendarClock, Plus, Search } from "lucide-react-native";
 import { daysBetween, fmtShort, today } from "@marina/shared";
 import { Button, Card, EmptyState, Screen, SearchBox, Segmented, Txt } from "@/components/ui";
 import { BookingBadge } from "@/components/status";
-import { BookingSheet, WalkInSheet } from "@/components/sheets";
+import { BookingSheet, NewBookingSheet } from "@/components/sheets";
 import { useOpenParam, useViewParam } from "@/lib/useOpenParam";
 import { useStore } from "@/store";
 import { useTheme } from "@/theme";
@@ -17,7 +17,7 @@ export default function Bookings() {
   const [q, setQ] = useState("");
   const [openId, setOpenId] = useOpenParam();
   const open = db.bookings.find((b) => b.id === openId);
-  const [walkIn, setWalkIn] = useState(false);
+  const [creating, setCreating] = useState(false);
   const now = today();
   const all = ix.bookingsIn(ids).filter((b) => b.status !== "cancelled");
   const lists = {
@@ -32,7 +32,7 @@ export default function Bookings() {
   ).slice(0, 60);
 
   return (
-    <Screen title="Bookings" right={can("bookings") !== "view" ? <Button size="sm" variant="primary" icon={Plus} label="Walk-in" onPress={() => setWalkIn(true)} /> : undefined}>
+    <Screen title="Bookings" right={can("bookings") !== "view" ? <Button size="sm" variant="primary" icon={Plus} label="New booking" onPress={() => setCreating(true)} /> : undefined}>
       <SearchBox value={q} onChange={setQ} placeholder="Boat, owner, berth or code" />
       {!s && (
         <Segmented
@@ -64,7 +64,7 @@ export default function Bookings() {
         </View>
       )}
       {open && <BookingSheet booking={open} onClose={() => setOpenId(undefined)} />}
-      {walkIn && <WalkInSheet onClose={() => setWalkIn(false)} onDone={(id) => { setWalkIn(false); setOpenId(id); }} />}
+      {creating && <NewBookingSheet onClose={() => setCreating(false)} onDone={(id) => { setCreating(false); setOpenId(id); }} />}
     </Screen>
   );
 }
