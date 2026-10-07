@@ -112,6 +112,8 @@ export interface Staff {
   /** Days of the week off, 0 = Sunday */
   daysOff: number[];
   hired: string;
+  /** Pay per hour for payroll. Defaults by position when not set. */
+  hourlyRate?: number;
 }
 
 export type Priority = "low" | "medium" | "high";
@@ -360,4 +362,14 @@ export interface MeterReading {
   /** Amount charged to the stay's invoice for this reading. */
   charged?: number;
   bookingId?: ID;
+}
+
+/** A manager's sign-off on someone's hours for a week (Sunday start). */
+export interface TimesheetApproval {
+  id: ID;
+  staffId: ID;
+  weekStart: string;
+  minutes: number;
+  approvedBy: string;
+  at: string;
 }

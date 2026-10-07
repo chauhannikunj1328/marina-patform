@@ -2,11 +2,12 @@
 // and dates are generated relative to today so the data never looks stale.
 import type {
   Berth, BerthType, Boat, BoatOwner, BoatType, Booking, BookingStatus, City, County,
-  Activity, ChatMessage, Contract, Handover, Invoice, MeterReading, Patrol, WaitlistEntry, MaintenanceTask, Marina, Message, Settings, Shift, Staff, StaffRequest, SystemUser, TimeEntry,
+  Activity, ChatMessage, Contract, Handover, Invoice, MeterReading, TimesheetApproval, Patrol, WaitlistEntry, MaintenanceTask, Marina, Message, Settings, Shift, Staff, StaffRequest, SystemUser, TimeEntry,
 } from "./types";
 import { addDays, daysBetween, fromISO, today } from "./date";
 import { bookingAmount } from "./pricing";
 import { DEFAULT_PERMISSIONS } from "./permissions";
+import { SHIFT_START_HOUR } from "./shifts";
 import { SERVICES } from "./actions";
 
 export interface Db {
@@ -39,6 +40,8 @@ export interface Db {
   contracts: Contract[];
   /** Power and water meter readings */
   meterReadings: MeterReading[];
+  /** Weekly hours signed off by a manager */
+  timesheetApprovals: TimesheetApproval[];
   settings: Settings;
   /** Notification ids the user has dismissed or read */
   readNotifications: string[];
@@ -372,6 +375,20 @@ export function createSeed(): Db {
     }));
   const messages: Message[] = [];
 
+  // Everyone else's clock-ins for the last two weeks, so hours and payroll have real numbers.
+  const clockIns: TimeEntry[] = [];
+  for (const st of staff) {
+    if (st.status !== "active" || st.email === "staff@marina.com") continue;
+    for (let back = 14; back >= 1; back--) {
+      const d = addDays(now, -back);
+      if (st.daysOff.includes(fromISO(d).getDay())) continue;
+      const startMin = SHIFT_START_HOUR[st.shift] * 60 - 10 + between(0, 15);
+      const length = 8 * 60 + between(-20, st.position === "Marina Manager" ? 90 : 35);
+      const base = fromISO(d).getTime();
+      clockIns.push({ id: `te-x${clockIns.length + 1}`, staffId: st.id, marinaId: st.marinaId, start: new Date(base + startMin * 60_000).toISOString(), end: new Date(base + (startMin + length) * 60_000).toISOString() });
+    }
+  }
+
   // Priya's clock-ins for the days she has already worked this week.
   const at = (day: string, h: number, m: number) => new Date(fromISO(day).getTime() + (h * 60 + m) * 60_000).toISOString();
   const timeEntries: TimeEntry[] = [];
@@ -431,5 +448,7 @@ export function createSeed(): Db {
     if (b.water) meterReadings.push({ id: `mr-${meterReadings.length + 1}`, berthId: b.id, kind: "water", value: between(4000, 40000), at: new Date(fromISO(addDays(now, -between(20, 30))).getTime() + 9 * 3_600_000).toISOString(), by: "Dock team" });
   }
 
-  return { counties, cities, marinas, berths, owners, boats, bookings, staff, tasks, invoices, users, activity, messages, timeEntries, requests, chat, handovers, patrols, waitlist, contracts, meterReadings, settings, readNotifications: [] };
+  timeEntries.push(...clockIns);
+
+  return { counties, cities, marinas, berths, owners, boats, bookings, staff, tasks, invoices, users, activity, messages, timeEntries, requests, chat, handovers, patrols, waitlist, contracts, meterReadings, timesheetApprovals: [], settings, readNotifications: [] };
 }

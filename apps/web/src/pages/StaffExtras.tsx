@@ -1,8 +1,9 @@
 // Staff page panels fed by the Marina Staff app: time off and swap requests, hours worked, messages.
 import { useState } from "react";
-import { CalendarClock, Check, Clock, MessagesSquare, Send, X } from "lucide-react";
+import { CalendarClock, Check, Clock, Download, MessagesSquare, Send, X } from "lucide-react";
+import { downloadCsv, downloadWorkbook } from "@/lib/csv";
 import { useStore } from "@/data/store";
-import { addDays, cx, DAYS, fmtDateTime, fmtDuration, fmtShort, fmtTime, fromISO, localDay, minutesWorked, nextId, today, type Staff, type StaffRequest } from "@marina/shared";
+import { addDays, cx, DAYS, fmtDateTime, fmtDuration, fmtShort, fmtTime, fromISO, hourlyRateOf, localDay, minutesWorked, money2, nextId, today, weeklyPay, type Staff, type StaffRequest } from "@marina/shared";
 import { Avatar, Badge, Button, EmptyState, Select, Table, Tabs, Textarea } from "@/components/ui";
 
 function RequestStatus({ r }: { r: StaffRequest }) {
@@ -66,42 +67,86 @@ export function RequestsPanel({ staff, canEdit }: { staff: Staff[]; canEdit: boo
   );
 }
 
-export function HoursPanel({ staff }: { staff: Staff[] }) {
-  const { db, ix } = useStore();
-  const [offset, setOffset] = useState(0);
+export function HoursPanel({ staff, canEdit }: { staff: Staff[]; canEdit: boolean }) {
+  const { db, ix, update, toast, user } = useStore();
+  const [offset, setOffset] = useState(-1);
   const start = addDays(today(), -fromISO(today()).getDay() + offset * 7);
+  const weekEnd = addDays(start, 7);
+  const over = weekEnd <= today();
   const days = Array.from({ length: 7 }, (_, i) => addDays(start, i));
-  const rows = staff.filter((s) => db.timeEntries.some((e) => e.staffId === s.id && localDay(e.start) >= start && localDay(e.start) < addDays(start, 7)));
-  const total = rows.reduce((t, s) => t + minutesWorked(db.timeEntries, s.id, start, addDays(start, 7)), 0);
+  const rows = staff.filter((s) => db.timeEntries.some((e) => e.staffId === s.id && localDay(e.start) >= start && localDay(e.start) < weekEnd));
+  const minutes = (s: Staff) => minutesWorked(db.timeEntries, s.id, start, weekEnd);
+  const approval = (s: Staff) => (db.timesheetApprovals ?? []).find((a) => a.staffId === s.id && a.weekStart === start);
+  const total = rows.reduce((t, s) => t + minutes(s), 0);
+  const pay = (s: Staff) => weeklyPay(minutes(s), hourlyRateOf(s));
+  const pending = rows.filter((s) => { const a = approval(s); return !a || a.minutes !== Math.round(minutes(s)); });
+
+  const approve = (list: Staff[]) => {
+    const before = db;
+    update(
+      (d) => ({
+        ...d,
+        timesheetApprovals: [
+          ...(d.timesheetApprovals ?? []).filter((a) => !(a.weekStart === start && list.some((s) => s.id === a.staffId))),
+          ...list.map((s, i) => ({ id: `ts-${start}-${s.id}-${i}`, staffId: s.id, weekStart: start, minutes: Math.round(minutes(s)), approvedBy: user?.name ?? "Manager", at: new Date().toISOString() })),
+        ],
+      }),
+      { text: list.length === 1 ? `Approved ${list[0].name}'s hours for the week of ${fmtShort(start)}` : `Approved ${list.length} timesheets for the week of ${fmtShort(start)}`, to: "/staff?tab=hours", marinaId: list.length === 1 ? list[0].marinaId : undefined },
+    );
+    toast(list.length === 1 ? `${list[0].name.split(" ")[0]}'s hours approved` : `${list.length} timesheets approved`, before);
+  };
+
+  const payrollSheet = () => ({
+    name: `Payroll ${start}`,
+    head: ["Staff member", "Position", "Marina", "Hours", "Regular hours", "Overtime hours", "Hourly rate", "Gross pay", "Approved by"],
+    rows: rows.map((s) => {
+      const p = pay(s);
+      return [s.name, s.position, ix.marina(s.marinaId)?.name ?? "", Math.round((minutes(s) / 60) * 100) / 100, Math.round(p.regular * 100) / 100, Math.round(p.overtime * 100) / 100, hourlyRateOf(s), p.gross, approval(s)?.approvedBy ?? "Not approved"];
+    }),
+  });
+
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
-        <p className="font-semibold">Week of {fmtShort(start)} <span className="font-normal text-ink-3">· {fmtDuration(total)} in total</span></p>
-        <div className="flex gap-1">
+        <p className="font-semibold">Week of {fmtShort(start)} <span className="font-normal text-ink-3">· {fmtDuration(total)} · {money2(rows.reduce((t, s) => t + pay(s).gross, 0))} gross</span></p>
+        <div className="flex flex-wrap gap-1">
           <Button size="sm" onClick={() => setOffset(offset - 1)}>Previous</Button>
-          <Button size="sm" onClick={() => setOffset(0)} disabled={offset === 0}>This week</Button>
+          <Button size="sm" onClick={() => setOffset(-1)} disabled={offset === -1}>Last week</Button>
           <Button size="sm" onClick={() => setOffset(offset + 1)} disabled={offset >= 0}>Next</Button>
+          <Button size="sm" icon={Download} disabled={!rows.length} onClick={() => { const p = payrollSheet(); downloadCsv(`payroll-${start}.csv`, p.head, p.rows); }}>Payroll CSV</Button>
+          <Button size="sm" icon={Download} disabled={!rows.length} onClick={() => downloadWorkbook(`payroll-${start}.xls`, [payrollSheet()])}>Excel</Button>
+          {canEdit && over && pending.length > 0 && <Button size="sm" variant="primary" icon={Check} onClick={() => approve(pending)}>Approve all {pending.length}</Button>}
         </div>
       </div>
+      {!over && rows.length > 0 && <p className="border-y border-line bg-surface-2 px-4 py-2 text-xs text-ink-2">This week isn&apos;t over yet. Approve it once it ends.</p>}
       {rows.length === 0 ? (
-        <EmptyState icon={Clock} title="No hours recorded this week" body="Staff clock in and out from the Marina Staff app." />
+        <EmptyState icon={Clock} title="No hours recorded this week" body="Staff clock in and out from the Marina app." />
       ) : (
-        <Table head={["Staff member", ...days.map((d, i) => `${DAYS[i]} ${Number(d.slice(8))}`), "Total"]}>
+        <Table head={["Staff member", ...days.map((d, i) => `${DAYS[i]} ${Number(d.slice(8))}`), "Total", "Pay", "Approval"]}>
           {rows.map((s) => {
             const live = db.timeEntries.find((e) => e.staffId === s.id && !e.end);
+            const a = approval(s);
+            const changed = a && a.minutes !== Math.round(minutes(s));
+            const p = pay(s);
             return (
               <tr key={s.id}>
                 <td><p className="font-medium">{s.name}</p><p className="text-xs text-ink-3">{s.position} · {ix.marina(s.marinaId)?.name}</p>{live && <span className="mt-1 inline-block"><Badge tone="success">On the clock since {fmtTime(live.start)}</Badge></span>}</td>
                 {days.map((d) => {
                   const m = minutesWorked(db.timeEntries, s.id, d, addDays(d, 1));
-                  const first = db.timeEntries.filter((e) => e.staffId === s.id && localDay(e.start) === d).sort((a, b) => a.start.localeCompare(b.start));
+                  const first = db.timeEntries.filter((e) => e.staffId === s.id && localDay(e.start) === d).sort((x, y) => x.start.localeCompare(y.start));
                   return (
                     <td key={d} className={cx("num whitespace-nowrap", !m && "text-ink-3")} title={first.map((e) => `${fmtTime(e.start)} – ${e.end ? fmtTime(e.end) : "now"}`).join(", ")}>
                       {m ? fmtDuration(m) : "–"}
                     </td>
                   );
                 })}
-                <td className="num font-semibold whitespace-nowrap">{fmtDuration(minutesWorked(db.timeEntries, s.id, start, addDays(start, 7)))}</td>
+                <td className="num font-semibold whitespace-nowrap">{fmtDuration(minutes(s))}{p.overtime > 0 && <span className="block text-xs font-normal text-ink-3">{p.overtime.toFixed(1)} h overtime</span>}</td>
+                <td className="num whitespace-nowrap">{money2(p.gross)}<span className="block text-xs text-ink-3">{money2(hourlyRateOf(s))}/h</span></td>
+                <td className="whitespace-nowrap">
+                  {a && !changed ? <Badge tone="success" icon={Check}>Approved</Badge> : changed ? <Badge tone="pending">Changed since approval</Badge> : null}
+                  {a && <span className="block text-xs text-ink-3">by {a.approvedBy}</span>}
+                  {canEdit && over && (!a || changed) && <Button size="sm" onClick={() => approve([s])}>Approve</Button>}
+                </td>
               </tr>
             );
           })}

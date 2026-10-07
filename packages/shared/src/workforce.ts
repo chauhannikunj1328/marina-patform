@@ -79,3 +79,15 @@ export function patrolCheckpoints(berths: Berth[]): { id: string; label: string;
     { id: "safety-fuel", label: "Fuel dock tidy, no spills", kind: "safety" },
   ];
 }
+
+/** Hourly pay by position when a staff record has no rate of its own. */
+export const DEFAULT_HOURLY: Record<string, number> = { "Marina Manager": 38, "Dock Hand": 24, "Front Desk Associate": 22, "Security Guard": 23 };
+export const hourlyRateOf = (s: Staff) => s.hourlyRate ?? DEFAULT_HOURLY[s.position] ?? 22;
+
+/** Pay for a week: up to 40 hours regular, the rest at time and a half. */
+export function weeklyPay(minutes: number, rate: number) {
+  const hours = minutes / 60;
+  const regular = Math.min(40, hours);
+  const overtime = Math.max(0, hours - 40);
+  return { regular, overtime, gross: Math.round((regular * rate + overtime * rate * 1.5) * 100) / 100 };
+}

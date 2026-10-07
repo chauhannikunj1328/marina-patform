@@ -221,7 +221,7 @@ export function StaffPage() {
         )}
         {tab === "schedule" && <WeekSchedule staff={staff} />}
         {tab === "requests" && <RequestsPanel staff={staff} canEdit={canEditStaff} />}
-        {tab === "hours" && <HoursPanel staff={staff} />}
+        {tab === "hours" && <HoursPanel staff={staff} canEdit={canEditStaff} />}
         {tab === "messages" && <MessagesPanel key={marinaId} staff={staff} />}
         {tab === "shifts" && (
           <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-2 xl:grid-cols-4">

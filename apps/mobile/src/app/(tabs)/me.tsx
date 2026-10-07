@@ -48,6 +48,9 @@ export default function Me() {
   const start = addDays(today(), -fromISO(today()).getDay());
   const week = Array.from({ length: 7 }, (_, i) => addDays(start, i));
   const weekMinutes = me ? minutesWorked(db.timeEntries, me.id, start, addDays(start, 7), now) : 0;
+  const lastStart = addDays(start, -7);
+  const lastWeekMinutes = me ? minutesWorked(db.timeEntries, me.id, lastStart, start, now) : 0;
+  const lastApproval = me ? (db.timesheetApprovals ?? []).find((a) => a.staffId === me.id && a.weekStart === lastStart) : undefined;
   const entries = me ? db.timeEntries.filter((e) => e.staffId === me.id).sort((a, b) => b.start.localeCompare(a.start)).slice(0, 6) : [];
   const mine = me ? db.requests.filter((r) => r.staffId === me.id && r.end >= addDays(today(), -14)).sort((a, b) => b.createdAt.localeCompare(a.createdAt)) : [];
   const askedToCover = me ? db.requests.filter((r) => r.kind === "swap" && r.swapWithId === me.id && r.status !== "declined" && r.start >= today()) : [];
@@ -88,6 +91,12 @@ export default function Me() {
             <Txt v="bodySm" color={t.text3}>{me.shift} shift · {SHIFT_HOURS[me.shift]}</Txt>
             <Txt v="bodySm" num weight="semibold">{fmtDuration(weekMinutes)} worked</Txt>
           </View>
+          {lastWeekMinutes > 0 && (
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+              <Txt v="bodySm" color={t.text3}>{tr("Last week")}: {fmtDuration(lastWeekMinutes)}</Txt>
+              {lastApproval && lastApproval.minutes === Math.round(lastWeekMinutes) ? <Badge tone="success" label={tr("Approved by {name}", { name: lastApproval.approvedBy.split(" ")[0] })} /> : <Badge tone="pending" label={tr("Waiting for approval")} />}
+            </View>
+          )}
         </Section>
       )}
 
