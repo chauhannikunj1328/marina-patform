@@ -218,6 +218,8 @@ export interface Settings {
   utilities?: { powerPerKwh: number; waterPerGallon: number };
   /** Reports emailed on a schedule (sent once the app has a server). */
   reportSchedules?: ReportSchedule[];
+  /** The company's own logo and colour on invoices, PDF reports and emails. */
+  branding?: { logo?: string; color?: string; invoiceFooter?: string };
 }
 
 export interface ReportSchedule {

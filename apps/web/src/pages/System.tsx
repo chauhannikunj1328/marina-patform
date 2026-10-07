@@ -4,7 +4,8 @@ import { Check, Minus, Plus, Trash } from "lucide-react";
 import { useStore } from "@/data/store";
 import type { Role } from "@marina/shared";
 import { ADMIN_ONLY, AREAS, DEFAULT_PERMISSIONS, LEVEL_LABEL, type Area, type Level } from "@marina/shared";
-import { Button, Card, CardHeader, ConfirmDialog, Field, IconButton, Input, Modal, PageHeader, Pagination, paginate, SearchInput, Select, Table, Toolbar, useDirty } from "@/components/ui";
+import { Button, Card, CardHeader, ConfirmDialog, Field, IconButton, Input, Modal, PageHeader, Pagination, paginate, SearchInput, Select, Table, Textarea, Toolbar, useDirty } from "@/components/ui";
+import { Logomark } from "@/components/Logo";
 import { addDays, fmtDate, fmtDateTime, fmtShort, fromISO, nowInZone, today } from "@marina/shared";
 import { bookingAmount, DEFAULT_PRICING, DEFAULT_UTILITIES, priceNote, type PricingRules } from "@marina/shared";
 import { money, money2, pct } from "@marina/shared";
@@ -188,7 +189,11 @@ function DailySummary({ onClose }: { onClose: () => void }) {
     <Modal open onClose={onClose} title="Daily summary preview" description={`What ${user?.name.split(" ")[0]} would receive at 7 am`} footer={<Button onClick={onClose}>Close</Button>}>
       <div className="rounded-[16px] border border-line bg-sidebar p-5">
         <div className="rounded-[12px] bg-surface p-5">
-          <p className="text-xs text-ink-3">From Marina · {fmtDate(today())}</p>
+          <div className="mb-3 flex items-center gap-2 border-b-2 pb-3" style={{ borderColor: db.settings.branding?.color ?? "#2F3740" }}>
+            {db.settings.branding?.logo ? <img src={db.settings.branding.logo} alt="" className="h-7 max-w-28 object-contain" /> : <Logomark size={24} />}
+            <span className="text-[13px] font-semibold">{db.settings.company}</span>
+          </div>
+          <p className="text-xs text-ink-3">From {db.settings.company} · {fmtDate(today())}</p>
           <p className="mt-2 text-[18px] leading-[26px] font-medium">Good morning, here's today at a glance</p>
           <dl className="mt-4 divide-y divide-line text-sm">
             {rows.map(([k, v]) => (
@@ -304,6 +309,68 @@ function nextWeekday(day: number): string {
   return d;
 }
 
+/** Company branding for documents: logo, colour and invoice footer. */
+function BrandingCard() {
+  const { db, update, toast } = useStore();
+  const saved = db.settings.branding ?? {};
+  const [f, setF] = useState({ logo: saved.logo ?? "", color: saved.color ?? "#2F3740", footer: saved.invoiceFooter ?? "" });
+  const [error, setError] = useState("");
+  const dirty = useDirty(f);
+  const pickLogo = (file?: File) => {
+    if (!file) return;
+    if (!/^image\/(png|jpeg|svg\+xml|webp)$/.test(file.type)) return setError("Use a PNG, JPG, SVG or WebP image.");
+    if (file.size > 300_000) return setError("Keep the logo under 300 KB.");
+    const reader = new FileReader();
+    reader.onload = () => { setF((x) => ({ ...x, logo: String(reader.result) })); setError(""); };
+    reader.readAsDataURL(file);
+  };
+  const save = () => {
+    if (!/^#[0-9a-fA-F]{6}$/.test(f.color)) return setError("Pick a colour.");
+    const before = db;
+    update((d) => ({ ...d, settings: { ...d.settings, branding: { logo: f.logo || undefined, color: f.color, invoiceFooter: f.footer.trim() || undefined } } }), "Updated company branding");
+    toast("Branding saved. Invoices, PDF reports and emails use it now.", before);
+  };
+  return (
+    <Card className="xl:col-span-2">
+      <CardHeader title="Branding" description="Your logo and colour on invoices, PDF reports and emails to boat owners" />
+      <div className="grid grid-cols-1 gap-6 p-5 lg:grid-cols-[1fr_360px]">
+        <div className="space-y-4">
+          <Field label="Logo" hint="PNG, JPG, SVG or WebP, under 300 KB. A wide logo works best." error={error}>
+            {(id) => (
+              <div className="flex flex-wrap items-center gap-3">
+                <input id={id} type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" onChange={(e) => pickLogo(e.target.files?.[0])} className="text-[13px] file:mr-3 file:cursor-pointer file:rounded-full file:border file:border-line file:bg-surface file:px-4 file:py-1.5 file:text-[13px] file:font-semibold" />
+                {f.logo && <Button size="sm" onClick={() => setF({ ...f, logo: "" })}>Remove logo</Button>}
+              </div>
+            )}
+          </Field>
+          <Field label="Brand colour" hint="Used for the top line, totals and headings on documents">
+            {(id) => (
+              <div className="flex items-center gap-3">
+                <input id={id} type="color" value={f.color} onChange={(e) => setF({ ...f, color: e.target.value })} className="h-10 w-14 cursor-pointer rounded-md border border-line bg-surface" />
+                <Input aria-label="Colour code" value={f.color} onChange={(e) => setF({ ...f, color: e.target.value })} className="w-32" />
+              </div>
+            )}
+          </Field>
+          <Field label="Invoice footer" hint="e.g. bank details, tax number or payment terms">{(id) => <Textarea id={id} rows={3} value={f.footer} onChange={(e) => setF({ ...f, footer: e.target.value })} />}</Field>
+        </div>
+        <div className="rounded-md border border-line bg-white p-4 text-[12px] text-[#17191E]" aria-label="Invoice preview">
+          <div className="mb-3 h-1 rounded-full" style={{ backgroundColor: f.color }} />
+          <div className="mb-3 flex items-center gap-2">
+            {f.logo ? <img src={f.logo} alt="" className="h-8 max-w-32 object-contain" /> : <Logomark size={28} />}
+            <span className="font-semibold">{db.settings.company}</span>
+          </div>
+          <div className="flex justify-between border-b border-[#e5e5e1] py-1.5"><span>Berth A-04 · 3 nights</span><span className="num">$240.00</span></div>
+          <div className="flex justify-between py-1.5 font-semibold"><span>Total</span><span className="num" style={{ color: f.color }}>$240.00</span></div>
+          {f.footer && <p className="mt-2 border-t border-[#e5e5e1] pt-2 text-[10px] whitespace-pre-line text-[#656565]">{f.footer}</p>}
+        </div>
+      </div>
+      <div className="flex justify-end border-t border-line px-5 py-3">
+        <Button variant="primary" disabled={!dirty} onClick={save}>Save branding</Button>
+      </div>
+    </Card>
+  );
+}
+
 export function Settings() {
   const { db, user, update, toast, resetData } = useStore();
   const [confirmReset, setConfirmReset] = useState(false);
@@ -390,6 +457,7 @@ export function Settings() {
         )}
 
         {isAdmin && <PricingCard />}
+        {isAdmin && <BrandingCard />}
 
         <Card className="xl:col-span-2">
           <CardHeader title="Demo data" description="This prototype keeps your changes in this browser until midnight." />

@@ -10,7 +10,7 @@ import { downloadCsv } from "@/lib/csv";
 import { Button, Card, ConfirmDialog, Field, IconButton, Input, Modal, PageHeader, Pagination, paginate, SearchInput, Select, StatCard, Table, Toolbar, useSort } from "@/components/ui";
 import { InvoiceBadge } from "@/components/status";
 import { Badge } from "@/components/ui";
-import { Logomark } from "@/components/Logo";
+import { CompanyMark, useBrandColor } from "@/components/CompanyMark";
 
 function useInvoiceActions() {
   const { ix, update, toast } = useStore();
@@ -84,6 +84,7 @@ function InvoiceStatus({ inv }: { inv: Invoice }) {
 
 function InvoiceDetail({ invoice: inv, onClose }: { invoice: Invoice; onClose: () => void }) {
   const { db, ix, update, toast } = useStore();
+  const brand = useBrandColor();
   const navigate = useNavigate();
   const { remind } = useInvoiceActions();
   const [paying, setPaying] = useState(false);
@@ -115,9 +116,10 @@ function InvoiceDetail({ invoice: inv, onClose }: { invoice: Invoice; onClose: (
       }
     >
       <div className="print-area text-[13px]">
+        <div className="mb-6 h-1 rounded-full" style={{ backgroundColor: brand }} aria-hidden />
         <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-center gap-3">
-            <Logomark size={36} />
+            <CompanyMark size={36} />
             <div>
               <p className="font-semibold">{db.settings.company}</p>
               <p className="text-ink-3">{marina?.name} · {marina?.address}</p>
@@ -173,7 +175,7 @@ function InvoiceDetail({ invoice: inv, onClose }: { invoice: Invoice; onClose: (
           <tfoot>
             <tr>
               <td colSpan={3} className="pt-3 text-right font-semibold">Total</td>
-              <td className="pt-3 text-right text-base font-semibold num">{money2(live.amount)}</td>
+              <td className="pt-3 text-right text-base font-semibold num" style={{ color: brand }}>{money2(live.amount)}</td>
             </tr>
           </tfoot>
         </table>
@@ -193,6 +195,7 @@ function InvoiceDetail({ invoice: inv, onClose }: { invoice: Invoice; onClose: (
           {live.status === "void" && <p><strong>Void.</strong> This invoice is no longer payable.</p>}
           <p className="text-ink-3">{live.reminders.length ? `Reminders sent: ${live.reminders.map(fmtDate).join(", ")}` : "No reminders sent."}</p>
         </div>
+        {db.settings.branding?.invoiceFooter && <p className="mt-6 border-t border-line pt-3 text-xs whitespace-pre-line text-ink-3">{db.settings.branding.invoiceFooter}</p>}
       </div>
       <button className="mt-4 text-[13px] font-semibold text-green-text hover:underline cursor-pointer print:hidden" onClick={() => navigate(`/bookings?q=${bk.code}`)}>Open booking {bk.code}</button>
       {paying && <RecordPayment invoice={live} onClose={() => setPaying(false)} />}

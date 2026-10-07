@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { CalendarRange, Clock, Download, FileDown, FileText, Ruler, Sailboat, Sheet } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { CompanyMark, useBrandColor } from "@/components/CompanyMark";
 import { useStore } from "@/data/store";
 import { daysBetween, fmtDate, fmtMonth, lastMonths, monthKey, nightsInMonth, today } from "@marina/shared";
 import { money, pct } from "@marina/shared";
@@ -23,6 +24,7 @@ export const REPORTS: { value: ReportKind; label: string; description: string }[
 
 export function Reports() {
   const { db, ix, scope } = useStore();
+  const brand = useBrandColor();
   const months = lastMonths(12);
   const [kind, setKind] = useState<ReportKind>("marina-summary");
   const [month, setMonth] = useState(months[months.length - 1]);
@@ -111,8 +113,8 @@ export function Reports() {
       </Card>
       {/* Guide 14 Exports: header with logo, Ink text, Neutral table lines. Printed via "Save as PDF". */}
       <div className="print-area pointer-events-none fixed top-0 left-[-10000px] w-[800px] text-[12px]" aria-hidden>
-        <div className="mb-6 flex items-center justify-between border-b border-[#e5e5e1] pb-4">
-          <Logo />
+        <div className="mb-6 flex items-center justify-between border-b-2 pb-4" style={{ borderColor: brand }}>
+          {db.settings.branding?.logo ? <CompanyMark size={32} /> : <Logo />}
           <span className="text-[#656565]">{db.settings.company}</span>
         </div>
         <h1 className="text-[22px] font-medium">{info.label}</h1>
