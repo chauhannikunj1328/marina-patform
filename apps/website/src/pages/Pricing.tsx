@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { addDays, CONTRACT_TERMS, DEFAULT_UTILITIES, money, money2, quote, RENEWAL_NOTICE_DAYS, SERVICES, t, today, type ContractTerm } from "@marina/shared";
 import { useStore } from "@/data/store";
 import { SearchForm } from "@/components/SearchForm";
-import { Card, Container, Field, Input, PageTitle, Select } from "@/components/ui";
+import { Card, Container, Field, Input, PageTitle, Select, usePageTitle } from "@/components/ui";
 import { marinaFacts, openMarinas, termFee } from "@/lib/marinas";
 
 /** Rough price for a stay: the cheapest berth the boat fits, at the marina's rules (not a booking). */
@@ -41,6 +41,7 @@ function Estimate() {
 
 export function Pricing() {
   const { db } = useStore();
+  usePageTitle(t("Rates and fees"));
   const marinas = openMarinas(db);
   const utilities = db.settings.utilities ?? DEFAULT_UTILITIES;
   const rules = db.settings.pricing;

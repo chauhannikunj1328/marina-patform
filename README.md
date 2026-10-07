@@ -101,9 +101,9 @@ A public site for visitors and an account area for boat owners, in English, Span
 | Marinas | `/marinas`, `/marinas/:id` | Filter by state, map; each marina's berth sizes and rates, amenities, dock office contact, directions, availability search |
 | Rates and fees | `/pricing` | Rates by marina, a price estimator, how prices are worked out (monthly rate from 28 nights, any weekend, season and long-stay rules from Settings › Pricing), contract terms and discounts, dock extras, how to pay |
 | Contact | `/contact` | Head office and every dock office; a message form |
-| Book a berth | `/book`, `/book/checkout` | Free berths that fit the boat for the whole stay, cheapest marina first, exact price; checkout with the owner's boat (or a new one), people on board and the berth rules |
-| Sign in, Create an account | `/sign-in`, `/register` | Owner accounts; the visitor returns to where they were heading |
-| My account | `/account/…` | Overview (next stay, what's owed, contracts to sign), bookings (cancel a request the marina hasn't confirmed), invoices (pay in full or in part, print the invoice or receipt), contracts (read and sign with your typed name), boats (add and edit), profile |
+| Book a berth | `/book`, `/book/checkout` | Free berths that fit the boat for the whole stay, cheapest marina first, exact price; checkout with the owner's boat (or a new one), people on board and the berth rules; **join a marina's waitlist** when it's full (shows on the web app's Waitlist tab) |
+| Sign in, Create an account, Forgot password | `/sign-in`, `/register`, `/forgot-password` | Owner accounts; the visitor returns to where they were heading |
+| My account | `/account/…` | Overview (next stay, what's owed, contracts to sign), bookings (cancel a request the marina hasn't confirmed), invoices (pay in full or in part, print the invoice or receipt), contracts (read and sign with your typed name), boats (add and edit), waitlist requests, profile and password |
 
 - **Bookings made online** are requests (`pending`), exactly like the front desk's: the berth is held, and the web app's Bookings page approves and invoices them. They're logged as "Online booking".
 - **Card payments** and **contract signatures** follow the same rules as the admin apps (`packages/shared/src/portal.ts`); the web app's Contracts page shows whether the owner has signed.

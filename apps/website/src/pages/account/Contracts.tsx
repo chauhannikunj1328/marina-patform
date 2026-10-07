@@ -3,7 +3,7 @@ import { useState } from "react";
 import { CircleCheck, FileSignature } from "lucide-react";
 import { CONTRACT_TERMS, fmtDate, localDay, money, t, today, withContractSigned, type Contract } from "@marina/shared";
 import { useStore } from "@/data/store";
-import { Badge, Button, ButtonLink, Card, EmptyState, Field, Input, Modal, Notice } from "@/components/ui";
+import { Badge, Button, ButtonLink, Card, EmptyState, Field, Input, Modal, Notice, usePageTitle } from "@/components/ui";
 
 function SignDialog({ contract, onClose }: { contract: Contract; onClose: () => void }) {
   const { db, ix, owner, update, toast } = useStore();
@@ -51,6 +51,7 @@ function SignDialog({ contract, onClose }: { contract: Contract; onClose: () => 
 
 export function MyContracts() {
   const { db, ix, owner } = useStore();
+  usePageTitle(t("Contracts"));
   const [signing, setSigning] = useState<Contract | undefined>();
   if (!owner) return null;
   const now = today();

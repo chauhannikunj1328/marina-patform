@@ -23,6 +23,9 @@ interface Store {
   signIn: (email: string, password: string) => Promise<string | null>;
   register: (r: { name: string; email: string; phone: string; password: string }) => Promise<string | null>;
   signOut: () => void;
+  /** Owners who signed up here can change their password; the demo account can't. */
+  canChangePassword: boolean;
+  changePassword: (current: string, next: string) => Promise<string | null>;
   toast: (text: string) => void;
   toasts: Toast[];
 }
@@ -122,12 +125,24 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return null;
   };
 
+  const canChangePassword = !!owner && read<Account[]>(ACCOUNTS_KEY, []).some((a) => a.owner.id === owner.id);
+
+  const changePassword = async (current: string, next: string) => {
+    const accounts = read<Account[]>(ACCOUNTS_KEY, []);
+    const account = accounts.find((a) => a.owner.id === owner?.id);
+    if (!account) return "The demo account's password can't be changed.";
+    if (account.hash !== (await sha256(current))) return "Your current password isn't right.";
+    const hash = await sha256(next);
+    write(ACCOUNTS_KEY, accounts.map((a) => (a === account ? { ...a, hash } : a)));
+    return null;
+  };
+
   const signOut = () => {
     write(SESSION_KEY, undefined);
     setOwnerId(undefined);
   };
 
-  return <Ctx.Provider value={{ db, ix, owner, update, signIn, register, signOut, toast, toasts }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ db, ix, owner, update, signIn, register, signOut, canChangePassword, changePassword, toast, toasts }}>{children}</Ctx.Provider>;
 }
 
 export function useStore() {

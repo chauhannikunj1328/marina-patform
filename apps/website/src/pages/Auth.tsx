@@ -1,10 +1,10 @@
 // Boat-owner sign in and sign up. After either, the owner goes back to where they were heading.
 import { useState, type ReactNode } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
-import { Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, MailCheck } from "lucide-react";
 import { DEMO_OWNER_EMAIL, t } from "@marina/shared";
 import { useStore } from "@/data/store";
-import { Button, Card, Container, Field, Input, Notice } from "@/components/ui";
+import { Button, Card, Container, Field, Input, Notice, usePageTitle } from "@/components/ui";
 
 function useReturnTo() {
   const loc = useLocation();
@@ -39,6 +39,7 @@ function PasswordInput({ id, value, onChange, autoComplete }: { id: string; valu
 
 export function SignIn() {
   const { owner, signIn } = useStore();
+  usePageTitle(t("Sign in"));
   const to = useReturnTo();
   const nav = useNavigate();
   const [email, setEmail] = useState("");
@@ -59,6 +60,7 @@ export function SignIn() {
       <form noValidate onSubmit={(e) => { e.preventDefault(); void submit(); }} className="space-y-4">
         <Field label={t("Email")}>{(id) => <Input id={id} type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />}</Field>
         <Field label={t("Password")}>{(id) => <PasswordInput id={id} autoComplete="current-password" value={password} onChange={setPassword} />}</Field>
+        <p className="-mt-1 text-end"><Link to="/forgot-password" className="text-[13px] font-semibold text-green-text hover:underline">{t("Forgot password?")}</Link></p>
         {error && <Notice tone="error">{error}</Notice>}
         <Button type="submit" variant="primary" size="lg" className="w-full" disabled={busy}>{busy ? t("Signing in…") : t("Sign in")}</Button>
         <p className="text-center text-[13px] text-ink-2">{t("New here?")} <Link to="/register" state={{ from: to }} className="font-semibold text-green-text hover:underline">{t("Create an account")}</Link></p>
@@ -78,6 +80,7 @@ export function SignIn() {
 
 export function Register() {
   const { owner, register } = useStore();
+  usePageTitle(t("Create an account"));
   const to = useReturnTo();
   const nav = useNavigate();
   const [f, setF] = useState({ name: "", email: "", phone: "", password: "" });
@@ -110,6 +113,30 @@ export function Register() {
         <Button type="submit" variant="primary" size="lg" className="w-full" disabled={busy}>{busy ? t("Creating your account…") : t("Create account")}</Button>
         <p className="text-center text-[13px] text-ink-2">{t("Already have an account?")} <Link to="/sign-in" state={{ from: to }} className="font-semibold text-green-text hover:underline">{t("Sign in")}</Link></p>
         <p className="text-center text-xs text-ink-3">{t("Your account is saved only in this browser for now.")}</p>
+      </form>
+    </Shell>
+  );
+}
+
+export function ForgotPassword() {
+  usePageTitle(t("Reset your password"));
+  const [email, setEmail] = useState("");
+  const [error, setError] = useState<string | undefined>();
+  const [sent, setSent] = useState(false);
+  if (sent)
+    return (
+      <Shell title={t("Check your email")} intro={t("If an account exists for {email}, we've sent a link to reset your password. It expires in 30 minutes.", { email })}>
+        <span className="flex size-12 items-center justify-center rounded-full bg-success-bg"><MailCheck className="size-5 text-success-fg" aria-hidden /></span>
+        <p className="mt-4 text-xs text-ink-3">{t("Preview: reset emails are sent once the website is connected to the office.")}</p>
+        <Link to="/sign-in" className="mt-6 inline-flex items-center gap-1 text-[13px] font-semibold text-green-text hover:underline"><ArrowLeft className="flip-rtl size-4" aria-hidden /> {t("Back to sign in")}</Link>
+      </Shell>
+    );
+  return (
+    <Shell title={t("Reset your password")} intro={t("Enter the email you signed up with and we'll send you a reset link.")}>
+      <form noValidate onSubmit={(e) => { e.preventDefault(); if (!/^\S+@\S+\.\S+$/.test(email)) return setError(t("Enter a valid email.")); setSent(true); }} className="space-y-4">
+        <Field label={t("Email")} error={error}>{(id) => <Input id={id} type="email" autoComplete="email" value={email} onChange={(e) => { setEmail(e.target.value); setError(undefined); }} />}</Field>
+        <Button type="submit" variant="primary" size="lg" className="w-full">{t("Send reset link")}</Button>
+        <p className="text-center text-[13px]"><Link to="/sign-in" className="font-semibold text-green-text hover:underline">{t("Back to sign in")}</Link></p>
       </form>
     </Shell>
   );

@@ -2,7 +2,7 @@
 // contracts and keep their boats up to date. Plain functions over the data, like actions.ts, so
 // the same rules apply when a real backend takes over.
 import type { Db } from "./seed";
-import type { Berth, Boat, BoatOwner, Booking, Invoice } from "./types";
+import type { Berth, Boat, BoatOwner, Booking, Invoice, WaitlistEntry } from "./types";
 import { BLOCKING } from "./selectors";
 import { bookingAmount } from "./pricing";
 import { daysBetween } from "./date";
@@ -125,6 +125,29 @@ export function withOwner(d: Db, o: Omit<BoatOwner, "id" | "since">, now: string
   const owner: BoatOwner = { ...o, id: nextId("o", d.owners), since: now };
   return { db: { ...d, owners: [...d.owners, owner] }, owner };
 }
+
+/**
+ * Asks to be told when a berth frees up at a full marina. The request lands on the web app's
+ * Waitlist tab, where staff offer freed-up berths. Asking again for the same stay changes nothing.
+ */
+export function withWaitlistRequest(
+  d: Db,
+  r: Omit<WaitlistEntry, "id" | "status" | "createdAt" | "offeredBerthId"> & { now: string; at: string },
+): { db: Db; entry: WaitlistEntry; duplicate: boolean } {
+  const list = d.waitlist ?? [];
+  const email = r.email.trim().toLowerCase();
+  const same = list.find((w) => w.email.toLowerCase() === email && w.marinaId === r.marinaId && w.start === r.start && w.end === r.end && (w.status === "waiting" || w.status === "offered"));
+  if (same) return { db: d, entry: same, duplicate: true };
+  const { now, at, ...rest } = r;
+  const entry: WaitlistEntry = { ...rest, email, name: r.name.trim(), boatName: r.boatName.trim(), note: r.note?.trim() || undefined, id: nextId("wl", list), status: "waiting", createdAt: now };
+  const marina = d.marinas.find((m) => m.id === r.marinaId);
+  const next = logged({ ...d, waitlist: [...list, entry] }, { at, by: "Website", text: `Waitlist request from ${entry.name} at ${marina?.name}`, to: "/bookings?view=waitlist", marinaId: r.marinaId });
+  return { db: next, entry, duplicate: false };
+}
+
+/** Waitlist requests made with this email that are still open. */
+export const ownerWaitlist = (d: Db, email: string) =>
+  (d.waitlist ?? []).filter((w) => w.email.toLowerCase() === email.toLowerCase() && (w.status === "waiting" || w.status === "offered"));
 
 /** An owner's bookings, newest stay first. */
 export function ownerBookings(d: Db, ownerId: string): Booking[] {

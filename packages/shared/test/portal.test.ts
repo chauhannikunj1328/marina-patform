@@ -150,3 +150,20 @@ describe("demo owner", () => {
     expect(withDemoOwner(out, "owner@marina.com", NOW)).toBe(out);
   });
 });
+
+describe("waitlist", () => {
+  it("adds a request for the marina's waitlist once, and lists it for the owner", async () => {
+    const { withWaitlistRequest, ownerWaitlist } = await import("../src/portal");
+    const db = createSeed();
+    const req = { marinaId: db.marinas[0].id, name: " Sam Lee ", email: "Sam@Example.com", phone: "", boatName: "Osprey", boatLength: 38, ...stay, now: NOW, at: NOW };
+    const r = withWaitlistRequest(db, req);
+    expect(r.duplicate).toBe(false);
+    expect(r.entry).toMatchObject({ status: "waiting", name: "Sam Lee", email: "sam@example.com", createdAt: NOW });
+    expect(r.db.waitlist?.length).toBe((db.waitlist ?? []).length + 1);
+    expect(r.db.activity[0]).toMatchObject({ by: "Website", marinaId: db.marinas[0].id });
+    const again = withWaitlistRequest(r.db, req);
+    expect(again.duplicate).toBe(true);
+    expect(again.db).toBe(r.db);
+    expect(ownerWaitlist(r.db, "sam@example.com").map((w) => w.id)).toEqual([r.entry.id]);
+  });
+});

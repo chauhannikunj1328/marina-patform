@@ -7,11 +7,12 @@ import { useStore } from "@/data/store";
 import { Map, type MapMarker } from "@/components/Map";
 import { MarinaCard } from "@/components/MarinaCard";
 import { SearchForm } from "@/components/SearchForm";
-import { ButtonLink, Card, Container, EmptyState, Eyebrow, PageTitle, flip } from "@/components/ui";
+import { ButtonLink, Card, Container, EmptyState, Eyebrow, PageTitle, flip, usePageTitle } from "@/components/ui";
 import { marinaFacts, openMarinas, stateOf } from "@/lib/marinas";
 
 export function Marinas() {
   const { db, ix } = useStore();
+  usePageTitle(t("Marinas"));
   const nav = useNavigate();
   const all = openMarinas(db);
   const states = [...new Set(all.map((m) => stateOf(db, m)))];
@@ -48,6 +49,7 @@ export function MarinaPage() {
   const { id = "" } = useParams();
   const { db, ix } = useStore();
   const marina = ix.marina(id);
+  usePageTitle(marina?.name);
   if (!marina || marina.status !== "active")
     return (
       <Container className="py-16">

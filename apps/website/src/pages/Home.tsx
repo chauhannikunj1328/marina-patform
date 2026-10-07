@@ -6,12 +6,13 @@ import { useStore } from "@/data/store";
 import { Map, type MapMarker } from "@/components/Map";
 import { MarinaCard } from "@/components/MarinaCard";
 import { SearchForm } from "@/components/SearchForm";
-import { ButtonLink, Card, Container, Eyebrow } from "@/components/ui";
+import { ButtonLink, Card, Container, Eyebrow, usePageTitle } from "@/components/ui";
 import { marinaFacts, openMarinas, stateOf } from "@/lib/marinas";
 
 export function Home() {
   const { db, ix, owner } = useStore();
   const nav = useNavigate();
+  usePageTitle();
   const marinas = openMarinas(db);
   const states = [...new Set(marinas.map((m) => stateOf(db, m)))];
   const berths = db.berths.filter((b) => marinas.some((m) => m.id === b.marinaId)).length;

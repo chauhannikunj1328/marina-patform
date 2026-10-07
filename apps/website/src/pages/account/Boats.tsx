@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Pencil, Plus, Ship } from "lucide-react";
 import { ownerBookings, t, today, withBoat, type Boat, type BoatType } from "@marina/shared";
 import { useStore } from "@/data/store";
-import { Button, Card, EmptyState, Field, Input, Modal, Select } from "@/components/ui";
+import { Button, Card, EmptyState, Field, Input, Modal, Select, usePageTitle } from "@/components/ui";
 
 const BOAT_TYPES: BoatType[] = ["Sailboat", "Motor Yacht", "Catamaran", "Center Console", "Trawler"];
 
@@ -43,6 +43,7 @@ function BoatForm({ boat, onClose }: { boat?: Boat; onClose: () => void }) {
 
 export function MyBoats() {
   const { db, owner } = useStore();
+  usePageTitle(t("My boats"));
   const [editing, setEditing] = useState<Boat | "new" | undefined>();
   if (!owner) return null;
   const boats = db.boats.filter((b) => b.ownerId === owner.id);

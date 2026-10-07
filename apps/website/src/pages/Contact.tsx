@@ -5,7 +5,7 @@ import { CircleCheck, Mail, Phone } from "lucide-react";
 import { t } from "@marina/shared";
 import { useStore } from "@/data/store";
 import { SITE } from "@/components/Layout";
-import { Button, Card, Container, Field, Input, Notice, PageTitle, Select, Textarea } from "@/components/ui";
+import { Button, Card, Container, Field, Input, Notice, PageTitle, Select, Textarea, usePageTitle } from "@/components/ui";
 import { openMarinas } from "@/lib/marinas";
 
 const TOPICS = ["A booking", "A long-term contract", "An invoice or payment", "Something else"];
@@ -13,6 +13,7 @@ const INQUIRIES_KEY = "marina.site.inquiries";
 
 export function Contact() {
   const { db, ix, owner } = useStore();
+  usePageTitle(t("Contact us"));
   const marinas = openMarinas(db);
   const [f, setF] = useState({ name: owner?.name ?? "", email: owner?.email ?? "", marinaId: "", topic: TOPICS[0], message: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});

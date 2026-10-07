@@ -8,7 +8,8 @@ import {
 } from "@marina/shared";
 import { useStore } from "@/data/store";
 import { SearchForm, defaultSearch } from "@/components/SearchForm";
-import { Badge, Button, ButtonLink, Card, Container, EmptyState, Field, Input, Notice, PageTitle, Select, flip } from "@/components/ui";
+import { WaitlistDialog } from "@/components/WaitlistDialog";
+import { Badge, Button, ButtonLink, Card, Container, EmptyState, Field, Input, Notice, PageTitle, Select, flip, usePageTitle } from "@/components/ui";
 import { stateOf } from "@/lib/marinas";
 
 const BOAT_TYPES: BoatType[] = ["Sailboat", "Motor Yacht", "Catamaran", "Center Console", "Trawler"];
@@ -47,8 +48,10 @@ function BerthRow({ berth, start, end, length }: { berth: Berth; start: string; 
 
 export function Book() {
   const { db, ix } = useStore();
+  usePageTitle(t("Book a berth"));
   const q = useSearch();
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [waitlist, setWaitlist] = useState(false);
   const problem = searchProblem({ ...q, length: Number(q.length) }, today());
   const results = useMemo(() => (problem ? [] : availableBerths(db, { start: q.start, end: q.end, length: Number(q.length), marinaId: q.marina || undefined })), [db, q.start, q.end, q.length, q.marina, problem]);
   const byMarina = useMemo(() => {
@@ -68,7 +71,7 @@ export function Book() {
       {problem ? (
         <Notice tone="warning">{t(problem)}</Notice>
       ) : byMarina.length === 0 ? (
-        <Card><EmptyState icon={CalendarDays} title={t("No free berths for these dates")} body={t("Try other dates or another marina, or call a dock office: they can sometimes move bookings around.")} action={<ButtonLink to="/contact">{t("Contact us")}</ButtonLink>} /></Card>
+        <Card><EmptyState icon={CalendarDays} title={t("No free berths for these dates")} body={t("Try other dates or another marina, or call a dock office: they can sometimes move bookings around.")} action={<div className="flex flex-wrap justify-center gap-2"><Button variant="primary" onClick={() => setWaitlist(true)}>{t("Join the waitlist")}</Button><ButtonLink to="/contact">{t("Contact us")}</ButtonLink></div>} /></Card>
       ) : (
         <div className="space-y-4">
           <p className="text-[13px] text-ink-3" aria-live="polite">{tn(results.length, "{n} free berth at {m} marinas", "{n} free berths at {m} marinas", { m: byMarina.length })}</p>
@@ -93,14 +96,17 @@ export function Book() {
               </Card>
             );
           })}
+          <p className="pt-2 text-[13px] text-ink-3">{t("Is the marina you want full on these dates?")} <button type="button" onClick={() => setWaitlist(true)} className="font-semibold text-green-text hover:underline cursor-pointer">{t("Join its waitlist")}</button></p>
         </div>
       )}
+      {waitlist && <WaitlistDialog marinaId={q.marina} start={q.start} end={q.end} length={Number(q.length)} onClose={() => setWaitlist(false)} />}
     </Container>
   );
 }
 
 export function Checkout() {
   const { db, ix, owner, update, toast } = useStore();
+  usePageTitle(t("Confirm your booking"));
   const nav = useNavigate();
   const [params] = useSearchParams();
   const berth = ix.berth(params.get("berth") ?? "");

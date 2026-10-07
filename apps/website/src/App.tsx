@@ -3,7 +3,7 @@ import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { t } from "@marina/shared";
 import { useStore } from "@/data/store";
 import Layout from "@/components/Layout";
-import { ButtonLink, Container, EmptyState } from "@/components/ui";
+import { ButtonLink, Container, EmptyState, usePageTitle } from "@/components/ui";
 import { Home } from "@/pages/Home";
 
 // Each page is its own download, so the first visit only loads what it needs.
@@ -17,6 +17,7 @@ const Book = page(() => import("@/pages/Book"), "Book");
 const Checkout = page(() => import("@/pages/Book"), "Checkout");
 const SignIn = page(() => import("@/pages/Auth"), "SignIn");
 const Register = page(() => import("@/pages/Auth"), "Register");
+const ForgotPassword = page(() => import("@/pages/Auth"), "ForgotPassword");
 const AccountLayout = page(() => import("@/pages/account/AccountLayout"), "AccountLayout");
 const Overview = page(() => import("@/pages/account/Overview"), "Overview");
 const MyBookings = page(() => import("@/pages/account/Bookings"), "MyBookings");
@@ -39,6 +40,7 @@ function Loading() {
 }
 
 function NotFound() {
+  usePageTitle(t("We couldn't find that page"));
   return (
     <Container className="py-16">
       <EmptyState title={t("We couldn't find that page")} body={t("It may have moved. Try the marinas list or the home page.")} action={<ButtonLink to="/" variant="primary">{t("Go to the home page")}</ButtonLink>} />
@@ -60,6 +62,7 @@ export default function App() {
           <Route path="book/checkout" element={<RequireOwner><Checkout /></RequireOwner>} />
           <Route path="sign-in" element={<SignIn />} />
           <Route path="register" element={<Register />} />
+          <Route path="forgot-password" element={<ForgotPassword />} />
           <Route path="account" element={<RequireOwner><AccountLayout /></RequireOwner>}>
             <Route index element={<Overview />} />
             <Route path="bookings" element={<MyBookings />} />

@@ -61,6 +61,17 @@ export function IconButton({ icon: Icon, label, className, ...rest }: ButtonHTML
 
 // ---- Layout pieces -------------------------------------------------------------
 
+/** Sets the browser tab title, e.g. "Rates and fees · Marina". */
+export function usePageTitle(title?: string) {
+  useEffect(() => {
+    const previous = document.title;
+    document.title = title ? `${title} · Marina` : t("Marina · Book a berth online");
+    return () => {
+      document.title = previous;
+    };
+  }, [title]);
+}
+
 export function Container({ className, children }: { className?: string; children: ReactNode }) {
   return <div className={cx("mx-auto w-full max-w-6xl px-4 sm:px-6", className)}>{children}</div>;
 }

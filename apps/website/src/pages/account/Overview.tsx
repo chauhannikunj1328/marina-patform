@@ -1,13 +1,14 @@
 // Account overview: next stay, what's owed, contracts to sign, recent bookings.
 import { Link } from "react-router-dom";
-import { ArrowRight, CalendarDays, FileSignature, Receipt, Ship } from "lucide-react";
-import { amountDue, daysBetween, fmtDate, money, ownerBookings, ownerInvoices, t, tn, today } from "@marina/shared";
+import { ArrowRight, CalendarDays, Clock, FileSignature, Receipt, Ship } from "lucide-react";
+import { amountDue, daysBetween, fmtDate, money, ownerBookings, ownerInvoices, ownerWaitlist, t, tn, today } from "@marina/shared";
 import { useStore } from "@/data/store";
-import { ButtonLink, Card, EmptyState, flip } from "@/components/ui";
+import { Badge, ButtonLink, Card, EmptyState, flip, usePageTitle } from "@/components/ui";
 import { BookingStatus } from "./status";
 
 export function Overview() {
   const { db, ix, owner } = useStore();
+  usePageTitle(t("My account"));
   if (!owner) return null;
   const now = today();
   const bookings = ownerBookings(db, owner.id);
@@ -17,6 +18,7 @@ export function Overview() {
   const balance = owed.reduce((s, i) => s + amountDue(i), 0);
   const toSign = db.contracts.filter((c) => c.ownerId === owner.id && c.status === "active" && c.end > now && !c.signed);
   const boats = db.boats.filter((b) => b.ownerId === owner.id);
+  const waiting = ownerWaitlist(db, owner.email);
 
   return (
     <div className="space-y-6">
@@ -48,6 +50,20 @@ export function Overview() {
         <Card className="bg-promo flex flex-wrap items-center justify-between gap-4 p-6">
           <p className="flex items-center gap-3 text-[15px] font-medium text-ink"><FileSignature className="size-5" aria-hidden /> {tn(toSign.length, "{n} contract is waiting for your signature", "{n} contracts are waiting for your signature")}</p>
           <ButtonLink to="/account/contracts" variant="primary" size="sm">{t("Read and sign")}</ButtonLink>
+        </Card>
+      )}
+
+      {waiting.length > 0 && (
+        <Card>
+          <h2 className="flex items-center gap-2 px-6 pt-5 pb-3 text-[17px] font-medium"><Clock className="size-4 text-ink-3" aria-hidden /> {t("On the waitlist")}</h2>
+          <ul>
+            {waiting.map((w) => (
+              <li key={w.id} className="flex flex-wrap items-center justify-between gap-3 border-t border-line px-6 py-3.5">
+                <span><span className="font-medium">{ix.marina(w.marinaId)?.name}</span><span className="block text-xs text-ink-3">{fmtDate(w.start)} – {fmtDate(w.end)} · {w.boatName}</span></span>
+                {w.status === "offered" ? <Badge tone="success">{t("Berth offered: the dock office will call you")}</Badge> : <Badge tone="pending">{t("Waiting")}</Badge>}
+              </li>
+            ))}
+          </ul>
         </Card>
       )}
 

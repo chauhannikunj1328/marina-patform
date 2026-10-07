@@ -4,13 +4,14 @@ import { useSearchParams } from "react-router-dom";
 import { CalendarDays } from "lucide-react";
 import { cx, daysBetween, fmtDate, money, ownerBookings, t, tn, today, withRequestCancelled, type Booking } from "@marina/shared";
 import { useStore } from "@/data/store";
-import { Button, ButtonLink, Card, EmptyState, Modal, Notice } from "@/components/ui";
+import { Button, ButtonLink, Card, EmptyState, Modal, Notice, usePageTitle } from "@/components/ui";
 import { BookingStatus } from "./status";
 
 type Tab = "upcoming" | "past" | "cancelled";
 
 export function MyBookings() {
   const { db, ix, owner, update, toast } = useStore();
+  usePageTitle(t("Bookings"));
   const [params] = useSearchParams();
   const fresh = params.get("new");
   const [tab, setTab] = useState<Tab>("upcoming");

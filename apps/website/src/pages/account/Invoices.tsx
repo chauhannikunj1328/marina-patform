@@ -4,11 +4,12 @@ import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, CreditCard, Printer, Receipt } from "lucide-react";
 import { amountDue, daysBetween, fmtDate, linesTotal, money2, ownerInvoices, t, today, withCardPayment } from "@marina/shared";
 import { useStore } from "@/data/store";
-import { Button, ButtonLink, Card, EmptyState, Field, Input, Modal, Notice, flip } from "@/components/ui";
+import { Button, ButtonLink, Card, EmptyState, Field, Input, Modal, Notice, flip, usePageTitle } from "@/components/ui";
 import { InvoiceStatus } from "./status";
 
 export function MyInvoices() {
   const { db, ix, owner } = useStore();
+  usePageTitle(t("Invoices"));
   if (!owner) return null;
   const invoices = ownerInvoices(db, owner.id);
   const open = invoices.filter((i) => amountDue(i) > 0);
@@ -76,6 +77,7 @@ export function InvoicePage() {
   const { db, ix, owner } = useStore();
   const [paying, setPaying] = useState(false);
   const inv = owner ? ownerInvoices(db, owner.id).find((i) => i.id === id) : undefined;
+  usePageTitle(inv?.number);
   if (!inv) return <Card><EmptyState icon={Receipt} title={t("We couldn't find that invoice")} action={<ButtonLink to="/account/invoices">{t("All invoices")}</ButtonLink>} /></Card>;
   const b = ix.booking(inv.bookingId);
   const marina = b ? ix.marinaOfBerth(b.berthId) : undefined;
