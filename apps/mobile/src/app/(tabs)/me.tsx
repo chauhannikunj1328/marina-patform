@@ -1,12 +1,13 @@
 // Me: profile, this week's shifts and hours, time off and swaps, marinas, appearance and account.
 import { useState } from "react";
-import { Pressable, View } from "react-native";
+import { Linking, Pressable, View } from "react-native";
 import { router } from "expo-router";
-import { ChevronRight, CloudOff, KeyRound, LogOut, Plus, UserRoundPen } from "lucide-react-native";
+import { ChevronRight, CloudOff, ExternalLink, KeyRound, LogOut, Plus, UserRoundPen } from "lucide-react-native";
 import { addDays, DAYS, fmtDuration, fmtShort, fmtTime, fromISO, localDay, minutesWorked, planFor, SHIFT_HOURS, today, type StaffRequest } from "@marina/shared";
 import { Avatar, Badge, Button, Screen, Section, Txt, type Icon } from "@/components/ui";
 import { PasswordSheet, ProfileSheet, RequestSheet } from "@/components/me-sheets";
 import { useNow } from "@/lib/clock";
+import { useRole } from "@/lib/role";
 import { useMe, useStore } from "@/store";
 import { useTheme, type ThemeMode } from "@/theme";
 
@@ -31,6 +32,7 @@ export default function Me() {
   const { db, ix, user, scope, signOut, update, toast, outbox } = useStore();
   const me = useMe();
   const { t, mode, setMode } = useTheme();
+  const { office, isAdmin } = useRole();
   const now = useNow();
   const [sheet, setSheet] = useState<"request" | "profile" | "password" | undefined>();
   const start = addDays(today(), -fromISO(today()).getDay());
@@ -49,14 +51,14 @@ export default function Me() {
   return (
     <Screen>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 16, marginBottom: 24 }}>
-        <Avatar name={user?.name ?? ""} size={56} />
+        <Avatar name={user?.name ?? ""} size={56} dot />
         <View style={{ flex: 1 }}>
           <Txt v="h2" numberOfLines={1}>{user?.name}</Txt>
-          <Txt v="bodySm" color={t.text3} numberOfLines={1}>{me?.position ?? "Staff"} · {me?.phone ?? user?.email}</Txt>
+          <Txt v="bodySm" color={t.text3} numberOfLines={1}>{isAdmin ? "Admin" : user?.role === "manager" ? "Marina manager" : me?.position ?? "Staff"} · {office ? user?.email : me?.phone ?? user?.email}</Txt>
         </View>
       </View>
 
-      {me && (
+      {me && !office && (
         <Section title="My week">
           <View style={{ flexDirection: "row", gap: 6 }}>
             {week.map((d, i) => {
@@ -79,7 +81,7 @@ export default function Me() {
         </Section>
       )}
 
-      {entries.length > 0 && (
+      {entries.length > 0 && !office && (
         <Section title="Timesheet">
           <View style={{ borderWidth: 1, borderColor: t.border, borderRadius: 16, backgroundColor: t.surface }}>
             {entries.map((e, i) => (
@@ -93,7 +95,7 @@ export default function Me() {
         </Section>
       )}
 
-      {me && (
+      {me && !office && (
         <Section title="Time off and swaps" action={<Button size="sm" icon={Plus} label="Request" onPress={() => setSheet("request")} />}>
           {mine.length === 0 && askedToCover.length === 0 && <Txt v="bodySm" color={t.text3}>Ask for time off or swap a shift with a colleague. Your manager approves it.</Txt>}
           {askedToCover.map((r) => (
@@ -121,14 +123,20 @@ export default function Me() {
         </Section>
       )}
 
-      <Section title="My marinas">
+      <Section title={isAdmin ? "Marinas" : "My marinas"} count={scope.length}>
         <View style={{ borderWidth: 1, borderColor: t.border, borderRadius: 16, backgroundColor: t.surface }}>
-          {scope.map((id, i) => (
+          {(isAdmin ? [] : scope).map((id, i) => (
             <View key={id} style={{ padding: 16, borderTopWidth: i ? 1 : 0, borderColor: t.border }}>
               <Txt>{ix.marina(id)?.name}</Txt>
               <Txt v="bodySm" color={t.text3}>{ix.marina(id)?.address}, {ix.city(ix.marina(id)?.cityId ?? "")?.name}</Txt>
             </View>
           ))}
+          {isAdmin && (
+            <View style={{ padding: 16 }}>
+              <Txt>All {scope.length} marinas</Txt>
+              <Txt v="bodySm" color={t.text3}>{db.counties.length} counties · {db.cities.length} cities. Each one is on the Overview.</Txt>
+            </View>
+          )}
         </View>
       </Section>
 
@@ -144,9 +152,15 @@ export default function Me() {
 
       <Section title="Account">
         <View style={{ borderWidth: 1, borderColor: t.border, borderRadius: 16, backgroundColor: t.surface, overflow: "hidden" }}>
-          {me && <ListRow icon={UserRoundPen} label="Edit profile" onPress={() => setSheet("profile")} />}
-          <View style={{ height: 1, backgroundColor: t.border }} />
+          {me && !office && <ListRow icon={UserRoundPen} label="Edit profile" onPress={() => setSheet("profile")} />}
+          {me && !office && <View style={{ height: 1, backgroundColor: t.border }} />}
           <ListRow icon={KeyRound} label="Change password" onPress={() => setSheet("password")} />
+          {office && (
+            <>
+              <View style={{ height: 1, backgroundColor: t.border }} />
+              <ListRow icon={ExternalLink} label="Open the web app" onPress={() => Linking.openURL("https://marina-patform.vercel.app")} />
+            </>
+          )}
         </View>
         {outbox.length > 0 && (
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>

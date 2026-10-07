@@ -493,13 +493,14 @@ export function Toasts({ top }: { top?: number }) {
   );
 }
 
-export function Avatar({ name, size = 48 }: { name: string; size?: number }) {
+/** Initials avatar. `dot` adds a green status dot (signed in, or on the clock). */
+export function Avatar({ name, size = 48, dot }: { name: string; size?: number; dot?: boolean }) {
   const { t } = useTheme();
   const initials = name.split(" ").map((p) => p[0]).slice(0, 2).join("");
   return (
     <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: t.surface3, borderWidth: 1, borderColor: t.border, alignItems: "center", justifyContent: "center" }}>
       <Text style={{ fontFamily: fonts.semibold, fontSize: size / 3, color: t.text2 }}>{initials}</Text>
-      <View style={{ position: "absolute", right: 0, bottom: 0, width: 12, height: 12, borderRadius: 6, backgroundColor: t.green, borderWidth: 2, borderColor: t.bg }} />
+      {dot && <View style={{ position: "absolute", right: 0, bottom: 0, width: 12, height: 12, borderRadius: 6, backgroundColor: t.green, borderWidth: 2, borderColor: t.bg }} />}
     </View>
   );
 }

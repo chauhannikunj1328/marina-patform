@@ -9,7 +9,7 @@ This is a **front-end prototype**. Each app runs on its own with generated sampl
 | Folder | What it is | Who uses it | Tech | Deploys to |
 |---|---|---|---|---|
 | `apps/web` | Admin and manager web app | Admins, marina managers | React, Vite, Tailwind | Vercel project `marina-patform` (this repo's root `vercel.json`) |
-| `apps/mobile` | Marina Staff app: splash → sign in → Today, Bookings, Berths, Tasks, Me | Dock hands, front desk | React Native (Expo SDK 57, expo-router) | App Store and Google Play (EAS Build); optional web preview on its own Vercel project |
+| `apps/mobile` | Marina app: splash → sign in → tabs for the person's role | Staff, marina managers, admins | React Native (Expo SDK 57, expo-router) | App Store and Google Play (EAS Build); optional web preview on its own Vercel project |
 | `apps/website` | Public website and boat-owner portal | Boat owners, visitors | Not started | Its own project |
 | `packages/shared` | Data types, sample data, calculations, permissions, brand tokens, demo accounts | Both apps | Plain TypeScript, no dependencies | Bundled into each app |
 | `brand/` | Logo SVGs and the brand handoff guide | Design | | |
@@ -40,11 +40,11 @@ Scan the QR code with Expo Go on a phone, or press `i` / `a` for the iOS simulat
 
 | Role | App | Email | Password |
 |---|---|---|---|
-| Admin (all marinas) | Web | admin@marina.com | admin123 |
-| Marina manager (4 San Francisco Bay marinas) | Web | manager@marina.com | manager123 |
+| Admin (all marinas) | Web and mobile | admin@marina.com | admin123 |
+| Marina manager (4 San Francisco Bay marinas) | Web and mobile | manager@marina.com | manager123 |
 | Staff, dock hand (Golden Gate and Bay Harbor) | Mobile | staff@marina.com | staff123 |
 
-Staff who sign in to the web app are asked to use the mobile app instead.
+Staff who sign in to the web app are asked to use the mobile app instead. The mobile sign-in screen has Admin, Manager and Staff demo buttons (prototype only).
 
 Reviewers can also choose **Create an account** on the web sign-in page. New accounts get admin access and are saved in that browser. On the deployed sites, the owner (chauhan.nikunj1328@gmail.com) is emailed each time someone registers or signs in (name, email, company, role, app, time, device; never the password) through [FormSubmit](https://formsubmit.co). FormSubmit asks the owner to confirm the address with the very first email. The address is set in `packages/shared/src/notify.ts`.
 
@@ -78,21 +78,37 @@ Changes you make are saved on that device until midnight; then fresh sample data
 
 The bell menu is built from live data: pending approvals, today's arrivals, overdue invoices, urgent work orders and unaccepted invites.
 
-## Staff mobile app
+## Mobile app
 
-Opens with the brand splash screen, then sign-in, then five tabs. Staff assigned to more than one marina switch between them from the header. The header also has **Scan**, **Messages** and **Notifications**.
+One app, **Marina**, for every role (bundle ID `com.marina.app`). The tabs depend on who signs in.
+
+### Managers and admins
+
+- **Overview:** occupancy, revenue this month, arrivals and departures, staff on the clock; what needs attention (approvals, late boats, berths that need moving, urgent repairs, overdue invoices); 6-month revenue; every marina ranked by occupancy; recent activity
+- **Marina page:** one marina's numbers, berths, revenue, people and contacts, with "Show this marina in the app"
+- **Approvals:** pending bookings (approve creates the invoice; clashing bookings are blocked) and staff time off / swaps, one at a time or Approve all with a confirmation
+- **Bookings:** same as staff, across the chosen marinas
+- **Team:** who's on the clock, scheduled or off; hours this week; messages with staff; tap a person to call, email or message them
+- **Work orders and Berths:** from the Overview. Managers can assign work orders and mark them done.
+- **All marinas** in the header switcher. Admins see every marina, managers the ones they're assigned to.
+- Setup (marinas, locations, users, access control, reports, billing) stays in the web app; **Me → Open the web app** links to it.
+
+### Staff
+
+
+The app opens with the brand splash screen, then sign-in. Staff get five tabs. Staff assigned to more than one marina switch between them from the header. The header also has **Scan**, **Messages** and **Notifications**.
 
 - **Today:** shift card with **Clock in / Clock out** and time on the clock, arrivals and departures with Check in / Check out, boats past their departure date, urgent repairs
 - **Bookings:** search, Today / Upcoming / In marina, booking details, call or email the owner, **Walk-in** booking for boats that arrive without one (find or add the boat, pick a free berth that fits, check in), **Take payment** at the dock (card reader, cash or check, full or part payment)
 - **Berths:** dock map with status filters, berth details, report a problem, take a berth out of service
 - **Tasks:** my, open and finished work orders; start and finish with notes and camera photos; report a new problem
 - **Me:** weekly schedule (with approved time off and swaps), hours worked and timesheet, **time off and shift swap requests**, edit profile, change password, appearance, sign out
-- **Scan:** point the camera at a berth's QR label (or type the berth number) to open it. Labels are printed from the web app (Berths → QR labels) and link to `marinastaff://berth/<id>`, so the phone camera opens the app too.
+- **Scan:** point the camera at a berth's QR label (or type the berth number) to open it. Labels are printed from the web app (Berths → QR labels) and link to `marinastaff://berth/<id>` (the app answers to both `marina://` and `marinastaff://`), so the phone camera opens the app too.
 - **Messages:** conversation with the marina's managers
 - **Notifications:** new and overdue work orders, manager messages, request decisions, colleagues asking you to cover, late departures, today's arrivals and tomorrow's shift
 - **Offline:** a banner shows when there's no connection. Everything keeps working and is saved on the phone; changes made offline are queued and cleared when the connection returns (they'll be sent to the server once there is one).
 
-What staff can do follows Access Control (e.g. View only hides check-in and edit actions; billing set to No access hides Take payment). App name "Marina Staff", bundle ID `com.marina.staff` (`apps/mobile/app.json`).
+What staff can do follows Access Control (e.g. View only hides check-in and edit actions; billing set to No access hides Take payment). Settings are in `apps/mobile/app.json`.
 
 ### Manager side (web app)
 

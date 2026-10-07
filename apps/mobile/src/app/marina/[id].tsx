@@ -2,7 +2,7 @@
 import { Linking, View } from "react-native";
 import { Redirect, router, useLocalSearchParams } from "expo-router";
 import { ArrowRight, Mail, Phone } from "lucide-react-native";
-import { lastMonths, money, openEntry, pct, planFor, today } from "@marina/shared";
+import { lastMonths, moneyShort, openEntry, pct, planFor, today } from "@marina/shared";
 import { Kpi, MiniBars } from "@/components/office";
 import { Button, Row, Screen, Section, StackHeader, Txt } from "@/components/ui";
 import { useStore } from "@/store";
@@ -30,8 +30,8 @@ export default function MarinaDetail() {
       <Screen>
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 24 }}>
           <Kpi label="Occupancy today" value={pct(m.occupancy)} sub={`${m.occupied} of ${m.berths} berths`} />
-          <Kpi label="Revenue this month" value={money(m.revenue)} sub={`${m.revenueChange >= 0 ? "+" : ""}${(m.revenueChange * 100).toFixed(1)}% vs last month`} />
-          <Kpi label="Today" value={`${m.arrivalsToday} in · ${m.departuresToday} out`} sub={`${m.checkedIn} boats in`} />
+          <Kpi label="Revenue this month" value={moneyShort(m.revenue)} sub={`${m.revenueChange >= 0 ? "+" : ""}${(m.revenueChange * 100).toFixed(1)}% vs last month`} />
+          <Kpi label="Arriving · leaving today" value={`${m.arrivalsToday} · ${m.departuresToday}`} sub={`${m.checkedIn} boats in now`} />
           <Kpi label="Waiting for approval" value={String(m.pending)} sub="bookings" />
         </View>
 

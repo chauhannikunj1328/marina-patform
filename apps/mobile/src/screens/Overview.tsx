@@ -2,7 +2,7 @@
 import { View } from "react-native";
 import { router } from "expo-router";
 import { CalendarCheck, CircleAlert, Clock, Receipt, ScanLine, TriangleAlert, Warehouse, Wrench } from "lucide-react-native";
-import { fmtDate, fmtDateTime, lastMonths, money, openEntry, pct, today } from "@marina/shared";
+import { fmtDate, fmtDateTime, lastMonths, money, moneyShort, openEntry, pct, today } from "@marina/shared";
 import { AlertRow, Kpi, List, MarinaRow, MiniBars } from "@/components/office";
 import { Button, Screen, Section, Txt } from "@/components/ui";
 import { useRole } from "@/lib/role";
@@ -46,8 +46,8 @@ export function Overview() {
 
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 24 }}>
         <Kpi label="Occupancy today" value={pct(m.occupancy)} sub={`${m.occupied} of ${m.berths}`} trend={{ value: `${occChange >= 0 ? "+" : ""}${occChange.toFixed(1)} pts`, up: occChange >= 0, good: occChange >= 0 }} onPress={() => router.navigate("/berths")} />
-        <Kpi label="Revenue this month" value={money(m.revenue)} sub="vs last month" trend={{ value: `${m.revenueChange >= 0 ? "+" : ""}${(m.revenueChange * 100).toFixed(1)}%`, up: m.revenueChange >= 0, good: m.revenueChange >= 0 }} />
-        <Kpi label="Today" value={`${m.arrivalsToday} in · ${m.departuresToday} out`} sub={`${m.checkedIn} boats in the marina`} onPress={() => router.navigate({ pathname: "/bookings", params: { view: "today", at: String(Date.now()) } })} />
+        <Kpi label="Revenue this month" value={moneyShort(m.revenue)} sub="vs last month" trend={{ value: `${m.revenueChange >= 0 ? "+" : ""}${(m.revenueChange * 100).toFixed(1)}%`, up: m.revenueChange >= 0, good: m.revenueChange >= 0 }} />
+        <Kpi label="Arriving · leaving today" value={`${m.arrivalsToday} · ${m.departuresToday}`} sub={`${m.checkedIn} boats in now`} onPress={() => router.navigate({ pathname: "/bookings", params: { view: "today", at: String(Date.now()) } })} />
         <Kpi label="Staff on the clock" value={String(onClock)} sub={`${staffIds.size} on the team`} onPress={() => router.navigate("/team")} />
       </View>
 

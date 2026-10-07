@@ -1,8 +1,9 @@
 // Approvals (managers and admins): pending bookings and staff time off / swap requests, decided in one tap.
+import { useState } from "react";
 import { View } from "react-native";
 import { CalendarCheck, CircleCheck, TriangleAlert } from "lucide-react-native";
 import { daysBetween, fmtShort, money2, relative, withInvoice, type Booking, type StaffRequest } from "@marina/shared";
-import { Badge, Button, Card, EmptyState, Screen, Segmented, Txt } from "@/components/ui";
+import { Badge, Button, Card, EmptyState, Screen, Segmented, Sheet, Txt } from "@/components/ui";
 import { useViewParam } from "@/lib/useOpenParam";
 import { useStore } from "@/store";
 import { useTheme } from "@/theme";
@@ -11,6 +12,7 @@ export default function Approvals() {
   const { db, ix, ids, update, toast, can, user } = useStore();
   const { t } = useTheme();
   const [view, setView] = useViewParam(["bookings", "staff"] as const, "bookings");
+  const [confirmAll, setConfirmAll] = useState(false);
   const inIds = new Set(ids);
   const bookings = ix.bookingsIn(ids).filter((b) => b.status === "pending").sort((a, b) => a.start.localeCompare(b.start));
   const staffIds = new Set(db.staff.filter((s) => inIds.has(s.marinaId)).map((s) => s.id));
@@ -49,7 +51,7 @@ export default function Approvals() {
   };
 
   return (
-    <Screen title="Approvals" right={view === "bookings" && canBook && bookings.filter((b) => !clashes(b)).length > 1 ? <Button size="sm" variant="primary" icon={CircleCheck} label="Approve all" onPress={approveAll} /> : undefined}>
+    <Screen title="Approvals" right={view === "bookings" && canBook && bookings.filter((b) => !clashes(b)).length > 1 ? <Button size="sm" variant="primary" icon={CircleCheck} label="Approve all" onPress={() => setConfirmAll(true)} /> : undefined}>
       <Segmented value={view} onChange={setView} items={[{ value: "bookings", label: "Bookings", count: bookings.length }, { value: "staff", label: "Staff requests", count: requests.length }]} />
       {view === "bookings" ? (
         bookings.length === 0 ? (
@@ -120,6 +122,23 @@ export default function Approvals() {
           })}
         </View>
       )}
+      {confirmAll && (() => {
+        const ok = bookings.filter((b) => !clashes(b));
+        const total = ok.reduce((sum, b) => sum + ix.amount(b), 0);
+        return (
+          <Sheet
+            open
+            onClose={() => setConfirmAll(false)}
+            title={`Approve ${ok.length} bookings?`}
+            subtitle={`${money2(total)} will be invoiced to boat owners.`}
+            footer={<Button variant="primary" size="lg" icon={CircleCheck} label={`Approve ${ok.length}`} onPress={() => { approveAll(); setConfirmAll(false); }} />}
+          >
+            <Txt v="bodySm" color={t.text2}>
+              Each one is confirmed and invoiced{bookings.length > ok.length ? `. ${bookings.length - ok.length} that clash with another booking are skipped` : ""}. You can undo straight after.
+            </Txt>
+          </Sheet>
+        );
+      })()}
     </Screen>
   );
 }

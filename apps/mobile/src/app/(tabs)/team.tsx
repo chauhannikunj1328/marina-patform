@@ -12,11 +12,11 @@ import { useStore } from "@/store";
 import { useTheme } from "@/theme";
 
 function PersonRow({ s, right, first, onPress }: { s: Staff; right?: React.ReactNode; first?: boolean; onPress: () => void }) {
-  const { ix, ids } = useStore();
+  const { db, ix, ids } = useStore();
   const { t } = useTheme();
   return (
     <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: 12, padding: 12, paddingHorizontal: 14, borderTopWidth: first ? 0 : 1, borderColor: t.border, backgroundColor: pressed ? t.sidebar : "transparent" })}>
-      <Avatar name={s.name} size={40} />
+      <Avatar name={s.name} size={40} dot={!!openEntry(db, s.id)} />
       <View style={{ flex: 1 }}>
         <Txt weight="medium" numberOfLines={1}>{s.name}</Txt>
         <Txt v="caption" color={t.text3} numberOfLines={1}>{s.position}{ids.length > 1 ? ` · ${ix.marina(s.marinaId)?.name}` : ""}</Txt>
