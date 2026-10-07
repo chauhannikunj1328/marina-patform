@@ -67,7 +67,7 @@ export function Overview() {
       </Section>
 
       {ids.length > 1 && (
-        <Section title="Marinas" count={ids.length} action={<Txt v="caption" color={t.text3}>Occupancy · revenue</Txt>}>
+        <Section title="Marinas" count={ids.length} action={<Pressable accessibilityRole="button" onPress={() => router.push("/compare")} hitSlop={8}><Txt v="bodySm" weight="semibold" color={t.greenText}>Compare</Txt></Pressable>}>
           <List>{[...ids].sort((a, b) => ix.metrics([b]).occupancy - ix.metrics([a]).occupancy).map((id, i) => <MarinaRow key={id} id={id} first={i === 0} />)}</List>
         </Section>
       )}
