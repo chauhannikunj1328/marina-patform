@@ -2,7 +2,7 @@
 // and dates are generated relative to today so the data never looks stale.
 import type {
   Berth, BerthType, Boat, BoatOwner, BoatType, Booking, BookingStatus, City, County,
-  Activity, ChatMessage, Contract, Handover, Invoice, MeterReading, TimesheetApproval, Patrol, WaitlistEntry, MaintenanceTask, Marina, Message, Settings, Shift, Staff, StaffRequest, SystemUser, TimeEntry,
+  Activity, ChatMessage, Contract, Handover, Invoice, MaintenancePlan, MeterReading, TimesheetApproval, Patrol, WaitlistEntry, MaintenanceTask, Marina, Message, Settings, Shift, Staff, StaffRequest, SystemUser, TimeEntry,
 } from "./types";
 import { addDays, daysBetween, fromISO, today } from "./date";
 import { bookingAmount } from "./pricing";
@@ -42,6 +42,8 @@ export interface Db {
   meterReadings: MeterReading[];
   /** Weekly hours signed off by a manager */
   timesheetApprovals: TimesheetApproval[];
+  /** Recurring maintenance */
+  maintenancePlans: MaintenancePlan[];
   settings: Settings;
   /** Notification ids the user has dismissed or read */
   readNotifications: string[];
@@ -450,5 +452,15 @@ export function createSeed(): Db {
 
   timeEntries.push(...clockIns);
 
-  return { counties, cities, marinas, berths, owners, boats, bookings, staff, tasks, invoices, users, activity, messages, timeEntries, requests, chat, handovers, patrols, waitlist, contracts, meterReadings, timesheetApprovals: [], settings, readNotifications: [] };
+  // Each marina's routine jobs. Work orders appear a week before they're due.
+  const maintenancePlans: MaintenancePlan[] = marinaDefs.flatMap((m, i) => {
+    const hand = staff.find((st) => st.marinaId === m.id && st.position === "Dock Hand");
+    return [
+      { id: `mp-${i * 3 + 1}`, marinaId: m.id, title: "Clean pump-out station", every: "week" as const, nextDue: addDays(now, 2 + (i % 5)), priority: "low" as const, assigneeId: hand?.id, active: true },
+      { id: `mp-${i * 3 + 2}`, marinaId: m.id, title: "Inspect pilings and cleats", every: "month" as const, nextDue: addDays(now, 12 + (i % 9)), priority: "medium" as const, assigneeId: hand?.id, active: true },
+      { id: `mp-${i * 3 + 3}`, marinaId: m.id, title: "Test fire extinguishers and life rings", every: "quarter" as const, nextDue: addDays(now, 20 + i), priority: "medium" as const, active: true },
+    ];
+  });
+
+  return { counties, cities, marinas, berths, owners, boats, bookings, staff, tasks, invoices, users, activity, messages, timeEntries, requests, chat, handovers, patrols, waitlist, contracts, meterReadings, timesheetApprovals: [], maintenancePlans, settings, readNotifications: [] };
 }

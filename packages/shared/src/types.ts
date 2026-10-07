@@ -135,6 +135,24 @@ export interface MaintenanceTask {
   photos?: string[];
   /** Day the work order was marked done. */
   doneAt?: string;
+  /** The recurring plan that created it. */
+  planId?: ID;
+}
+
+export type Recurrence = "week" | "month" | "quarter";
+
+/** Maintenance that repeats (weekly pump-out cleaning, monthly piling checks). */
+export interface MaintenancePlan {
+  id: ID;
+  marinaId: ID;
+  title: string;
+  berthId?: ID;
+  every: Recurrence;
+  /** Due date of the next work order. */
+  nextDue: string;
+  priority: Priority;
+  assigneeId?: ID;
+  active: boolean;
 }
 
 export type InvoiceStatus = "paid" | "due" | "overdue" | "void";

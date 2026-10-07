@@ -4,6 +4,7 @@ import { CircleAlert, CircleCheck, Clock, Eye, Pencil, Plus, Trash, UserCheck, U
 import { nextId, useStore } from "@/data/store";
 import { DAYS, planFor, SHIFT_HOURS } from "@marina/shared";
 import { HoursPanel, MessagesPanel, RequestsPanel } from "./StaffExtras";
+import { RecurringPlans } from "./Recurring";
 import type { MaintenanceTask, Priority, Shift, Staff, TaskStatus } from "@marina/shared";
 import { addDays, fmtDate, fmtShort, fromISO, relative, today } from "@marina/shared";
 import { cx } from "@marina/shared";
@@ -451,7 +452,7 @@ export function Maintenance() {
             const overdue = t.status !== "done" && t.due < now;
             return (
               <tr key={t.id} className="cursor-pointer hover:bg-row-hover" onClick={() => setOpen(t.id)}>
-                <td><span className="font-medium">{t.title}</span><span className="block text-xs text-ink-3">{t.code} · opened {fmtShort(t.created)}{t.notes.length > 0 && ` · ${t.notes.length} note${t.notes.length > 1 ? "s" : ""}`}</span></td>
+                <td><span className="font-medium">{t.title}</span><span className="block text-xs text-ink-3">{t.code}{t.planId && " · recurring"} · opened {fmtShort(t.created)}{t.notes.length > 0 && ` · ${t.notes.length} note${t.notes.length > 1 ? "s" : ""}`}</span></td>
                 <td>{ix.marina(t.marinaId)?.name}<span className="block text-xs text-ink-3">{t.berthId ? `Berth ${ix.berth(t.berthId)?.code}` : "Facility"}</span></td>
                 <td>{ix.staffMember(t.assigneeId)?.name ?? <span className="text-ink-3">Unassigned</span>}</td>
                 <td><PriorityBadge priority={t.priority} /></td>
@@ -467,6 +468,7 @@ export function Maintenance() {
           })}
         </Table>
       </Card>
+      <RecurringPlans ids={marinaId === "all" ? scope : [marinaId]} canEdit={canEditTasks} />
       {opened && !editing && <TaskDetail task={opened} onClose={() => setOpen()} onEdit={() => setEditing(opened)} />}
       {editing && <TaskForm task={editing === "new" ? undefined : editing} onClose={() => setEditing(undefined)} />}
     </>

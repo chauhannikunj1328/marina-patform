@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { AppState, Platform } from "react-native";
 import * as Crypto from "expo-crypto";
 import NetInfo from "@react-native-community/netinfo";
-import {
+import { withRecurringTasks,
   BUILT_IN_USERS, createSeed, DEFAULT_PERMISSIONS, diffDb, Index, levelFor, nextId, PASSWORD_HASHES, sendOwnerEmail, SIGN_IN_ERROR, setCurrency, setTimeZone, today,
   type Area, type Db, type Level, type SystemUser,
 } from "@marina/shared";
@@ -72,7 +72,8 @@ const sha256 = (v: string) => Crypto.digestStringAsync(Crypto.CryptoDigestAlgori
 
 function normalize(db: Db): Db {
   const missing = BUILT_IN_USERS().filter((b) => !db.users.some((u) => u.email.toLowerCase() === b.email));
-  return {
+  // Recurring maintenance creates the work orders it owes whenever data loads.
+  return withRecurringTasks({
     ...db,
     users: [...db.users, ...missing],
     // Data saved before these existed.
@@ -85,9 +86,10 @@ function normalize(db: Db): Db {
     contracts: db.contracts ?? [],
     meterReadings: db.meterReadings ?? [],
     timesheetApprovals: db.timesheetApprovals ?? [],
+    maintenancePlans: db.maintenancePlans ?? [],
     settings: { ...db.settings, permissions: { ...DEFAULT_PERMISSIONS, ...db.settings.permissions } },
     invoices: db.invoices.map((i) => ({ ...i, payments: i.payments ?? [], status: i.status === "due" && i.due < today() ? "overdue" : i.status })),
-  };
+  });
 }
 
 export function StoreProvider({ children }: { children: ReactNode }) {

@@ -1,8 +1,8 @@
 // Small helpers shared by pages that change data, so every page creates records the same way.
 import type { Db } from "./seed";
-import type { Contract, Invoice, InvoiceLine, MeterKind, MeterReading, Message } from "./types";
+import type { Contract, Invoice, InvoiceLine, MaintenancePlan, MaintenanceTask, MeterKind, MeterReading, Message, Recurrence } from "./types";
 import { nextId } from "./util";
-import { addDays, daysBetween, today } from "./date";
+import { addDays, addMonths, daysBetween, today } from "./date";
 
 export function withInvoice(d: Db, bookingId: string, amount: number): Db {
   if (d.invoices.some((i) => i.bookingId === bookingId && i.status !== "void")) return d;
@@ -87,4 +87,39 @@ export function withMeterReading(d: Db, reading: Omit<MeterReading, "id" | "char
     });
   }
   return { db: next, usage, charge };
+}
+
+export const RECURRENCE_LABEL: Record<Recurrence, string> = { week: "Every week", month: "Every month", quarter: "Every 3 months" };
+export const nextRecurrence = (from: string, every: Recurrence) => (every === "week" ? addDays(from, 7) : addMonths(from, every === "month" ? 1 : 3));
+
+/** Work orders are created this many days before they're due. */
+export const PLAN_LEAD_DAYS = 7;
+
+/**
+ * Create the work orders that recurring plans owe (due within the next week and not already open),
+ * and move each plan on to its following date. Safe to run any time: it never creates duplicates.
+ */
+export function withRecurringTasks(d: Db, now = today()): Db {
+  const plans = d.maintenancePlans ?? [];
+  if (!plans.some((p) => p.active && p.nextDue <= addDays(now, PLAN_LEAD_DAYS))) return d;
+  let tasks = d.tasks;
+  const updated = plans.map((p) => {
+    if (!p.active) return p;
+    let plan = p;
+    // Catch up at most a few cycles, so a long pause doesn't flood the list.
+    for (let i = 0; i < 4 && plan.nextDue <= addDays(now, PLAN_LEAD_DAYS); i++) {
+      const exists = tasks.some((x) => x.planId === plan.id && x.due === plan.nextDue);
+      if (!exists && !tasks.some((x) => x.planId === plan.id && x.status !== "done")) {
+        const id = nextId("t", tasks);
+        const task: MaintenanceTask = {
+          id, code: `WO-${String(tasks.length + 1).padStart(3, "0")}`, title: plan.title, marinaId: plan.marinaId, berthId: plan.berthId, assigneeId: plan.assigneeId,
+          priority: plan.priority, status: "open", created: now, due: plan.nextDue < now ? now : plan.nextDue, notes: [{ at: now, by: "Schedule", text: `${RECURRENCE_LABEL[plan.every]} (recurring).` }], planId: plan.id,
+        };
+        tasks = [...tasks, task];
+      }
+      plan = { ...plan, nextDue: nextRecurrence(plan.nextDue, plan.every) };
+    }
+    return plan;
+  });
+  return { ...d, tasks, maintenancePlans: updated as MaintenancePlan[] };
 }

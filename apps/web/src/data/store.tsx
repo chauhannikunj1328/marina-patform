@@ -1,6 +1,6 @@
 import { useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { StoreContext } from "./context";
-import { diffDb, setTimeZone, today } from "@marina/shared";
+import { withRecurringTasks, diffDb, setTimeZone, today } from "@marina/shared";
 import { setCurrency } from "@marina/shared";
 import { notifyOwner } from "@/lib/notify";
 import { DEFAULT_PERMISSIONS, levelFor, type Area, type Level } from "@marina/shared";
@@ -104,7 +104,8 @@ function loadDb(): Db {
 function normalize(db: Db): Db {
   const now = today();
   const missing = [...BUILT_IN_USERS(), ...readAccounts().map(toUser)].filter((b) => !db.users.some((u) => u.email.toLowerCase() === b.email.toLowerCase()));
-  return {
+  // Recurring maintenance creates the work orders it owes whenever data loads.
+  return withRecurringTasks({
     ...db,
     // Data saved before permissions existed gets the defaults.
     settings: { ...db.settings, permissions: { ...DEFAULT_PERMISSIONS, ...db.settings.permissions } },
@@ -119,12 +120,13 @@ function normalize(db: Db): Db {
     contracts: db.contracts ?? [],
     meterReadings: db.meterReadings ?? [],
     timesheetApprovals: db.timesheetApprovals ?? [],
+    maintenancePlans: db.maintenancePlans ?? [],
     invoices: db.invoices.map((i) => {
       // Data saved before partial payments existed: rebuild the payment list from paidAt.
       const payments = i.payments ?? (i.status === "paid" && i.paidAt ? [{ date: i.paidAt, amount: i.amount, method: i.method ?? "Card" }] : []);
       return { ...i, payments, status: i.status === "due" && i.due < now ? "overdue" : i.status };
     }),
-  };
+  });
 }
 
 /** "Remember me" keeps the session in localStorage; otherwise it ends when the tab closes. */
