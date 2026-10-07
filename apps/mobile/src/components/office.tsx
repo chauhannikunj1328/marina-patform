@@ -82,7 +82,7 @@ export function MarinaRow({ id, first }: { id: string; first?: boolean }) {
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
         <View style={{ flex: 1 }}>
           <Txt weight="medium" numberOfLines={1}>{ix.marina(id)?.name}</Txt>
-          <Txt v="caption" color={t.text3}>{ix.cityOfMarina(id)?.name} · {m.berths} berths{m.pending ? ` · ${m.pending} pending` : ""}</Txt>
+          <Txt v="caption" color={t.text3}>{ix.marina(id)?.status === "inactive" ? "Closed to bookings · " : ""}{ix.cityOfMarina(id)?.name} · {m.berths} berths{m.pending ? ` · ${m.pending} pending` : ""}</Txt>
         </View>
         <View style={{ alignItems: "flex-end" }}>
           <Txt v="bodySm" num weight="semibold">{pct(m.occupancy)}</Txt>
@@ -98,8 +98,9 @@ export function MarinaRow({ id, first }: { id: string; first?: boolean }) {
 }
 
 /** For sheets opened on "All marinas": choose which marina the new record belongs to. */
-export function MarinaPicker({ value, onChange }: { value: string; onChange: (id: string) => void }) {
-  const { ix, scope } = useStore();
+export function MarinaPicker({ value, onChange, openOnly }: { value: string; onChange: (id: string) => void; openOnly?: boolean }) {
+  const { ix, scope: all } = useStore();
+  const scope = openOnly ? all.filter((id) => ix.marina(id)?.status !== "inactive") : all;
   return (
     <Field label="Marina">
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>

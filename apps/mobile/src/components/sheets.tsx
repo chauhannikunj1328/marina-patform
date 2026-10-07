@@ -178,8 +178,9 @@ const BOAT_TYPES: BoatType[] = ["Sailboat", "Motor Yacht", "Catamaran", "Center 
 export function NewBookingSheet({ onClose, onDone }: { onClose: () => void; onDone: (bookingId: string) => void }) {
   const { db, ix, update, toast, marinaId: current, scope } = useStore();
   const { t } = useTheme();
-  const [marinaId, setMarina] = useState(current === ALL ? scope[0] : current);
+  const [marinaId, setMarina] = useState(current === ALL ? scope.find((m) => ix.marina(m)?.status !== "inactive") ?? scope[0] : current);
   const [mode, setMode] = useState<"existing" | "new">("existing");
+  const closed = ix.marina(marinaId)?.status === "inactive";
   const [q, setQ] = useState("");
   const [boatId, setBoatId] = useState("");
   const [f, setF] = useState({ owner: "", phone: "", email: "", boat: "", type: "Sailboat" as BoatType, length: "" });
@@ -205,6 +206,7 @@ export function NewBookingSheet({ onClose, onDone }: { onClose: () => void; onDo
   const set = (k: keyof typeof f, v: string) => { setF({ ...f, [k]: v }); setErrors({}); };
 
   const save = () => {
+    if (closed) return toast(`${ix.marina(marinaId)?.name} is closed to new bookings.`, undefined, "warning");
     const e: Record<string, string> = {};
     if (mode === "existing") {
       if (!boat) e.boat = "Find the boat, or add a new one.";
@@ -241,7 +243,12 @@ export function NewBookingSheet({ onClose, onDone }: { onClose: () => void; onDo
   return (
     <Sheet open onClose={onClose} title="New booking" subtitle={arrivingToday ? "Arriving today, or pick a later day" : `Arriving ${fmtShort(start)}`} footer={<Button variant="primary" size="lg" icon={checkIn ? LogIn : undefined} label={berth ? `${checkIn ? "Book and check in" : "Book"} · ${money2(price)}` : "Book"} onPress={save} />}>
       <View style={{ gap: 16 }}>
-        {current === ALL && <MarinaPicker value={marinaId} onChange={(id) => { setMarina(id); setBerthId(""); }} />}
+        {current === ALL && <MarinaPicker openOnly value={marinaId} onChange={(id) => { setMarina(id); setBerthId(""); }} />}
+        {closed && (
+          <View style={{ backgroundColor: t.status.maintenance.bg, borderRadius: 12, padding: 12 }}>
+            <Txt v="bodySm" color={t.status.maintenance.fg}>{ix.marina(marinaId)?.name} is closed to new bookings. Ask an admin to reopen it.</Txt>
+          </View>
+        )}
         <Segmented value={mode} onChange={(v) => { setMode(v); setErrors({}); }} items={[{ value: "existing", label: "Known boat" }, { value: "new", label: "New boat" }]} />
         {mode === "existing" ? (
           <Field label="Boat" error={errors.boat}>
