@@ -3,14 +3,10 @@
 import { useMemo, useState } from "react";
 import { FilePlus2, FileSignature, RefreshCw, Repeat, TriangleAlert, Wallet } from "lucide-react";
 import { nextId, useStore } from "@/data/store";
-import { tn, t, addMonths, daysBetween, fmtDate, fmtShort, money, RENEWAL_NOTICE_DAYS, renewalsDue, today, withInvoice, type Booking, type Contract, type ContractTerm } from "@marina/shared";
+import { tn, t, addMonths, CONTRACT_TERMS, daysBetween, fmtDate, fmtShort, localDay, money, RENEWAL_NOTICE_DAYS, renewalsDue, today, withInvoice, type Booking, type Contract, type ContractTerm } from "@marina/shared";
 import { Badge, Button, Card, ConfirmDialog, EmptyState, Field, Input, Modal, PageHeader, SearchInput, Select, StatCard, Table, Toolbar, useDirty } from "@/components/ui";
 
-const TERMS: Record<ContractTerm, { label: string; months: number; discount: number }> = {
-  monthly: { label: "Monthly", months: 1, discount: 0 },
-  seasonal: { label: "Seasonal (6 months)", months: 6, discount: 0.05 },
-  annual: { label: "Annual (12 months)", months: 12, discount: 0.1 },
-};
+const TERMS = CONTRACT_TERMS;
 
 /** Create the booking (held for the whole term), the contract and its invoice. */
 function withContract(d: Parameters<typeof withInvoice>[0], c: Omit<Contract, "id" | "code" | "bookingId" | "createdAt" | "status">) {
@@ -102,6 +98,7 @@ export function Contracts() {
                       : renewed ? <Badge tone="success" icon={Repeat}>{t("Renewed")}</Badge>
                       : due.has(c.id) ? <Badge tone={c.autoRenew ? "pending" : "maintenance"}>{c.autoRenew ? tn(left, "Renews in {n} day", "Renews in {n} days") : tn(left, "Ends in {n} day", "Ends in {n} days")}</Badge>
                       : <Badge tone="active">{c.autoRenew ? t("Auto-renews") : t("Fixed term")}</Badge>}
+                    <span className="mt-1 block text-xs text-ink-3">{c.signed ? t("Signed by the owner {date}", { date: fmtShort(localDay(c.signed.at)) }) : t("Not signed yet")}</span>
                   </td>
                   <td className="whitespace-nowrap">
                     {canEdit && c.status === "active" && c.end > now && !renewed && (

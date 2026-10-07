@@ -1,10 +1,16 @@
-# Marina website (not started)
+# Marina website
 
 The public face of Marina, kept separate from the admin web app and the staff mobile app.
 
-Planned:
+- **Public site:** home with berth search, marinas (with a map), rates and fees, contact
+- **Booking:** free berths that fit the boat for the whole stay, with the exact price; online bookings are requests the marina approves in the web app
+- **Owner portal** (`/account`): bookings, invoices and receipts (pay online), contracts (sign online), boats, profile
 
-- **Marketing site:** what Marina does, pricing, contact and demo request
-- **Boat-owner portal:** find a marina, check berth availability, book and pay, see past stays, invoices and receipts, update boat details
+```bash
+npm install
+npm run dev
+```
 
-It will use `@marina/shared` for types, pricing and brand tokens, and deploy as its own Vercel project with Root Directory `apps/website`. Boat owners will need a real backend first, so bookings made here appear in the web and staff apps.
+Demo owner: `owner@marina.com` / `owner123` (the sign-in page fills it in during development).
+
+It uses `@marina/shared` for data, pricing, booking rules (`portal.ts`), translations and the brand stylesheet (`brand.css`), and deploys as its own Vercel project with Root Directory `apps/website`. Until there's a backend, it keeps its own copy of the sample data in the browser.

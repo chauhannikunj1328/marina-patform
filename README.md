@@ -10,11 +10,11 @@ This is a **front-end prototype**. Each app runs on its own with generated sampl
 |---|---|---|---|---|
 | `apps/web` | Admin and manager web app | Admins, marina managers | React, Vite, Tailwind | Vercel project `marina-patform` (this repo's root `vercel.json`) |
 | `apps/mobile` | Marina app: splash → sign in → tabs for the person's role | Staff, marina managers, admins | React Native (Expo SDK 57, expo-router) | App Store and Google Play (EAS Build); optional web preview on its own Vercel project |
-| `apps/website` | Public website and boat-owner portal | Boat owners, visitors | Not started | Its own project |
-| `packages/shared` | Data types, sample data, calculations, permissions, brand tokens, demo accounts | Both apps | Plain TypeScript, no dependencies | Bundled into each app |
+| `apps/website` | Public website and boat-owner portal | Visitors, boat owners | React, Vite, Tailwind | Its own Vercel project (Root Directory `apps/website`) |
+| `packages/shared` | Data types, sample data, calculations, permissions, booking rules, brand tokens and styles, demo accounts | All three apps | Plain TypeScript, no dependencies | Bundled into each app |
 | `brand/` | Logo SVGs and the brand handoff guide | Design | | |
 
-Each app has its own `package.json` and `node_modules`, so they install, build and deploy separately. They import `@marina/shared` straight from source (a Vite alias on the web, Metro `watchFolders` on mobile), so every number is calculated the same way in both.
+Each app has its own `package.json` and `node_modules`, so they install, build and deploy separately. They import `@marina/shared` straight from source (a Vite alias on the web, Metro `watchFolders` on mobile), so every number is calculated the same way everywhere.
 
 ## Run it
 
@@ -36,6 +36,15 @@ npm run dev:mobile
 
 Scan the QR code with Expo Go on a phone, or press `i` / `a` for the iOS simulator or Android emulator. `npm run web:mobile` opens it in a browser on http://localhost:8081.
 
+**Public website and owner portal**
+
+```bash
+npm --prefix apps/website install
+npm run dev:website
+```
+
+Opens on http://localhost:5174 if 5173 is taken by the web app.
+
 ### Demo accounts
 
 | Role | App | Email | Password |
@@ -43,6 +52,7 @@ Scan the QR code with Expo Go on a phone, or press `i` / `a` for the iOS simulat
 | Admin (all marinas) | Web and mobile | admin@marina.com | admin123 |
 | Marina manager (4 San Francisco Bay marinas) | Web and mobile | manager@marina.com | manager123 |
 | Staff, dock hand (Golden Gate and Bay Harbor) | Mobile | staff@marina.com | staff123 |
+| Boat owner (with a contract, invoices and stays) | Website owner portal | owner@marina.com | owner123 |
 
 Staff who sign in to the web app are asked to use the mobile app instead. The mobile sign-in screen has Admin, Manager and Staff demo buttons (prototype only).
 
@@ -54,6 +64,7 @@ Changes you make are saved on that device until midnight; then fresh sample data
 
 - **Web app:** pushes to `main` deploy automatically to https://marina-patform.vercel.app. The root `vercel.json` installs and builds `apps/web`.
 - **Mobile app in the stores:** from `apps/mobile`, run `npx eas-cli build --profile production --platform all`, then `npx eas-cli submit`. This needs an Expo account, an Apple Developer account and a Google Play developer account. `--profile preview` builds an Android APK you can install directly for testing.
+- **Public website:** create a Vercel project from this repo with **Root Directory** set to `apps/website`. Its `vercel.json` builds the site and serves `dist`.
 - **Mobile app web preview (optional):** create a second Vercel project from this repo with **Root Directory** set to `apps/mobile`. Its `vercel.json` runs `expo export` and serves `dist`.
 
 ## Web app
@@ -79,6 +90,24 @@ Changes you make are saved on that device until midnight; then fresh sample data
 | Settings | `/settings` | Profile, notifications, company defaults; **Pricing** (seasons, weekend surcharge, long-stay discount, utility rates; new bookings keep the price they were made at); **Branding** (logo, colour, invoice footer) |
 
 The bell menu is built from live data: pending approvals, today's arrivals, overdue invoices, urgent work orders, staff requests and messages, waitlist matches, contract renewals, low stock, new incidents and unaccepted invites.
+
+## Public website and owner portal
+
+A public site for visitors and an account area for boat owners, in English, Spanish and Arabic, light and dark.
+
+| Page | Route | What works |
+|---|---|---|
+| Home | `/` | Berth search, marinas on a map, how booking works, owner portal |
+| Marinas | `/marinas`, `/marinas/:id` | Filter by state, map; each marina's berth sizes and rates, amenities, dock office contact, directions, availability search |
+| Rates and fees | `/pricing` | Rates by marina, a price estimator, how prices are worked out (monthly rate from 28 nights, any weekend, season and long-stay rules from Settings › Pricing), contract terms and discounts, dock extras, how to pay |
+| Contact | `/contact` | Head office and every dock office; a message form |
+| Book a berth | `/book`, `/book/checkout` | Free berths that fit the boat for the whole stay, cheapest marina first, exact price; checkout with the owner's boat (or a new one), people on board and the berth rules |
+| Sign in, Create an account | `/sign-in`, `/register` | Owner accounts; the visitor returns to where they were heading |
+| My account | `/account/…` | Overview (next stay, what's owed, contracts to sign), bookings (cancel a request the marina hasn't confirmed), invoices (pay in full or in part, print the invoice or receipt), contracts (read and sign with your typed name), boats (add and edit), profile |
+
+- **Bookings made online** are requests (`pending`), exactly like the front desk's: the berth is held, and the web app's Bookings page approves and invoices them. They're logged as "Online booking".
+- **Card payments** and **contract signatures** follow the same rules as the admin apps (`packages/shared/src/portal.ts`); the web app's Contracts page shows whether the owner has signed.
+- **Until there's a backend,** the website keeps its own copy of the sample data in the browser, so a booking made here doesn't reach the web or staff app. Payments are simulated (no card is charged) and contact messages are kept in the browser.
 
 ## Mobile app
 
@@ -179,7 +208,7 @@ Every figure is calculated from one data set (`packages/shared/src/seed.ts`) by 
 
 ## Brand
 
-The UI follows the **Marina Brand to Product Handoff Guide v1**. Web tokens live at the top of `apps/web/src/index.css` (light and dark); the mobile app uses the same values from `packages/shared/src/brand.ts`.
+The UI follows the **Marina Brand to Product Handoff Guide v1**. Web tokens, themes and shared styles live in `packages/shared/src/brand.css`, used by both the web app and the website (light and dark); the mobile app uses the same values from `packages/shared/src/brand.ts`.
 
 - **Color:** Slate `#2F3740` for primary buttons and the active nav bar, Teal `#497079` for rings and focus, Sunlight `#F7E8A6` for highlight pills and update cards, Green `#0E9A50` for links, progress and "new" (Green 700 `#0B6B37` for small text). Warm sidebar `#F1F0EC`.
 - **Type:** Poppins for UI, Inter with tabular figures for numbers (`.num` class).
@@ -193,9 +222,9 @@ Icons are from [Lucide](https://lucide.dev) (`lucide-react` on the web, `lucide-
 
 ## Tests
 
-Run `npm test` from the project root (the first time, run `npm install` in `packages/shared`). The tests in `packages/shared/test` cover pricing, dates, permissions, map helpers, recurring maintenance, contract renewals, overtime pay and the dashboard numbers (each marina's figures add up to the totals). They also fail if any text in either app is missing its Spanish or Arabic translation, or if a translation drops a `{placeholder}`.
+Run `npm test` from the project root (the first time, run `npm install` in `packages/shared`). The tests in `packages/shared/test` cover pricing, dates, permissions, map helpers, recurring maintenance, contract renewals, overtime pay, the dashboard numbers (each marina's figures add up to the totals) and the website's booking, payment and signing rules. They also fail if any text in any app is missing its Spanish or Arabic translation, or if a translation drops a `{placeholder}`.
 
-`npm run lint` checks both apps: Oxlint for the web app (TypeScript 7 isn't supported by typescript-eslint yet) and `expo lint` for the phone app. Both must finish with no warnings.
+`npm run lint` checks all three apps: Oxlint for the web app and the website (TypeScript 7 isn't supported by typescript-eslint yet) and `expo lint` for the phone app. All must finish with no warnings.
 
 ## Project structure
 
@@ -203,7 +232,7 @@ Run `npm test` from the project root (the first time, run `npm install` in `pack
 apps/
   web/          Vite app: src/pages (one file per area), src/components, src/data/store.tsx
   mobile/       Expo app: src/app (screens and routes), src/components, src/store.tsx, assets/
-  website/      public site and boat-owner portal (not started)
+  website/      Vite app: public site and boat-owner portal (src/pages, src/pages/account)
 packages/
   shared/       types, sample data, pricing, selectors, permissions, dates, brand tokens, demo accounts
 brand/          logo SVGs and the brand guide
@@ -216,4 +245,4 @@ brand/          logo SVGs and the brand guide
 - Scheduled report emails are saved but not sent
 - Card payments in the app (Stripe Terminal / Tap to Pay); staff record payments taken on the marina's card reader
 - Payments (Stripe) and real email/SMS delivery: reminders, invites and booking emails are recorded in the system and the audit log, but not actually sent
-- Public website and boat-owner booking portal (`apps/website`)
+- Owner portal against a real backend: today bookings, payments and signatures made on the website stay in that browser

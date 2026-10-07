@@ -1,0 +1,50 @@
+@import "tailwindcss";
+@import "../../../packages/shared/src/brand.css";
+
+/* Public website only. Brand tokens, themes, right-to-left and map styles live in brand.css. */
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Hero: the brand canvas gradient with the fine promo grid fading out toward the bottom. */
+.hero-bg {
+  background: var(--canvas);
+  position: relative;
+  isolation: isolate;
+}
+.hero-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(var(--promo-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--promo-line) 1px, transparent 1px);
+  background-size: 24px 24px;
+  mask-image: linear-gradient(to bottom, black 30%, transparent 100%);
+}
+
+/* Receipts print on their own, in light colours. */
+@media print {
+  @page {
+    margin: 16mm;
+  }
+  body * {
+    visibility: hidden;
+  }
+  .print-area,
+  .print-area * {
+    visibility: visible;
+  }
+  .print-area {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    color: #17191e;
+    background: #fff;
+  }
+  .no-print {
+    display: none !important;
+  }
+}

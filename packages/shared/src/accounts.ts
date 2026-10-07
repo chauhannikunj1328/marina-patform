@@ -15,4 +15,11 @@ export const BUILT_IN_USERS = (): SystemUser[] => [
   { id: "u-owner", name: "Nikunj Chauhan", email: "chauhan.nikunj1328@gmail.com", role: "admin", marinaIds: [], lastActive: today(), status: "active" },
 ];
 
+/** Boat owners who sign in to the public website's owner portal (separate from staff accounts). */
+export const OWNER_PASSWORD_HASHES: Record<string, string> = {
+  "owner@marina.com": "43a0d17178a9d26c9e0fe9a74b0b45e38d32f27aed887a008a54bf6e033bf7b9",
+};
+/** The sample boat owner the demo owner account signs in as. */
+export const DEMO_OWNER_EMAIL = "owner@marina.com";
+
 export const SIGN_IN_ERROR = "That email and password don't match. Try again.";

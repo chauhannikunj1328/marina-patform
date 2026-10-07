@@ -38,7 +38,7 @@ describe("t / tn / tx", () => {
 
 // ---- Every phrase used in the apps has a Spanish and Arabic translation -------------------------
 const ROOT = join(import.meta.dirname, "../../..");
-const SOURCES = ["apps/web/src", "apps/mobile/src", "packages/shared/src"];
+const SOURCES = ["apps/web/src", "apps/mobile/src", "apps/website/src", "packages/shared/src"];
 
 function files(dir: string): string[] {
   return readdirSync(dir).flatMap((f: string) => {

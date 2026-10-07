@@ -381,6 +381,8 @@ export interface Contract {
   createdAt: string;
   /** The contract this one renewed. */
   renewedFromId?: ID;
+  /** The boat owner's signature, given in the owner portal. */
+  signed?: { name: string; at: string };
 }
 
 export type MeterKind = "power" | "water";

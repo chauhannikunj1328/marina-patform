@@ -55,6 +55,13 @@ export function withServiceCharge(d: Db, bookingId: string, stayAmount: number, 
 }
 
 /** How early a contract is flagged for renewal: a week for monthly, a month for seasonal, two months for annual. */
+/** Contract lengths and their discount on the monthly rate. */
+export const CONTRACT_TERMS: Record<Contract["term"], { label: string; months: number; discount: number }> = {
+  monthly: { label: "Monthly", months: 1, discount: 0 },
+  seasonal: { label: "Seasonal (6 months)", months: 6, discount: 0.05 },
+  annual: { label: "Annual (12 months)", months: 12, discount: 0.1 },
+};
+
 export const RENEWAL_NOTICE_DAYS: Record<Contract["term"], number> = { monthly: 7, seasonal: 30, annual: 60 };
 
 /** Active contracts ending within their notice period that haven't been renewed yet. */
