@@ -65,18 +65,20 @@ Changes you make are saved on that device until midnight; then fresh sample data
 | Login, Forgot password | `/login`, `/forgot-password` | Validation, show/hide password, reset-link confirmation |
 | Global / County / City dashboards | `/`, `/county/:id`, `/city/:id` | KPIs, revenue and occupancy charts, rankings, today's to-dos, recent activity, CSV export |
 | Marinas | `/marinas`, `/marinas/:id` | Add, edit, deactivate; detail page with bookings, staff and clickable berth status |
-| Berths & Slips | `/berths` | List and dock map; berth detail (current boat, upcoming and past stays, work orders, "Book this berth"); add/edit/delete; maintenance toggle |
-| Bookings | `/bookings` | New booking (only free berths that fit the boat), change dates or berth (re-prices unpaid invoices), approve, check in/out, cancel, email details, calendar, today's arrivals/departures, double-booking check, CSV |
+| Berths & Slips | `/berths` | List, dock map and **Meters** (power and water readings billed to the boat in the berth); berth detail; add/edit/delete; maintenance toggle; printable **QR labels** |
+| Bookings | `/bookings` | New booking (only free berths that fit the boat, priced with the pricing rules), change dates or berth (re-prices unpaid invoices), approve, check in/out, cancel, email details, calendar, today's arrivals/departures, double-booking check, **Waitlist** (matches freed-up berths, offer, one-click book), CSV |
+| Contracts | `/contracts` | Monthly, seasonal and annual berth contracts held through a booking for the whole term and invoiced up front; renewal alerts (a week, a month or two months ahead); Renew / Don't renew |
 | Locations | `/locations` | Counties, cities and a map; add, edit, delete (admin only) |
-| Staff | `/staff` | Directory, weekly schedule with shift-gap warnings, shift coverage, days off, add/edit/remove |
-| Maintenance | `/maintenance` | Work orders with notes, start/complete/reopen, filters; completing the last order returns the berth to service |
+| Staff | `/staff` | Directory, weekly schedule (follows approved time off and swaps), shift coverage, **Requests** (approve or decline), **Hours** (pay, overtime, timesheet approval, payroll CSV/Excel), **Messages** with staff |
+| Maintenance | `/maintenance` | Work orders with notes and **parts used**, start/complete/reopen, filters; **Recurring jobs** (weekly, monthly, quarterly; work orders created a week ahead); **Parts & supplies** stock with low-stock flags and restocking |
+| Incidents | `/incidents` | Damage, injuries, theft and spills reported from the phone; investigate, follow-up notes, close with an outcome |
 | Boat Owners & Users | `/users` | Add/edit owners and boats, owner history and balance; invite, edit, disable users |
-| Billing | `/billing` | Invoice view and print, record payment, reminders (logged), void, CSV |
-| Reports, Analytics | `/reports`, `/analytics` | 4 downloadable reports; stay length, lead time, boat mix |
-| Access Control | `/access` | Role permission matrix and a searchable audit log of every change |
-| Settings | `/settings` | Profile, notification preferences, company name, currency, invoice due days, monthly-rate threshold (all applied live) |
+| Billing | `/billing` | Invoice view and print with company branding and service lines (fuel, pump-out, electricity, water…), record payment, reminders (logged), void, CSV |
+| Reports, Analytics | `/reports`, `/analytics` | 5 reports (incl. fuel, services and utilities) as CSV, Excel or PDF; **Export all data** as one Excel workbook; **scheduled report emails** (saved; sent once there's a server); stay length, lead time, boat mix |
+| Access Control | `/access` | Role permission matrix and a searchable audit log of every change, with **before and after values** |
+| Settings | `/settings` | Profile, notifications, company defaults; **Pricing** (seasons, weekend surcharge, long-stay discount, utility rates; new bookings keep the price they were made at); **Branding** (logo, colour, invoice footer) |
 
-The bell menu is built from live data: pending approvals, today's arrivals, overdue invoices, urgent work orders and unaccepted invites.
+The bell menu is built from live data: pending approvals, today's arrivals, overdue invoices, urgent work orders, staff requests and messages, waitlist matches, contract renewals, low stock, new incidents and unaccepted invites.
 
 ## Mobile app
 
@@ -84,14 +86,14 @@ One app, **Marina**, for every role (bundle ID `com.marina.app`). The tabs depen
 
 ### Managers and admins
 
-- **Overview:** occupancy, revenue this month, arrivals and departures, staff on the clock; what needs attention (approvals, late boats, berths that need moving, urgent repairs, overdue invoices); 6-month revenue; every marina ranked by occupancy; recent activity
-- **Marina page:** one marina's numbers, berths, revenue, people and contacts, with "Show this marina in the app"
-- **Approvals:** pending bookings (approve creates the invoice; clashing bookings are blocked) and staff time off / swaps, one at a time or Approve all with a confirmation
-- **Bookings:** same as staff, across the chosen marinas
-- **Team:** who's on the clock, scheduled or off; hours this week; messages with staff; tap a person to call, email or message them
-- **Work orders and Berths:** from the Overview. Managers can assign work orders and mark them done.
-- **All marinas** in the header switcher. Admins see every marina, managers the ones they're assigned to.
-- Setup (marinas, locations, users, access control, reports, billing) stays in the web app; **Me → Open the web app** links to it.
+- **Overview:** occupancy, revenue this month, arrivals and departures, staff on the clock; what needs attention; 6-month revenue (tap for **revenue by county, city and marina**); every marina ranked by occupancy with **Compare** (2–3 side by side); recent activity with a full **activity log**
+- **Marina page:** one marina's numbers, berths, revenue, people and contacts; admins can **close a marina to new bookings** and reopen it
+- **Approvals:** pending bookings (approve creates the invoice) and staff time off / swaps; Approve all with a confirmation
+- **Bookings:** make future bookings, change dates or berth, extend, cancel, approve or decline, take payments, move a boat to another berth
+- **Team:** today (on the clock, scheduled, off, patrols, hand-over notes), **Week** (shift gaps, Find cover, edit someone's regular schedule), hours, chat, and **Message everyone** announcements
+- **Owners, Invoices, Day report:** owner lookup with stays and balance; overdue / due / paid invoices with reminders and payments; today's or yesterday's report with the plan for tomorrow, shareable as text
+- **Work orders:** assign, set priority and due date, mark done
+- **All marinas** in the header switcher. Setup (marinas, locations, users, access control) stays in the web app; **Me → Open the web app** links to it.
 
 ### Staff
 
@@ -106,6 +108,7 @@ The app opens with the brand splash screen, then sign-in. Staff get five tabs. S
 - **Scan:** point the camera at a berth's QR label (or type the berth number) to open it. Labels are printed from the web app (Berths → QR labels) and link to `marinastaff://berth/<id>` (the app answers to both `marina://` and `marinastaff://`), so the phone camera opens the app too.
 - **Messages:** conversation with the marina's managers
 - **Notifications:** new and overdue work orders, manager messages, request decisions, colleagues asking you to cover, late departures, today's arrivals and tomorrow's shift
+- **Also:** **shift reminders** 30 minutes before each shift (phone notification), a **berth ready check** before arrivals, **check-in sign-off** (boat condition, photos, the owner's signature on screen), **Add service** (fuel, pump-out, ice, laundry) and **Read meters** charged to the boat's invoice, **hand-over notes** at clock-out, **dock patrol** rounds (scan a berth label on each dock, safety checklist), **incident reports**, **Face ID / fingerprint unlock**, **Español**
 - **Offline:** a banner shows when there's no connection. Everything keeps working and is saved on the phone; changes made offline are queued and cleared when the connection returns (they'll be sent to the server once there is one).
 
 What staff can do follows Access Control (e.g. View only hides check-in and edit actions; billing set to No access hides Take payment). Settings are in `apps/mobile/app.json`.
@@ -113,7 +116,7 @@ What staff can do follows Access Control (e.g. View only hides check-in and edit
 ### Manager side (web app)
 
 - **Staff → Requests:** approve or decline time off and shift swaps. Approved ones update the weekly schedule and the staff member's app.
-- **Staff → Hours:** each person's clock-ins by day, weekly totals and who's on the clock now.
+- **Staff → Hours:** each person's clock-ins by day, weekly totals, pay with overtime, timesheet approval and payroll export.
 - **Staff → Messages:** reply to staff conversations.
 - **Berths → QR labels:** printable labels for every berth post at a marina.
 - The bell shows new staff requests and unread staff messages.
@@ -182,7 +185,9 @@ brand/          logo SVGs and the brand guide
 ## Not built yet
 
 - Real backend, database and authentication. Until then each app keeps its own copy of the sample data, so a check-in, clock-in, request or message on the phone doesn't show up in the web app (and the other way round). A password changed in the staff app only works on that phone. Demo password hashes live in `packages/shared/src/accounts.ts`.
-- Push notifications for staff (notifications are in-app for now)
+- Push notifications from the server (shift reminders are local phone notifications; everything else is in-app for now)
+- Scheduled report emails are saved but not sent
+- Spanish covers the staff screens; dates, relative times and the manager/admin screens are English
 - Card payments in the app (Stripe Terminal / Tap to Pay); staff record payments taken on the marina's card reader
 - Payments (Stripe) and real email/SMS delivery: reminders, invites and booking emails are recorded in the system and the audit log, but not actually sent
 - Public website and boat-owner booking portal (`apps/website`)
