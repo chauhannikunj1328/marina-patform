@@ -7,6 +7,7 @@
     "build:web": "npm --prefix apps/web run build",
     "dev:mobile": "npm --prefix apps/mobile run start",
     "web:mobile": "npm --prefix apps/mobile run web",
-    "build:mobile-web": "npm --prefix apps/mobile run export:web"
+    "build:mobile-web": "npm --prefix apps/mobile run export:web",
+    "test": "npm --prefix packages/shared test"
   }
 }

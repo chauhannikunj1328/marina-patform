@@ -4,7 +4,7 @@ import { CalendarRange, Clock, Download, FileDown, FileText, Ruler, Sailboat, Sh
 import { Logo } from "@/components/Logo";
 import { CompanyMark, useBrandColor } from "@/components/CompanyMark";
 import { useStore } from "@/data/store";
-import { t, daysBetween, fmtDate, fmtMonth, lastMonths, monthKey, nightsInMonth, today } from "@marina/shared";
+import { t, daysBetween, fmtDate, fmtMonth, lastMonths, monthKey, REVENUE, today } from "@marina/shared";
 import { money, pct } from "@marina/shared";
 import { downloadCsv, downloadWorkbook } from "@/lib/csv";
 import { allDataSheets } from "@/lib/exportAll";
@@ -82,11 +82,11 @@ export function Reports() {
     }
     const byOwner = new Map<string, number>();
     for (const b of ix.bookingsIn(scope)) {
-      if (b.status === "cancelled" || b.status === "pending") continue;
-      const n = nightsInMonth(b.start, b.end, month);
-      if (!n) continue;
+      if (!REVENUE.includes(b.status)) continue;
+      const share = ix.monthShare(b, month);
+      if (!share) continue;
       const o = ix.boat(b.boatId)?.ownerId ?? "";
-      byOwner.set(o, (byOwner.get(o) ?? 0) + (ix.amount(b) * n) / daysBetween(b.start, b.end));
+      byOwner.set(o, (byOwner.get(o) ?? 0) + share);
     }
     const rows = [...byOwner.entries()].sort((a, b) => b[1] - a[1]).slice(0, 25).map(([o, v]) => {
       const owner = ix.owner(o);

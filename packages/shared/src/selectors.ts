@@ -125,18 +125,26 @@ export class Index {
     return this.db.bookings.filter((bk) => set.has(this.berth(bk.berthId)?.marinaId ?? ""));
   }
 
+  /**
+   * A booking's price for the nights that fall in one month, in whole dollars. Rounded on the
+   * running total, so a booking's months add up exactly to its price and totals add up across
+   * marinas, cities and owners.
+   */
+  monthShare(bk: Booking, month: string): number {
+    const nights = daysBetween(bk.start, bk.end);
+    if (nights <= 0 || !nightsInMonth(bk.start, bk.end, month)) return 0;
+    const amt = this.amount(bk);
+    const upTo = (day: string) => Math.round((amt * Math.min(nights, Math.max(0, daysBetween(bk.start, day)))) / nights);
+    return upTo(addDays(`${month}-${String(daysInMonth(month)).padStart(2, "0")}`, 1)) - upTo(`${month}-01`);
+  }
+
   revenueByMonth(marinaIds: string[], months: string[]): number[] {
     const totals = months.map(() => 0);
     for (const bk of this.bookingsIn(marinaIds)) {
       if (!REVENUE.includes(bk.status)) continue;
-      const nights = daysBetween(bk.start, bk.end);
-      const amt = this.amount(bk);
-      months.forEach((m, i) => {
-        const n = nightsInMonth(bk.start, bk.end, m);
-        if (n) totals[i] += (amt * n) / nights;
-      });
+      months.forEach((m, i) => { totals[i] += this.monthShare(bk, m); });
     }
-    return totals.map(Math.round);
+    return totals;
   }
 
   /** Booked berth-nights divided by available berth-nights, per month (up to today for the current month). */

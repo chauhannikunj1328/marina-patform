@@ -191,6 +191,10 @@ The UI follows the **Marina Brand to Product Handoff Guide v1**. Web tokens live
 
 Icons are from [Lucide](https://lucide.dev) (`lucide-react` on the web, `lucide-react-native` on mobile), set to a 1.5 px rounded stroke to match the guide's icon style.
 
+## Tests
+
+Run `npm test` from the project root (the first time, run `npm install` in `packages/shared`). The tests in `packages/shared/test` cover pricing, dates, permissions, map helpers, recurring maintenance, contract renewals, overtime pay and the dashboard numbers (each marina's figures add up to the totals). They also fail if any text in either app is missing its Spanish or Arabic translation, or if a translation drops a `{placeholder}`.
+
 ## Project structure
 
 ```
