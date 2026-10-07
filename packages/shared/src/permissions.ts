@@ -13,7 +13,7 @@ export const AREAS: { key: Area; label: string; routes: string[] }[] = [
   { key: "berths", label: "Berths: add, edit, maintenance", routes: ["/berths"] },
   { key: "bookings", label: "Bookings and contracts: create, approve, check in/out", routes: ["/bookings", "/contracts"] },
   { key: "staff", label: "Staff and shifts", routes: ["/staff"] },
-  { key: "maintenance", label: "Work orders", routes: ["/maintenance"] },
+  { key: "maintenance", label: "Work orders and incidents", routes: ["/maintenance", "/incidents"] },
   { key: "owners", label: "Boat owners", routes: ["/users"] },
   { key: "billing", label: "Billing: invoices, payments, reminders", routes: ["/billing"] },
   { key: "reports", label: "Reports and analytics", routes: ["/reports", "/analytics"] },

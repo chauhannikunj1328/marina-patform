@@ -2,7 +2,7 @@
 // and dates are generated relative to today so the data never looks stale.
 import type {
   Berth, BerthType, Boat, BoatOwner, BoatType, Booking, BookingStatus, City, County,
-  Activity, ChatMessage, Contract, Handover, InventoryItem, Invoice, MaintenancePlan, MeterReading, TimesheetApproval, Patrol, WaitlistEntry, MaintenanceTask, Marina, Message, Settings, Shift, Staff, StaffRequest, SystemUser, TimeEntry,
+  Activity, ChatMessage, Contract, Handover, Incident, InventoryItem, Invoice, MaintenancePlan, MeterReading, TimesheetApproval, Patrol, WaitlistEntry, MaintenanceTask, Marina, Message, Settings, Shift, Staff, StaffRequest, SystemUser, TimeEntry,
 } from "./types";
 import { addDays, daysBetween, fromISO, today } from "./date";
 import { bookingAmount } from "./pricing";
@@ -46,6 +46,8 @@ export interface Db {
   maintenancePlans: MaintenancePlan[];
   /** Parts and supplies at each marina */
   inventory: InventoryItem[];
+  /** Damage, injuries, theft and spills */
+  incidents: Incident[];
   settings: Settings;
   /** Notification ids the user has dismissed or read */
   readNotifications: string[];
@@ -458,6 +460,12 @@ export function createSeed(): Db {
     ["Dock cleat, 10 in", "each", 18, 4], ["Dock line, 25 ft", "each", 24, 6], ["Fender, medium", "each", 32, 4], ["Shore power cord, 30 A", "each", 120, 2],
     ["Pedestal fuse, 30 A", "each", 9, 10], ["Hose fitting", "each", 6, 10], ["Deck screws", "box", 14, 3], ["Marine epoxy kit", "kit", 38, 2], ["Dock light bulb", "each", 11, 8],
   ];
+  const ago = (h: number) => new Date(Date.now() - h * 3_600_000).toISOString();
+  const incidents: Incident[] = [
+    { id: "ic-1", code: "INC-001", marinaId: "m-gg", kind: "damage", serious: false, at: ago(30), berthId: berths.find((b) => b.marinaId === "m-gg" && b.code === "B-04")?.id, description: "Visiting boat clipped the end of the finger pier while docking in a gust. Two boards cracked, no one hurt.", people: "Skipper of the visiting boat", reportedBy: "Henry Morgan", reportedAt: ago(29), status: "investigating", notes: [{ at: ago(20), by: "Ava Smith", text: "Spoke to the skipper; their insurer has the details. Boards ordered." }] },
+    { id: "ic-2", code: "INC-002", marinaId: "m-gg", kind: "injury", serious: false, at: ago(52), description: "Guest slipped on the wet gangway at night and grazed a knee. First aid given, declined further help.", people: "Guest from C-07; witness: Ethan Bennett", reportedBy: "Ethan Bennett", reportedAt: ago(51), status: "open", notes: [] },
+    { id: "ic-3", code: "INC-003", marinaId: "m-bh", kind: "theft", serious: true, at: ago(96), description: "Outboard motor taken from a tender on Dock A overnight. Police informed.", people: "Owner of the tender", reportedBy: "Night security", reportedAt: ago(90), status: "closed", notes: [{ at: ago(70), by: "Manager", text: "Police report filed, CCTV footage shared." }], outcome: "Police report filed; extra lighting ordered for Dock A." },
+  ];
   const inventory: InventoryItem[] = marinaDefs.flatMap((m, i) =>
     PARTS.map(([name, unit, cost, reorder], k) => ({ id: `inv-${m.id}-${k + 1}`, marinaId: m.id, name, unit, unitCost: cost, reorderAt: reorder, qty: Math.max(0, reorder + between(-3, 14) - ((i + k) % 7 === 0 ? reorder : 0)) })),
   );
@@ -472,5 +480,5 @@ export function createSeed(): Db {
     ];
   });
 
-  return { counties, cities, marinas, berths, owners, boats, bookings, staff, tasks, invoices, users, activity, messages, timeEntries, requests, chat, handovers, patrols, waitlist, contracts, meterReadings, timesheetApprovals: [], maintenancePlans, inventory, settings, readNotifications: [] };
+  return { counties, cities, marinas, berths, owners, boats, bookings, staff, tasks, invoices, users, activity, messages, timeEntries, requests, chat, handovers, patrols, waitlist, contracts, meterReadings, timesheetApprovals: [], maintenancePlans, inventory, incidents, settings, readNotifications: [] };
 }

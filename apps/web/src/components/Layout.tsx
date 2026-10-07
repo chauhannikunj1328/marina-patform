@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { FileSignature,
+import { ShieldAlert, FileSignature,
   Anchor, ArrowLeft, ArrowRight, Bell, Eye, Building, CalendarDays, ChartLine, CircleAlert, CircleCheck, EllipsisVertical, FileText, Globe, House, Info, Landmark,
   Keyboard, LogOut, MapPin, Menu, Moon, Sparkles, Receipt, Search, Settings, ShieldCheck, Sun, TriangleAlert, UserCog, Users, Warehouse, Wrench, X,
   type LucideIcon,
@@ -48,6 +48,7 @@ export const NAV: { group: string; items: NavItem[] }[] = [
     items: [
       { to: "/staff", label: "Staff", icon: UserCog },
       { to: "/maintenance", label: "Maintenance", icon: Wrench },
+      { to: "/incidents", label: "Incidents", icon: ShieldAlert },
       { to: "/users", label: "Owners & Users", icon: Users },
       { to: "/billing", label: "Billing & Invoicing", icon: Receipt },
     ],

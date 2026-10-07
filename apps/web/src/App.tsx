@@ -23,6 +23,7 @@ const Maintenance = page(() => import("@/pages/Operations"), "Maintenance");
 const People = page(() => import("@/pages/People"), "People");
 const Billing = page(() => import("@/pages/Billing"), "Billing");
 const Contracts = page(() => import("@/pages/Contracts"), "Contracts");
+const Incidents = page(() => import("@/pages/Incidents"), "Incidents");
 const Reports = page(() => import("@/pages/Insights"), "Reports");
 const Analytics = page(() => import("@/pages/Insights"), "Analytics");
 const AccessControl = page(() => import("@/pages/System"), "AccessControl");
@@ -80,6 +81,7 @@ export default function App() {
           <Route path="locations" element={<Guard admin>{lazyPage(<Locations />)}</Guard>} />
           <Route path="staff" element={<Guard area="staff">{lazyPage(<ByQuery><StaffPage /></ByQuery>)}</Guard>} />
           <Route path="maintenance" element={<Guard area="maintenance">{lazyPage(<ByQuery><Maintenance /></ByQuery>)}</Guard>} />
+          <Route path="incidents" element={<Guard area="maintenance">{lazyPage(<ByQuery><Incidents /></ByQuery>)}</Guard>} />
           <Route path="users" element={<Guard area="owners">{lazyPage(<ByQuery><People /></ByQuery>)}</Guard>} />
           <Route path="billing" element={<Guard area="billing">{lazyPage(<ByQuery><Billing /></ByQuery>)}</Guard>} />
           <Route path="reports" element={<Guard area="reports">{lazyPage(<Reports />)}</Guard>} />

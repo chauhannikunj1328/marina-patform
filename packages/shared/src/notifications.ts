@@ -42,6 +42,9 @@ export function buildNotifications(db: Db, ix: Index, scope: string[], isAdmin: 
   const renewals = renewalsDue(db.contracts ?? [], now).filter((c) => inScope.has(c.marinaId));
   if (renewals.length)
     out.push({ id: `renewals-${renewals.map((c) => c.id).join(".")}`, title: `${renewals.length} ${renewals.length === 1 ? "contract is" : "contracts are"} up for renewal`, body: "Renew them or let the berth go back on sale.", to: "/contracts" });
+  const openIncidents = (db.incidents ?? []).filter((i) => i.status === "open" && inScope.has(i.marinaId));
+  if (openIncidents.length)
+    out.push({ id: `incidents-${openIncidents.map((i) => i.id).join(".")}`, title: `${openIncidents.length} new ${openIncidents.length === 1 ? "incident" : "incidents"} to review`, body: openIncidents.slice(0, 2).map((i) => i.description.slice(0, 60)).join(" · "), to: "/incidents" });
   const low = lowStock((db.inventory ?? []).filter((i) => inScope.has(i.marinaId)));
   if (low.length)
     out.push({ id: `stock-${low.map((i) => `${i.id}:${i.qty}`).join(".")}`, title: `${low.length} ${low.length === 1 ? "part is" : "parts are"} running low`, body: low.slice(0, 3).map((i) => i.name).join(", "), to: "/maintenance?tab=parts" });

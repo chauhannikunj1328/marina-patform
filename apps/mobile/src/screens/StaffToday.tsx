@@ -2,12 +2,13 @@
 import { useState } from "react";
 import { Pressable, View } from "react-native";
 import { router } from "expo-router";
-import { ChevronRight, Clock, LogIn, LogOut, Sailboat, Wrench } from "lucide-react-native";
+import { ChevronRight, Clock, LogIn, LogOut, Sailboat, ShieldAlert, Wrench } from "lucide-react-native";
 import { fmtDate, fmtDuration, fmtTime, planFor, prepChecklist, relative, SHIFT_HOURS, today, type Booking } from "@marina/shared";
 import { Badge, Button, Card, EmptyState, Screen, Section, Txt } from "@/components/ui";
 import { BookingSheet, CheckInSheet, useBookingStatus } from "@/components/sheets";
 import { HandoverList, HandoverSheet } from "@/components/handover";
 import { PatrolLink } from "@/components/patrol";
+import { IncidentSheet } from "@/components/incident";
 import { useClock, useNow } from "@/lib/clock";
 import { useOpenParam } from "@/lib/useOpenParam";
 import { useStore } from "@/store";
@@ -44,6 +45,7 @@ export function StaffToday() {
   const open = db.bookings.find((b) => b.id === openId);
   const [checkingIn, setCheckingIn] = useState<Booking | undefined>();
   const [handover, setHandover] = useState<"clockout" | "note" | undefined>();
+  const [incident, setIncident] = useState(false);
   const now = today();
   const all = ix.bookingsIn([marinaId]);
   const arrivals = all.filter((b) => b.start === now && (b.status === "confirmed" || b.status === "pending" || b.status === "checked-in"));
@@ -91,6 +93,7 @@ export function StaffToday() {
       </View>
 
       <PatrolLink />
+      <Button icon={ShieldAlert} label={tr("Report an incident")} onPress={() => setIncident(true)} style={{ marginTop: -12, marginBottom: 24 }} />
 
       <Section title={tr("From the last shift")} action={<Button size="sm" label={tr("Leave a note")} onPress={() => setHandover("note")} />}>
         <HandoverList marinaIds={[marinaId]} empty={tr("No hand-over notes in the last 24 hours.")} />
@@ -171,6 +174,7 @@ export function StaffToday() {
       <Txt v="caption" color={t.text3} style={{ textAlign: "center" }}>{m.occupied} of {m.berths} berths occupied · {m.available} free</Txt>
       {open && <BookingSheet booking={open} onClose={() => setOpenId(undefined)} />}
       {checkingIn && <CheckInSheet booking={checkingIn} onClose={() => setCheckingIn(undefined)} />}
+      {incident && <IncidentSheet marinaId={marinaId} onClose={() => setIncident(false)} />}
       {handover && <HandoverSheet marinaId={marinaId} title={handover === "clockout" ? tr("Clocked out. Any notes?") : undefined} onClose={() => setHandover(undefined)} />}
     </Screen>
   );

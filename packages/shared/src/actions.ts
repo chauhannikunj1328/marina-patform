@@ -142,3 +142,5 @@ export function withPartsUsed(d: Db, taskId: string, itemId: string, qty: number
 }
 
 export const lowStock = (items: InventoryItem[]) => items.filter((i) => i.qty <= i.reorderAt);
+
+export const INCIDENT_LABEL: Record<import("./types").IncidentKind, string> = { damage: "Damage", injury: "Injury", theft: "Theft", spill: "Fuel or oil spill", other: "Other" };

@@ -88,6 +88,7 @@ function normalize(db: Db): Db {
     timesheetApprovals: db.timesheetApprovals ?? [],
     maintenancePlans: db.maintenancePlans ?? [],
     inventory: db.inventory ?? [],
+    incidents: db.incidents ?? [],
     settings: { ...db.settings, permissions: { ...DEFAULT_PERMISSIONS, ...db.settings.permissions } },
     invoices: db.invoices.map((i) => ({ ...i, payments: i.payments ?? [], status: i.status === "due" && i.due < today() ? "overdue" : i.status })),
   });

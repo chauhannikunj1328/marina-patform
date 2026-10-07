@@ -405,3 +405,26 @@ export interface TimesheetApproval {
   approvedBy: string;
   at: string;
 }
+
+export type IncidentKind = "damage" | "injury" | "theft" | "spill" | "other";
+
+/** Something that went wrong at a marina: damage, an injury, theft or a spill. */
+export interface Incident {
+  id: ID;
+  code: string;
+  marinaId: ID;
+  kind: IncidentKind;
+  serious: boolean;
+  /** When it happened (ISO date-time). */
+  at: string;
+  berthId?: ID;
+  description: string;
+  /** People involved or witnesses. */
+  people?: string;
+  photos?: string[];
+  reportedBy: string;
+  reportedAt: string;
+  status: "open" | "investigating" | "closed";
+  notes: { at: string; by: string; text: string }[];
+  outcome?: string;
+}
