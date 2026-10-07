@@ -69,6 +69,7 @@ export default function Chat() {
                 {newDay && <Txt v="caption" color={t.text3} style={{ textAlign: "center", marginVertical: 8 }}>{day === today() ? "Today" : fmtShort(day)}</Txt>}
                 <View style={{ alignSelf: mine ? "flex-end" : "flex-start", maxWidth: "82%" }}>
                   <View style={{ backgroundColor: mine ? t.primary : t.surface, borderWidth: mine ? 0 : 1, borderColor: t.border, borderRadius: 18, borderBottomRightRadius: mine ? 6 : 18, borderBottomLeftRadius: mine ? 18 : 6, paddingHorizontal: 14, paddingVertical: 10 }}>
+                    {m.broadcast && <Txt v="caption" weight="semibold" color={mine ? t.onPrimary : t.greenText}>Announcement to everyone</Txt>}
                     <Txt color={mine ? t.onPrimary : t.text}>{m.text}</Txt>
                   </View>
                   <Txt v="caption" color={t.text3} style={{ marginTop: 2, textAlign: mine ? "right" : "left" }}>

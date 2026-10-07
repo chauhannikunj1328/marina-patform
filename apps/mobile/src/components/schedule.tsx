@@ -6,7 +6,7 @@ import { ChevronLeft, ChevronRight, Send, TriangleAlert } from "lucide-react-nat
 import { addDays, DAYS, fmtShort, fromISO, nextId, planFor, SHIFT_HOURS, today, type Shift, type Staff } from "@marina/shared";
 import { useStore } from "../store";
 import { useTheme } from "../theme";
-import { Badge, Button, Card, Chip, Field, IconButton, Sheet, Txt } from "./ui";
+import { Badge, Button, Card, Chip, Field, IconButton, Input, Sheet, Txt } from "./ui";
 
 export const SHIFTS = Object.keys(SHIFT_HOURS) as Shift[];
 
@@ -160,6 +160,48 @@ export function EditScheduleSheet({ staff, onClose }: { staff: Staff; onClose: (
           </View>
         </Field>
         <Txt v="caption" color={t.text3}>Single days off and swaps go through Approvals. This changes the regular week.</Txt>
+      </View>
+    </Sheet>
+  );
+}
+
+/** One announcement to every staff member at the chosen marinas. It lands in each person's Messages. */
+export function BroadcastSheet({ onClose }: { onClose: () => void }) {
+  const { db, ix, ids, update, toast, user } = useStore();
+  const { t } = useTheme();
+  const [targets, setTargets] = useState<string[]>(ids.length === 1 ? ids : []);
+  const [text, setText] = useState("");
+  const [error, setError] = useState("");
+  const people = db.staff.filter((s) => targets.includes(s.marinaId) && s.position !== "Marina Manager" && s.status === "active");
+  const send = () => {
+    if (!targets.length) return setError("Choose at least one marina.");
+    if (!text.trim()) return setError("Write the message.");
+    const at = new Date().toISOString();
+    update(
+      (d) => {
+        const base = Number(nextId("ch", d.chat).split("-")[1]);
+        return { ...d, chat: [...d.chat, ...people.map((s, i) => ({ id: `ch-${base + i}`, staffId: s.id, fromStaff: false, by: user?.name ?? "Manager", text: text.trim(), at, read: false, broadcast: true }))] };
+      },
+      { text: `Sent an announcement to ${people.length} staff at ${targets.map((m) => ix.marina(m)?.name).join(", ")}`, marinaId: targets.length === 1 ? targets[0] : undefined },
+    );
+    toast(`Sent to ${people.length} ${people.length === 1 ? "person" : "people"}`);
+    onClose();
+  };
+  return (
+    <Sheet open onClose={onClose} title="Message everyone" subtitle="An announcement in every staff member's Messages" footer={<Button variant="primary" size="lg" icon={Send} label={people.length ? `Send to ${people.length} ${people.length === 1 ? "person" : "people"}` : "Send"} onPress={send} />}>
+      <View style={{ gap: 16 }}>
+        {ids.length > 1 && (
+          <Field label="Marinas">
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+              <Chip label="All" on={targets.length === ids.length} onPress={() => { setTargets(targets.length === ids.length ? [] : ids); setError(""); }} />
+              {ids.map((m) => <Chip key={m} label={ix.marina(m)?.name ?? m} on={targets.includes(m)} onPress={() => { setTargets(targets.includes(m) ? targets.filter((x) => x !== m) : [...targets, m]); setError(""); }} />)}
+            </View>
+          </Field>
+        )}
+        <Field label="Message" error={error}>
+          <Input multiline value={text} onChangeText={(v) => { setText(v); setError(""); }} placeholder="e.g. Storm coming in tonight. Double up the lines on Dock A before you leave." invalid={!!error && !text.trim()} />
+        </Field>
+        <Txt v="caption" color={t.text3}>Replies come back to you one by one in Chat.</Txt>
       </View>
     </Sheet>
   );

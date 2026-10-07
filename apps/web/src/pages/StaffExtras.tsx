@@ -168,7 +168,7 @@ export function MessagesPanel({ staff }: { staff: Staff[] }) {
             {msgs.length === 0 && <p className="text-center text-[13px] text-ink-3">No messages yet. They'll see yours in the staff app.</p>}
             {msgs.map((m) => (
               <div key={m.id} className={cx("max-w-[75%]", m.fromStaff ? "self-start" : "self-end text-right")}>
-                <p className={cx("inline-block rounded-2xl px-3.5 py-2 text-left text-[13px]", m.fromStaff ? "border border-line bg-surface" : "bg-primary text-on-primary")}>{m.text}</p>
+                <p className={cx("inline-block rounded-2xl px-3.5 py-2 text-left text-[13px]", m.fromStaff ? "border border-line bg-surface" : "bg-primary text-on-primary")}>{m.broadcast && <span className="block text-[11px] font-semibold opacity-80">Announcement to everyone</span>}{m.text}</p>
                 <p className="mt-0.5 text-[11px] text-ink-3">{m.fromStaff ? "" : `${m.by} · `}{localDay(m.at) === today() ? fmtTime(m.at) : `${fmtShort(localDay(m.at))}, ${fmtTime(m.at)}`}{!m.fromStaff && m.read && " · Seen"}</p>
               </div>
             ))}

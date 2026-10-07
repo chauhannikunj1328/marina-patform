@@ -217,4 +217,6 @@ export interface ChatMessage {
   at: string; // ISO date-time
   /** Read by the other side. */
   read: boolean;
+  /** Sent to everyone at a marina at once (an announcement). */
+  broadcast?: boolean;
 }

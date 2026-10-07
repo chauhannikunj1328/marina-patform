@@ -2,11 +2,11 @@
 import { useState } from "react";
 import { Pressable, View } from "react-native";
 import { router } from "expo-router";
-import { Clock, MessagesSquare, Users } from "lucide-react-native";
+import { Clock, Megaphone, MessagesSquare, Users } from "lucide-react-native";
 import { addDays, fmtDateTime, fmtDuration, fmtShort, fmtTime, fromISO, minutesWorked, openEntry, planFor, today, type Staff } from "@marina/shared";
 import { List, StaffSheet } from "@/components/office";
-import { WeekSchedule } from "@/components/schedule";
-import { Avatar, Badge, EmptyState, Screen, Section, Segmented, Txt } from "@/components/ui";
+import { BroadcastSheet, WeekSchedule } from "@/components/schedule";
+import { Avatar, Badge, Button, EmptyState, Screen, Section, Segmented, Txt } from "@/components/ui";
 import { useViewParam } from "@/lib/useOpenParam";
 import { useNow } from "@/lib/clock";
 import { useStore } from "@/store";
@@ -33,6 +33,7 @@ export default function Team() {
   const now = useNow();
   const [view, setView] = useViewParam(["today", "week", "hours", "messages"] as const, "today");
   const [open, setOpen] = useState<Staff | undefined>();
+  const [broadcast, setBroadcast] = useState(false);
   const staff = db.staff.filter((s) => ids.includes(s.marinaId)).sort((a, b) => a.name.localeCompare(b.name));
   const day = today();
   const clocked = staff.filter((s) => openEntry(db, s.id));
@@ -88,6 +89,7 @@ export default function Team() {
         )
       )}
 
+      {view === "messages" && <Button icon={Megaphone} label="Message everyone" onPress={() => setBroadcast(true)} style={{ marginBottom: 12 }} />}
       {view === "messages" && (
         threads.length === 0 ? <EmptyState icon={MessagesSquare} title="No conversations yet" body="Open a team member and tap Message to start one." /> : (
           <List>
@@ -114,6 +116,7 @@ export default function Team() {
 
       {staff.length === 0 && <EmptyState icon={Users} title="No staff at this marina" />}
       {open && <StaffSheet staff={open} onClose={() => setOpen(undefined)} />}
+      {broadcast && <BroadcastSheet onClose={() => setBroadcast(false)} />}
     </Screen>
   );
 }
