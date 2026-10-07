@@ -4,9 +4,10 @@ import { BrowserRouter } from "react-router-dom";
 import "./index.css";
 import { StoreProvider } from "@/data/store";
 import App from "./App";
-import { LangProvider } from "@/lib/lang";
+import { LangProvider, startLang } from "@/lib/lang";
 
-createRoot(document.getElementById("root")!).render(
+// The saved language (if not English) is fetched before the first render.
+void startLang().then(() => createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
       <LangProvider>
@@ -16,4 +17,4 @@ createRoot(document.getElementById("root")!).render(
       </LangProvider>
     </BrowserRouter>
   </StrictMode>,
-);
+));

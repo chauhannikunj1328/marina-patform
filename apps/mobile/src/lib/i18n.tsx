@@ -4,7 +4,7 @@
 // a right-to-left root view right away, and the page direction on web.
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { I18nManager, Platform, View } from "react-native";
-import { isRtl, setLang as setSharedLang, t, type Lang } from "@marina/shared";
+import { isRtl, loadLang, setLang as setSharedLang, t, type Lang } from "@marina/shared";
 import { load, save } from "./storage";
 import { setArabicFonts } from "@/theme";
 
@@ -38,19 +38,26 @@ export function LangProvider({ children }: { children: ReactNode }) {
     return "en";
   });
   useEffect(() => {
-    load<Lang>(KEY).then((l) => {
+    load<Lang>(KEY).then(async (l) => {
       if (l && l !== lang) {
+        await loadLang(l);
         apply(l);
         setLangState(l);
       }
+    }).catch(() => {
+      /* stays in English */
     });
     // Read the saved choice once on start.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const setLang = useCallback((l: Lang) => {
-    apply(l);
-    setLangState(l);
-    void save(KEY, l);
+    loadLang(l).then(() => {
+      apply(l);
+      setLangState(l);
+      void save(KEY, l);
+    }, () => {
+      /* couldn't load the translations: stay in the current language */
+    });
   }, []);
   // A new function per language, so memoized screens that depend on it re-render too.
   // eslint-disable-next-line react-hooks/exhaustive-deps

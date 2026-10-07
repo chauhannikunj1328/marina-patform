@@ -2,8 +2,8 @@
 // Text is written in English in the code and looked up in the Spanish and Arabic tables;
 // anything missing falls back to English. The current language is module state (like the time
 // zone), so plain functions and formatters can use it; apps re-render everything when it changes.
-import { es } from "./es";
-import { ar } from "./ar";
+// The Spanish and Arabic tables are downloaded only when that language is chosen: call
+// loadLang(l) before setLang(l).
 
 export type Lang = "en" | "es" | "ar";
 export const LANGS: { code: Lang; name: string; english: string; rtl: boolean }[] = [
@@ -14,7 +14,18 @@ export const LANGS: { code: Lang; name: string; english: string; rtl: boolean }[
 
 /** A translation, or plural forms chosen by the language's rules (Arabic has zero, one, two, few, many). */
 export type Entry = string | Partial<Record<Intl.LDMLPluralRule, string>>;
-const TABLES: Record<Exclude<Lang, "en">, Record<string, Entry>> = { es, ar };
+type Table = Record<string, Entry>;
+const TABLES: Partial<Record<Exclude<Lang, "en">, Table>> = {};
+const EMPTY: Table = {};
+/** The current language's table (empty for English, or while it's still loading). */
+const table = (): Table => (lang === "en" ? EMPTY : TABLES[lang] ?? EMPTY);
+
+/** Fetches a language's translations (English needs none). Safe to call again. */
+export async function loadLang(l: Lang): Promise<void> {
+  if (l === "en" || TABLES[l]) return;
+  TABLES[l] = l === "es" ? (await import("./es")).es : (await import("./ar")).ar;
+  compiled = undefined;
+}
 
 let lang: Lang = "en";
 let listeners: ((l: Lang) => void)[] = [];
@@ -45,7 +56,7 @@ export function t(text: string | undefined, vars?: Vars): string | undefined;
 export function t(text: string | undefined, vars?: Vars): string | undefined {
   if (text === undefined) return undefined;
   if (lang === "en") return fill(plain(text), vars);
-  const e = TABLES[lang][text];
+  const e = table()[text];
   const s = typeof e === "string" ? e : e?.other ?? plain(text);
   return fill(s, vars);
 }
@@ -61,7 +72,7 @@ const rules: Partial<Record<Lang, Intl.PluralRules>> = {};
 export function tn(n: number, one: string, other: string, vars?: Vars): string {
   const v = { n, ...vars };
   if (lang === "en") return fill(n === 1 ? one : other, v);
-  const e = TABLES[lang][other] ?? TABLES[lang][one];
+  const e = table()[other] ?? table()[one];
   if (!e) return fill(n === 1 ? one : other, v);
   if (typeof e === "string") return fill(e, v);
   const cat = (rules[lang] ??= new Intl.PluralRules(locale(lang))).select(n);
@@ -77,7 +88,7 @@ const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 function templates(): Template[] {
   if (compiled?.lang === lang) return compiled.list;
-  const list = Object.keys(TABLES[lang as Exclude<Lang, "en">])
+  const list = Object.keys(table())
     .filter((k) => /\{\w+\}/.test(k) && /[A-Za-z]{2}/.test(plain(k).replace(/\{\w+\}/g, "")))
     .map((key) => {
       const names: string[] = [];
@@ -98,10 +109,9 @@ function templates(): Template[] {
 /** Translate a finished English sentence, e.g. "Berth A-04 deleted", using the phrase "Berth {code} deleted". */
 export function tx(text: string, depth = 0): string {
   if (lang === "en" || !text) return text;
-  const table = TABLES[lang];
-  if (table[text] !== undefined) return t(text);
+  if (table()[text] !== undefined) return t(text);
   const cap = text.charAt(0).toUpperCase() + text.slice(1);
-  if (table[cap] !== undefined) return t(cap);
+  if (table()[cap] !== undefined) return t(cap);
   if (depth > 1) return text;
   for (const { re, names, key } of templates()) {
     const m = re.exec(text);

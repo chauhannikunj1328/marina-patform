@@ -164,7 +164,7 @@ Both apps run in **English** (default), **Spanish** and **Arabic**. Switch from 
 
 - **Arabic reads right to left:** the layout is mirrored (sidebar and tab order on the right, arrows and chevrons flipped, chart axes reversed) and text uses **IBM Plex Sans Arabic**. Numbers stay in Western digits (0–9), and codes, emails, phone numbers and amounts keep reading left to right.
 - Dates, times, currency and plurals follow the language (Arabic has its own forms for 1, 2, 3–10 and 11+).
-- Text is written in English in the code (`t("Check in")` on the web, `tr("Check in")` on mobile, where `t` is the theme). Translations live in `packages/shared/src/i18n/es.ts` and `ar.ts`, keyed by the English text; anything missing falls back to English.
+- Text is written in English in the code (`t("Check in")` on the web, `tr("Check in")` on mobile, where `t` is the theme). Translations live in `packages/shared/src/i18n/es.ts` and `ar.ts`, keyed by the English text; anything missing falls back to English. The web app downloads a language's translations only when someone picks it, so English visitors don't load them.
 - The activity log and notifications are stored in English and shown in the reader's language.
 - Names, addresses and text people type (work order titles, notes, messages) are shown as entered.
 - On a phone, switching to or from Arabic mirrors the layout right away; the system's right-to-left setting is applied the next time the app opens.
