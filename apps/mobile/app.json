@@ -66,6 +66,12 @@
           "barcodeScannerEnabled": true
         }
       ],
+      [
+        "expo-notifications",
+        {
+          "color": "#2F3740"
+        }
+      ],
       "expo-status-bar"
     ],
     "experiments": {

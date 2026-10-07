@@ -1,6 +1,6 @@
 // Me: profile, this week's shifts and hours, time off and swaps, marinas, appearance and account.
 import { useState } from "react";
-import { Linking, Pressable, View } from "react-native";
+import { Linking, Pressable, Switch, View } from "react-native";
 import { router } from "expo-router";
 import { ChevronRight, CloudOff, ExternalLink, KeyRound, LogOut, Plus, UserRoundPen } from "lucide-react-native";
 import { addDays, DAYS, fmtDuration, fmtShort, fmtTime, fromISO, localDay, minutesWorked, planFor, SHIFT_HOURS, today, type StaffRequest } from "@marina/shared";
@@ -8,6 +8,7 @@ import { Avatar, Badge, Button, Screen, Section, Txt, type Icon } from "@/compon
 import { PasswordSheet, ProfileSheet, RequestSheet } from "@/components/me-sheets";
 import { useNow } from "@/lib/clock";
 import { useRole } from "@/lib/role";
+import { allowNotifications, remindersSupported } from "@/lib/reminders";
 import { useMe, useStore } from "@/store";
 import { useTheme, type ThemeMode } from "@/theme";
 
@@ -29,7 +30,7 @@ function ListRow({ icon: IconCmp, label, onPress }: { icon: Icon; label: string;
 }
 
 export default function Me() {
-  const { db, ix, user, scope, signOut, update, toast, outbox } = useStore();
+  const { db, ix, user, scope, signOut, update, toast, outbox, reminders, setReminders } = useStore();
   const me = useMe();
   const { t, mode, setMode } = useTheme();
   const { office, isAdmin } = useRole();
@@ -139,6 +140,28 @@ export default function Me() {
           )}
         </View>
       </Section>
+
+      {me && !office && (
+        <Section title="Notifications">
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 12, borderWidth: 1, borderColor: t.border, borderRadius: 16, padding: 16, backgroundColor: t.surface }}>
+            <View style={{ flex: 1 }}>
+              <Txt>Shift reminders</Txt>
+              <Txt v="caption" color={t.text3}>{remindersSupported ? "A notification 30 minutes before each shift." : "Available in the phone app."}</Txt>
+            </View>
+            <Switch
+              accessibilityLabel="Shift reminders"
+              disabled={!remindersSupported}
+              value={reminders && remindersSupported}
+              trackColor={{ true: t.tealStrong, false: t.surface3 }}
+              onValueChange={async (on) => {
+                if (on && !(await allowNotifications())) return toast("Turn on notifications for Marina in your phone's Settings.", undefined, "warning");
+                setReminders(on);
+                toast(on ? "Reminders on for your next 2 weeks of shifts" : "Shift reminders off");
+              }}
+            />
+          </View>
+        </Section>
+      )}
 
       <Section title="Appearance">
         <View style={{ flexDirection: "row", backgroundColor: t.surface3, borderRadius: 9999, padding: 4, gap: 4 }}>

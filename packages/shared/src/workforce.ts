@@ -1,6 +1,6 @@
 // Shifts, time off, swaps and hours worked. Used by the staff app and the web Staff page.
 import type { Db } from "./seed";
-import type { Staff, StaffRequest, TimeEntry } from "./types";
+import type { Shift, Staff, StaffRequest, TimeEntry } from "./types";
 import { fromISO, toISO } from "./date";
 
 export type DayPlan =
@@ -46,3 +46,10 @@ export function fmtTime(iso: string): string {
 
 /** Local calendar day of a date-time, as ISO date. */
 export const localDay = (iso: string) => toISO(new Date(iso));
+
+/** The shift someone works on a day: their own, or the colleague's they're covering. Undefined when not working. */
+export function shiftOn(s: Staff, day: string, requests: StaffRequest[], staff: Staff[]): Shift | undefined {
+  const p = planFor(s, day, requests);
+  if (!p.working) return undefined;
+  return p.covering ? staff.find((x) => x.id === p.covering?.staffId)?.shift ?? s.shift : s.shift;
+}

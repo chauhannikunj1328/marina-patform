@@ -42,6 +42,9 @@ interface Store {
   /** Changes made while offline, waiting to be sent once there's a server to send them to. */
   outbox: { at: string; text: string }[];
   changePassword: (current: string, next: string) => Promise<string | null>;
+  /** Shift reminders on this phone (staff). */
+  reminders: boolean;
+  setReminders: (on: boolean) => void;
 }
 
 const Ctx = createContext<Store | null>(null);
@@ -54,6 +57,7 @@ const SESSION_KEY = "marina.session";
 const MARINA_KEY = "marina.staff.marina";
 const PASSWORDS_KEY = "marina.passwords";
 const OUTBOX_KEY = "marina.outbox";
+const REMINDERS_KEY = "marina.reminders";
 
 const sha256 = (v: string) => Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, v);
 
@@ -81,6 +85,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [outbox, setOutbox] = useState<{ at: string; text: string }[]>([]);
   /** Passwords changed on this phone (hashes only), until there's a real account server. */
   const [passwords, setPasswords] = useState<Record<string, string>>({});
+  const [reminders, setRemindersState] = useState(false);
   const loaded = useRef(false);
   const onlineRef = useRef(true);
 
@@ -93,6 +98,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setMarinaIdState((await load<string>(MARINA_KEY)) ?? "");
       setPasswords((await load<Record<string, string>>(PASSWORDS_KEY)) ?? {});
       setOutbox((await load<{ at: string; text: string }[]>(OUTBOX_KEY)) ?? []);
+      setRemindersState((await load<boolean>(REMINDERS_KEY)) ?? false);
       loaded.current = true;
       setReady(true);
     })();
@@ -195,6 +201,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return null;
   };
 
+  const setReminders = useCallback((on: boolean) => {
+    setRemindersState(on);
+    void save(REMINDERS_KEY, on);
+  }, []);
+
   const signOut = () => {
     setUserId(null);
     void remove(SESSION_KEY);
@@ -203,7 +214,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const can = useCallback((area?: Area) => levelFor(db.settings.permissions, user?.role, area), [db.settings.permissions, user?.role]);
 
   return (
-    <Ctx.Provider value={{ ready, db, ix, user, scope, marinaId: currentMarina, ids, setMarinaId, signIn, signOut, update, can, toasts, toast, online, outbox, changePassword }}>
+    <Ctx.Provider value={{ ready, db, ix, user, scope, marinaId: currentMarina, ids, setMarinaId, signIn, signOut, update, can, toasts, toast, online, outbox, changePassword, reminders, setReminders }}>
       {children}
     </Ctx.Provider>
   );

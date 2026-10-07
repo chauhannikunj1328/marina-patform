@@ -1,7 +1,7 @@
 // Signed-in shell: header with the logomark and marina switcher, and a bottom tab bar that depends
 // on the role. Staff: Today, Bookings, Berths, Tasks, Me. Managers and admins: Overview, Approvals,
 // Bookings, Team, Me (Berths and Tasks stay reachable from the Overview).
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Pressable, View, type ColorValue } from "react-native";
 import { Redirect, router, Tabs } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -9,7 +9,8 @@ import { Bell, CalendarCheck, CalendarDays, Check, ChevronDown, ClipboardList, H
 import type { ComponentType } from "react";
 import { IconButton, Logomark, OfflineBanner, Sheet, Txt } from "@/components/ui";
 import { useInbox, useRole, useUnreadChat } from "@/lib/role";
-import { ALL, useStore } from "@/store";
+import { syncShiftReminders } from "@/lib/reminders";
+import { ALL, useMe, useStore } from "@/store";
 import { fonts, useTheme } from "@/theme";
 
 function Header() {
@@ -66,6 +67,20 @@ function Header() {
   );
 }
 
+/** Keeps this phone's shift reminders in line with the person's schedule, time off and swaps. */
+function ReminderSync() {
+  const { db, ix, reminders } = useStore();
+  const me = useMe();
+  const marinaName = ix.marina(me?.marinaId ?? "")?.name ?? "the marina";
+  const key = me ? JSON.stringify([me.shift, me.daysOff, me.status, db.requests.filter((r) => r.status === "approved" && (r.staffId === me.id || r.swapWithId === me.id)).map((r) => r.id)]) : "";
+  useEffect(() => {
+    void syncShiftReminders(me, db, marinaName, reminders).catch(() => undefined);
+    // Re-sync only when the schedule itself changes, not on every data update.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key, reminders, marinaName]);
+  return null;
+}
+
 const icon = (Cmp: ComponentType<LucideProps>) =>
   function TabIcon({ color: tint, focused }: { color: ColorValue; focused: boolean }) {
     const { t } = useTheme();
@@ -88,6 +103,8 @@ export default function TabsLayout() {
   const staffOnly = office ? { href: null } : {};
   const officeOnly = office ? {} : { href: null };
   return (
+    <>
+    {!office && <ReminderSync />}
     <Tabs
       screenOptions={{
         header: () => <Header />,
@@ -106,5 +123,6 @@ export default function TabsLayout() {
       <Tabs.Screen name="team" options={{ title: "Team", tabBarIcon: icon(Users), ...officeOnly }} />
       <Tabs.Screen name="me" options={{ title: "Me", tabBarIcon: icon(UserRound) }} />
     </Tabs>
+    </>
   );
 }

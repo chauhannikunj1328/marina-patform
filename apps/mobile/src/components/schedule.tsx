@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Pressable, View } from "react-native";
 import { ChevronLeft, ChevronRight, Send, TriangleAlert } from "lucide-react-native";
-import { addDays, DAYS, fmtShort, fromISO, nextId, planFor, SHIFT_HOURS, today, type Shift, type Staff } from "@marina/shared";
+import { addDays, DAYS, fmtShort, fromISO, nextId, planFor, SHIFT_HOURS, shiftOn, today, type Shift, type Staff } from "@marina/shared";
 import { useStore } from "../store";
 import { useTheme } from "../theme";
 import { Badge, Button, Card, Chip, Field, IconButton, Input, Sheet, Txt } from "./ui";
@@ -11,13 +11,6 @@ import { Badge, Button, Card, Chip, Field, IconButton, Input, Sheet, Txt } from 
 export const SHIFTS = Object.keys(SHIFT_HOURS) as Shift[];
 
 type Requests = Parameters<typeof planFor>[2];
-
-/** The shift someone works on a day: their own, or the colleague's they're covering. Undefined when not working. */
-export function shiftOn(s: Staff, day: string, requests: Requests, staff: Staff[]): Shift | undefined {
-  const p = planFor(s, day, requests);
-  if (!p.working) return undefined;
-  return p.covering ? staff.find((x) => x.id === p.covering?.staffId)?.shift ?? s.shift : s.shift;
-}
 
 /** Shifts with nobody working at a marina on a day. */
 export function gapsOn(staff: Staff[], marinaId: string, day: string, requests: Requests): Shift[] {
