@@ -14,5 +14,6 @@ export default defineConfig({
     },
   },
   // The shared package lives outside this app's folder.
-  server: { fs: { allow: ["../.."] } },
+  // PORT is set when a tool picks the port (e.g. the preview runner); otherwise Vite's default.
+  server: { port: process.env.PORT ? Number(process.env.PORT) : undefined, fs: { allow: ["../.."] } },
 });
