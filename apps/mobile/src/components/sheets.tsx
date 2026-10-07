@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Image, Linking, Pressable, ScrollView, View } from "react-native";
 import { ArrowRightLeft, Banknote, Fuel, Gauge, CalendarCog, Camera, CircleCheck, CircleX, ImagePlus, LogIn, LogOut, Mail, Phone, Search, TriangleAlert, X } from "lucide-react-native";
 import {
-  addDays, bookingAmount, daysBetween, DEFAULT_UTILITIES, lastReading, METER_UNIT, priceNote, withMeterReading, fmtDate, fmtShort, linesTotal, money2, nextId, prepChecklist, relative, SERVICES, today, withInvoice, withServiceCharge,
+  addDays, bookingAmount, daysBetween, DEFAULT_UTILITIES, withPartsUsed, lastReading, METER_UNIT, priceNote, withMeterReading, fmtDate, fmtShort, linesTotal, money2, nextId, prepChecklist, relative, SERVICES, today, withInvoice, withServiceCharge,
   type ArrivalRecord, type Berth, type MeterKind, type BoatCondition, type Booking, type BookingStatus, type BoatType, type Invoice, type MaintenanceTask, type PaymentMethod, type Priority,
 } from "@marina/shared";
 import { ALL, useMe, useStore } from "../store";
@@ -613,7 +613,47 @@ export function TaskSheet({ task, onClose }: { task: MaintenanceTask; onClose: (
           <Button size="sm" label={tr("Add update")} disabled={!note.trim() && photos.length === 0} onPress={addUpdate} style={{ alignSelf: "flex-start" }} />
         </View>
       )}
+      <TaskParts task={x} canEdit={canEdit && x.status !== "done"} />
     </Sheet>
+  );
+}
+
+/** Parts used on a work order, and taking more from the marina's stock. */
+function TaskParts({ task: x, canEdit }: { task: MaintenanceTask; canEdit: boolean }) {
+  const { db, update, toast } = useStore();
+  const { t } = useTheme();
+  const tr = useTr();
+  const items = (db.inventory ?? []).filter((i) => i.marinaId === x.marinaId);
+  const [itemId, setItemId] = useState("");
+  const [qty, setQty] = useState(1);
+  const item = items.find((i) => i.id === itemId);
+  if (!items.length) return null;
+  const use = () => {
+    if (!item) return;
+    const before = db;
+    update((d) => withPartsUsed(d, x.id, item.id, qty), { text: `Used ${qty} × ${item.name} on ${x.code}`, to: `/maintenance?open=${x.id}`, marinaId: x.marinaId });
+    toast(`${qty} × ${item.name} taken from stock`, before);
+    setItemId("");
+    setQty(1);
+  };
+  return (
+    <View style={{ gap: 8, marginTop: 16 }}>
+      <Txt v="bodySm" weight="semibold">{tr("Parts used")}</Txt>
+      {(x.parts ?? []).length === 0 ? <Txt v="caption" color={t.text3}>{tr("None yet.")}</Txt> : (x.parts ?? []).map((p) => <Txt key={p.itemId} v="bodySm">{p.qty} × {items.find((i) => i.id === p.itemId)?.name}</Txt>)}
+      {canEdit && (
+        <>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+            {items.map((i) => <Chip key={i.id} label={i.name} sub={`${i.qty} ${i.unit} ${tr("left")}`} on={itemId === i.id} disabled={i.qty === 0} onPress={() => { setItemId(i.id); setQty(1); }} />)}
+          </ScrollView>
+          {item && (
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+              <Stepper label={item.unit} value={qty} onChange={setQty} max={item.qty} />
+              <Button size="sm" variant="primary" label={tr("Use part")} onPress={use} />
+            </View>
+          )}
+        </>
+      )}
+    </View>
   );
 }
 

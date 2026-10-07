@@ -1,6 +1,6 @@
 // Small helpers shared by pages that change data, so every page creates records the same way.
 import type { Db } from "./seed";
-import type { Contract, Invoice, InvoiceLine, MaintenancePlan, MaintenanceTask, MeterKind, MeterReading, Message, Recurrence } from "./types";
+import type { Contract, InventoryItem, Invoice, InvoiceLine, MaintenancePlan, MaintenanceTask, MeterKind, MeterReading, Message, Recurrence } from "./types";
 import { nextId } from "./util";
 import { addDays, addMonths, daysBetween, today } from "./date";
 
@@ -123,3 +123,22 @@ export function withRecurringTasks(d: Db, now = today()): Db {
   });
   return { ...d, tasks, maintenancePlans: updated as MaintenancePlan[] };
 }
+
+/** Take parts out of stock for a work order. Quantities below zero are capped at what's left. */
+export function withPartsUsed(d: Db, taskId: string, itemId: string, qty: number): Db {
+  const item = (d.inventory ?? []).find((i) => i.id === itemId);
+  if (!item || qty <= 0) return d;
+  const used = Math.min(qty, item.qty);
+  return {
+    ...d,
+    inventory: (d.inventory ?? []).map((i) => (i.id === itemId ? { ...i, qty: i.qty - used } : i)),
+    tasks: d.tasks.map((t) => {
+      if (t.id !== taskId) return t;
+      const parts = t.parts ?? [];
+      const existing = parts.find((p) => p.itemId === itemId);
+      return { ...t, parts: existing ? parts.map((p) => (p.itemId === itemId ? { ...p, qty: p.qty + used } : p)) : [...parts, { itemId, qty: used }] };
+    }),
+  };
+}
+
+export const lowStock = (items: InventoryItem[]) => items.filter((i) => i.qty <= i.reorderAt);

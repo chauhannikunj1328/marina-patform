@@ -137,6 +137,20 @@ export interface MaintenanceTask {
   doneAt?: string;
   /** The recurring plan that created it. */
   planId?: ID;
+  /** Parts and supplies used on the job. */
+  parts?: { itemId: ID; qty: number }[];
+}
+
+/** A part or supply kept in stock at a marina. */
+export interface InventoryItem {
+  id: ID;
+  marinaId: ID;
+  name: string;
+  unit: string;
+  qty: number;
+  /** Flag for reordering at or below this. */
+  reorderAt: number;
+  unitCost: number;
 }
 
 export type Recurrence = "week" | "month" | "quarter";

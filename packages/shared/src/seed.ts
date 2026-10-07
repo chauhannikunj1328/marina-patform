@@ -2,7 +2,7 @@
 // and dates are generated relative to today so the data never looks stale.
 import type {
   Berth, BerthType, Boat, BoatOwner, BoatType, Booking, BookingStatus, City, County,
-  Activity, ChatMessage, Contract, Handover, Invoice, MaintenancePlan, MeterReading, TimesheetApproval, Patrol, WaitlistEntry, MaintenanceTask, Marina, Message, Settings, Shift, Staff, StaffRequest, SystemUser, TimeEntry,
+  Activity, ChatMessage, Contract, Handover, InventoryItem, Invoice, MaintenancePlan, MeterReading, TimesheetApproval, Patrol, WaitlistEntry, MaintenanceTask, Marina, Message, Settings, Shift, Staff, StaffRequest, SystemUser, TimeEntry,
 } from "./types";
 import { addDays, daysBetween, fromISO, today } from "./date";
 import { bookingAmount } from "./pricing";
@@ -44,6 +44,8 @@ export interface Db {
   timesheetApprovals: TimesheetApproval[];
   /** Recurring maintenance */
   maintenancePlans: MaintenancePlan[];
+  /** Parts and supplies at each marina */
+  inventory: InventoryItem[];
   settings: Settings;
   /** Notification ids the user has dismissed or read */
   readNotifications: string[];
@@ -452,6 +454,14 @@ export function createSeed(): Db {
 
   timeEntries.push(...clockIns);
 
+  const PARTS: [string, string, number, number][] = [
+    ["Dock cleat, 10 in", "each", 18, 4], ["Dock line, 25 ft", "each", 24, 6], ["Fender, medium", "each", 32, 4], ["Shore power cord, 30 A", "each", 120, 2],
+    ["Pedestal fuse, 30 A", "each", 9, 10], ["Hose fitting", "each", 6, 10], ["Deck screws", "box", 14, 3], ["Marine epoxy kit", "kit", 38, 2], ["Dock light bulb", "each", 11, 8],
+  ];
+  const inventory: InventoryItem[] = marinaDefs.flatMap((m, i) =>
+    PARTS.map(([name, unit, cost, reorder], k) => ({ id: `inv-${m.id}-${k + 1}`, marinaId: m.id, name, unit, unitCost: cost, reorderAt: reorder, qty: Math.max(0, reorder + between(-3, 14) - ((i + k) % 7 === 0 ? reorder : 0)) })),
+  );
+
   // Each marina's routine jobs. Work orders appear a week before they're due.
   const maintenancePlans: MaintenancePlan[] = marinaDefs.flatMap((m, i) => {
     const hand = staff.find((st) => st.marinaId === m.id && st.position === "Dock Hand");
@@ -462,5 +472,5 @@ export function createSeed(): Db {
     ];
   });
 
-  return { counties, cities, marinas, berths, owners, boats, bookings, staff, tasks, invoices, users, activity, messages, timeEntries, requests, chat, handovers, patrols, waitlist, contracts, meterReadings, timesheetApprovals: [], maintenancePlans, settings, readNotifications: [] };
+  return { counties, cities, marinas, berths, owners, boats, bookings, staff, tasks, invoices, users, activity, messages, timeEntries, requests, chat, handovers, patrols, waitlist, contracts, meterReadings, timesheetApprovals: [], maintenancePlans, inventory, settings, readNotifications: [] };
 }

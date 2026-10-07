@@ -5,6 +5,7 @@ import { nextId, useStore } from "@/data/store";
 import { DAYS, planFor, SHIFT_HOURS } from "@marina/shared";
 import { HoursPanel, MessagesPanel, RequestsPanel } from "./StaffExtras";
 import { RecurringPlans } from "./Recurring";
+import { PartsCard, PartsUsed } from "./Parts";
 import type { MaintenanceTask, Priority, Shift, Staff, TaskStatus } from "@marina/shared";
 import { addDays, fmtDate, fmtShort, fromISO, relative, today } from "@marina/shared";
 import { cx } from "@marina/shared";
@@ -373,6 +374,7 @@ function TaskDetail({ task, onClose, onEdit }: { task: MaintenanceTask; onClose:
         <span className="text-ink-3">Location: </span>{ix.marina(t.marinaId)?.name}{berth ? `, berth ${berth.code}` : ", facility"}
         {berth?.underMaintenance && <span className="ml-2 text-ink-3">(berth out of service)</span>}
       </p>
+      <PartsUsed task={t} />
       <h3 className="mb-2 text-[13px] font-semibold">Notes</h3>
       {t.notes.length === 0 ? (
         <p className="mb-3 text-[13px] text-ink-3">No notes yet.</p>
@@ -469,6 +471,7 @@ export function Maintenance() {
         </Table>
       </Card>
       <RecurringPlans ids={marinaId === "all" ? scope : [marinaId]} canEdit={canEditTasks} />
+      <PartsCard ids={marinaId === "all" ? scope : [marinaId]} canEdit={canEditTasks} />
       {opened && !editing && <TaskDetail task={opened} onClose={() => setOpen()} onEdit={() => setEditing(opened)} />}
       {editing && <TaskForm task={editing === "new" ? undefined : editing} onClose={() => setEditing(undefined)} />}
     </>
