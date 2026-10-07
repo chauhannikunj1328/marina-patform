@@ -3,7 +3,12 @@ import { cloneElement, useEffect, useId, useLayoutEffect, useMemo, useRef, useSt
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { ArrowDown, ArrowUp, ArrowUpDown, ChevronDown, ChevronLeft, ChevronRight, CircleAlert, Inbox, Info, Search, TrendingDown, TrendingUp, X, type LucideIcon } from "lucide-react";
-import { cx } from "@marina/shared";
+import { tn, t, cx } from "@marina/shared";
+import { ArrowLeft, ArrowRight } from "lucide-react";
+
+/** Icons that point along the reading direction; they're mirrored in Arabic. */
+const DIRECTIONAL = new Set<unknown>([ChevronLeft, ChevronRight, ArrowLeft, ArrowRight]);
+export const flip = (Icon: unknown) => (DIRECTIONAL.has(Icon) ? "flip-rtl" : undefined);
 
 // ---- Tooltip (07: Slate background, white 12 px text, radius 6, no arrow) ----
 
@@ -78,7 +83,7 @@ export function Button({
       )}
       {...rest}
     >
-      {Icon && <Icon className="size-4 shrink-0" aria-hidden />}
+      {Icon && <Icon className={cx("size-4 shrink-0", flip(Icon))} aria-hidden />}
       {children}
     </button>
   );
@@ -107,7 +112,7 @@ export function IconButton({
         )}
         {...rest}
       >
-        <Icon className={look === "outline" ? "size-5" : "size-4"} aria-hidden />
+        <Icon className={cx(look === "outline" ? "size-5" : "size-4", flip(Icon))} aria-hidden />
       </button>
     </Tooltip>
   );
@@ -198,14 +203,14 @@ export function StatCard({
           <Icon className="size-5 text-ink-2" aria-hidden />
         </span>
       </div>
-      <div className="num mt-3 text-[32px] leading-10 font-semibold tracking-[-0.01em]">{value}</div>
+      <div className="num mt-3 text-[32px] leading-10 font-semibold tracking-[-0.01em]"><bdi dir="ltr">{value}</bdi></div>
       <div className="mt-2 flex flex-wrap items-center gap-2 text-xs leading-[18px] text-ink-3">
         {trend && <Trend {...trend} />}
         {sub}
       </div>
     </>
   );
-  const cls = "block w-full rounded-[16px] border bg-surface p-6 text-left";
+  const cls = "block w-full rounded-[16px] border bg-surface p-6 text-start";
   const interactive = "cursor-pointer transition-[background-color,border-color,box-shadow] duration-[120ms] ease-brand hover:border-line-hover hover:bg-row-hover hover:shadow-e1 active:bg-sidebar";
   if (to)
     return (
@@ -232,9 +237,9 @@ export function Trend({ value, label = "vs last month", unit = "pct" }: { value:
         <Icon className="size-3.5" aria-hidden />
         {up ? "+" : "−"}
         {Math.abs(value * 100).toFixed(1)}
-        {unit === "pct" ? "%" : " pts"}
+        {unit === "pct" ? "%" : " " + t("pts")}
       </span>
-      <span className="text-ink-3">{label}</span>
+      <span className="text-ink-3">{t(label)}</span>
     </span>
   );
 }
@@ -282,7 +287,7 @@ export function Tabs<T extends string>({ value, onChange, items }: { value: T; o
             value === it.value ? "border-primary text-ink" : "border-transparent text-ink-3 hover:text-ink",
           )}
         >
-          {it.label}
+          {t(it.label)}
           {it.count !== undefined && <span className="num rounded-full bg-surface-3 px-2 text-xs font-semibold text-ink-2">{it.count}</span>}
         </button>
       ))}
@@ -333,18 +338,18 @@ export function Select({ children, look = "box", ...props }: SelectHTMLAttribute
   if (look === "plain")
     return (
       <span className="relative inline-flex items-center">
-        <select {...props} className={cx("cursor-pointer appearance-none rounded-full bg-transparent py-1.5 pr-7 pl-2 text-[15px] font-semibold text-ink hover:bg-sidebar-hover focus:outline-2 focus:outline-offset-2 focus:outline-focus", props.className)}>
+        <select {...props} className={cx("cursor-pointer appearance-none rounded-full bg-transparent py-1.5 pe-7 ps-2 text-[15px] font-semibold text-ink hover:bg-sidebar-hover focus:outline-2 focus:outline-offset-2 focus:outline-focus", props.className)}>
           {children}
         </select>
-        <ChevronDown className="pointer-events-none absolute right-2 size-4 text-ink" aria-hidden />
+        <ChevronDown className="pointer-events-none absolute end-2 size-4 text-ink" aria-hidden />
       </span>
     );
   return (
     <span className={cx("relative inline-flex w-full items-center", props.className)}>
-      <select {...props} className={cx(control, "cursor-pointer appearance-none pr-9")}>
+      <select {...props} className={cx(control, "cursor-pointer appearance-none pe-9")}>
         {children}
       </select>
-      <ChevronDown className="pointer-events-none absolute right-3.5 size-4 text-ink-2" aria-hidden />
+      <ChevronDown className="pointer-events-none absolute end-3.5 size-4 text-ink-2" aria-hidden />
     </span>
   );
 }
@@ -357,14 +362,14 @@ export function Textarea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
 export function SearchInput({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder: string }) {
   return (
     <div className="relative min-w-[min(100%,16rem)] flex-1">
-      <Search className="pointer-events-none absolute top-1/2 left-0 size-5 -translate-y-1/2 text-ink-3" aria-hidden />
+      <Search className="pointer-events-none absolute top-1/2 start-0 size-5 -translate-y-1/2 text-ink-3" aria-hidden />
       <input
         type="search"
         aria-label={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="h-10 w-full border-0 border-b border-line bg-transparent pr-2 pl-8 text-[15px] text-ink placeholder:text-ink-3 transition-colors hover:border-line-hover focus:border-focus focus:outline-none"
+        className="h-10 w-full border-0 border-b border-line bg-transparent pe-2 ps-8 text-[15px] text-ink placeholder:text-ink-3 transition-colors hover:border-line-hover focus:border-focus focus:outline-none"
       />
     </div>
   );
@@ -377,7 +382,7 @@ export function Toolbar({ children, active = 0, onClear }: { children: ReactNode
       {children}
       {active > 0 && onClear && (
         <button onClick={onClear} className="inline-flex h-10 items-center gap-1 rounded-full px-3 text-[13px] font-semibold text-green-text hover:bg-success-bg cursor-pointer">
-          <X className="size-3.5" aria-hidden /> Clear {active} filter{active > 1 ? "s" : ""}
+          <X className="size-3.5" aria-hidden /> {tn(active, "Clear {n} filter", "Clear {n} filters")}
         </button>
       )}
     </div>
@@ -427,7 +432,7 @@ type Head = ReactNode | { label: string; sortKey: string };
 
 export function Table({ head, children, empty, sort }: { head: Head[]; children: ReactNode; empty?: boolean; sort?: SortState }) {
   const ref = useRef<HTMLTableElement>(null);
-  const labels = head.map((h) => (typeof h === "string" ? h : h && typeof h === "object" && "label" in h ? h.label : ""));
+  const labels = head.map((h) => (typeof h === "string" ? t(h) : h && typeof h === "object" && "label" in h ? t(h.label) : ""));
   // On phones each row becomes a card; cells show their column name from data-label (see .rtable in index.css).
   useLayoutEffect(() => {
     ref.current?.querySelectorAll("tbody > tr").forEach((tr) => {
@@ -438,24 +443,24 @@ export function Table({ head, children, empty, sort }: { head: Head[]; children:
     <div className="overflow-x-auto max-sm:overflow-visible max-sm:pb-2">
       <table ref={ref} className="rtable w-full text-[13px] leading-5">
         <thead>
-          <tr className="border-y border-table-line bg-table-head text-left">
+          <tr className="border-y border-table-line bg-table-head text-start">
             {head.map((h, i) => {
               const sortable = sort && h && typeof h === "object" && "sortKey" in h;
               if (!sortable)
                 return (
-                  <th key={i} className="text-label h-10 px-4 whitespace-nowrap text-ink-3 first:pl-6 last:pr-6 last:text-right">
-                    {h as ReactNode}
+                  <th key={i} className="text-label h-10 px-4 whitespace-nowrap text-ink-3 first:ps-6 last:pe-6 last:text-end">
+                    {typeof h === "string" ? t(h) : (h as ReactNode)}
                   </th>
                 );
               const active = sort.key === h.sortKey;
               const Icon = !active ? ArrowUpDown : sort.dir === "asc" ? ArrowUp : ArrowDown;
               return (
-                <th key={i} aria-sort={active ? (sort.dir === "asc" ? "ascending" : "descending") : "none"} className="h-10 px-2 whitespace-nowrap first:pl-4">
+                <th key={i} aria-sort={active ? (sort.dir === "asc" ? "ascending" : "descending") : "none"} className="h-10 px-2 whitespace-nowrap first:ps-4">
                   <button
                     onClick={() => sort.onSort(h.sortKey)}
                     className={cx("text-label inline-flex items-center gap-1 rounded-full px-2 py-1 hover:bg-sidebar-hover cursor-pointer", active ? "text-ink" : "text-ink-3")}
                   >
-                    {h.label}
+                    {t(h.label)}
                     <Icon className={cx("size-3", !active && "opacity-50")} aria-hidden />
                   </button>
                 </th>
@@ -463,11 +468,11 @@ export function Table({ head, children, empty, sort }: { head: Head[]; children:
             })}
           </tr>
         </thead>
-        <tbody className="[&>tr]:border-b [&>tr]:border-table-line [&>tr:last-child]:border-0 [&>tr]:transition-colors [&>tr]:duration-[120ms] [&>tr:hover]:bg-row-hover [&_td]:h-[52px] [&_td]:px-4 [&_td]:py-2.5 [&_td]:align-middle [&_td:first-child]:pl-6 [&_td:last-child]:pr-6 [&_td:last-child]:text-right">
+        <tbody className="[&>tr]:border-b [&>tr]:border-table-line [&>tr:last-child]:border-0 [&>tr]:transition-colors [&>tr]:duration-[120ms] [&>tr:hover]:bg-row-hover [&_td]:h-[52px] [&_td]:px-4 [&_td]:py-2.5 [&_td]:align-middle [&_td:first-child]:ps-6 [&_td:last-child]:pe-6 [&_td:last-child]:text-end">
           {children}
         </tbody>
       </table>
-      {empty && <EmptyState icon={Search} title="No results found" body="Nothing matches these filters. Try a different search or clear the filters." />}
+      {empty && <EmptyState icon={Search} title={t("No results found")} body={t("Nothing matches these filters. Try a different search or clear the filters.")} />}
     </div>
   );
 }
@@ -477,11 +482,11 @@ export function Pagination({ page, pages, total, onPage }: { page: number; pages
   return (
     <div className="flex items-center justify-between border-t border-table-line px-6 py-3 text-[13px] text-ink-3">
       <span className="num">
-        Page {page} of {pages} · {total.toLocaleString("en-US")} results
+        {t("Page")} {page} {t("of")} {pages} · {total.toLocaleString("en-US")} {t("results")}
       </span>
       <div className="flex gap-2">
-        <IconButton look="outline" icon={ChevronLeft} label="Previous page" disabled={page <= 1} onClick={() => onPage(page - 1)} />
-        <IconButton look="outline" icon={ChevronRight} label="Next page" disabled={page >= pages} onClick={() => onPage(page + 1)} />
+        <IconButton look="outline" icon={ChevronLeft} label={t("Previous page")} disabled={page <= 1} onClick={() => onPage(page - 1)} />
+        <IconButton look="outline" icon={ChevronRight} label={t("Next page")} disabled={page >= pages} onClick={() => onPage(page + 1)} />
       </div>
     </div>
   );
@@ -584,15 +589,15 @@ export function Modal({
             <h2 className="text-[22px] leading-[30px] font-medium tracking-[-0.005em]">{title}</h2>
             {description && <p className="mt-1 text-[13px] leading-5 text-ink-3">{description}</p>}
           </div>
-          <IconButton look="outline" icon={X} label="Close" onClick={() => requestClose.current()} />
+          <IconButton look="outline" icon={X} label={t("Close")} onClick={() => requestClose.current()} />
         </div>
         <div className="overflow-y-auto px-6 pb-6 sm:px-8">{children}</div>
         {confirmDiscard ? (
           <div role="alert" className="flex flex-wrap items-center justify-between gap-2 rounded-b-[20px] border-t border-line bg-accent-soft px-6 py-4 sm:px-8">
-            <p className="text-[13px] font-medium text-ink">Discard your unsaved changes?</p>
+            <p className="text-[13px] font-medium text-ink">{t("Discard your unsaved changes?")}</p>
             <div className="flex gap-2">
-              <Button size="sm" onClick={() => setConfirmDiscard(false)}>Keep editing</Button>
-              <Button size="sm" variant="primary" onClick={onClose}>Discard</Button>
+              <Button size="sm" onClick={() => setConfirmDiscard(false)}>{t("Keep editing")}</Button>
+              <Button size="sm" variant="primary" onClick={onClose}>{t("Discard")}</Button>
             </div>
           </div>
         ) : (
@@ -628,7 +633,7 @@ export function ConfirmDialog({
       title={title}
       footer={
         <>
-          <Button onClick={onClose}>Keep it</Button>
+          <Button onClick={onClose}>{t("Keep it")}</Button>
           <Button
             variant={destructive ? "danger" : "primary"}
             onClick={() => {
@@ -662,7 +667,7 @@ export function Avatar({ name, size = 8, online }: { name: string; size?: 8 | 9 
       aria-hidden
     >
       {initials}
-      {online && <span className="absolute -right-0.5 -bottom-0.5 size-3 rounded-full border-2 border-sidebar bg-green" />}
+      {online && <span className="absolute -end-0.5 -bottom-0.5 size-3 rounded-full border-2 border-sidebar bg-green" />}
     </span>
   );
 }
@@ -674,7 +679,7 @@ export function Meter({ value, label }: { value: number; label?: string }) {
       <div className="h-1.5 w-full min-w-16 overflow-hidden rounded-full bg-line" role="meter" aria-valuenow={Math.round(value * 100)} aria-valuemin={0} aria-valuemax={100} aria-label={label}>
         <div className="h-full rounded-full bg-green transition-[width] duration-300 ease-brand" style={{ width: `${Math.min(100, value * 100)}%` }} />
       </div>
-      <span className="num w-10 text-right text-xs font-medium text-ink-2">{(value * 100).toFixed(0)}%</span>
+      <span className="num w-10 text-end text-xs font-medium text-ink-2">{(value * 100).toFixed(0)}%</span>
     </div>
   );
 }

@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Ban, CircleAlert, CircleCheck, CircleDollarSign, Clock, DollarSign, Download, Eye, Printer, Send } from "lucide-react";
 import { useStore } from "@/data/store";
 import type { Invoice, InvoiceStatus, PaymentMethod } from "@marina/shared";
-import { linesTotal, withMessage } from "@marina/shared";
+import { tn, t, linesTotal, withMessage } from "@marina/shared";
 import { daysBetween, fmtDate, monthKey, today } from "@marina/shared";
 import { money, money2 } from "@marina/shared";
 import { downloadCsv } from "@/lib/csv";
@@ -22,7 +22,7 @@ function useInvoiceActions() {
       (d) => withMessage({ ...d, invoices: d.invoices.map((i) => (i.id === inv.id ? { ...i, reminders: [...i.reminders, today()] } : i)) }, { to: owner.email, subject: `Payment reminder for ${inv.number}`, kind: "reminder", ref: inv.id }),
       { text: `Sent payment reminder for ${inv.number} to ${owner.name}`, to: `/billing?open=${inv.id}`, marinaId: ix.berth(bk.berthId)?.marinaId },
     );
-    if (!quiet) toast(`Reminder sent to ${owner.email}`);
+    if (!quiet) toast(t("Reminder sent to {email}", { email: owner.email }));
   };
   return { remind };
 }
@@ -34,9 +34,9 @@ function RecordPayment({ invoice, onClose }: { invoice: Invoice; onClose: () => 
   const [error, setError] = useState("");
   const save = () => {
     const amount = Math.round(Number(f.amount) * 100) / 100;
-    if (!(amount > 0)) return setError("Enter an amount above zero.");
-    if (amount > balance) return setError(`That's more than the ${money2(balance)} still owed.`);
-    if (f.date > today()) return setError("Payment date can't be in the future.");
+    if (!(amount > 0)) return setError(t("Enter an amount above zero."));
+    if (amount > balance) return setError(t("That's more than the {amount} still owed.", { amount: money2(balance) }));
+    if (f.date > today()) return setError(t("Payment date can't be in the future."));
     const before = db;
     const full = amount >= balance;
     update(
@@ -50,21 +50,21 @@ function RecordPayment({ invoice, onClose }: { invoice: Invoice; onClose: () => 
       }),
       { text: `Recorded ${money2(amount)} ${full ? "payment" : "part payment"} for ${invoice.number} (${f.method})`, to: `/billing?open=${invoice.id}`, marinaId: ix.marinaOfInvoice(invoice) },
     );
-    toast(full ? `${invoice.number} is now paid` : `${money2(amount)} recorded. ${money2(balance - amount)} still owed.`, before);
+    toast(full ? t("{number} is now paid", { number: invoice.number }) : t("{amount} recorded. {amount2} still owed.", { amount: money2(amount), amount2: money2(balance - amount) }), before);
     onClose();
   };
   return (
     <Modal
       open
       onClose={onClose}
-      title={`Record payment for ${invoice.number}`}
-      description={`${money2(balance)} still owed of ${money2(invoice.amount)}`}
-      footer={<><Button onClick={onClose}>Cancel</Button><Button variant="primary" onClick={save}>Record payment</Button></>}
+      title={t("Record payment for {number}", { number: invoice.number })}
+      description={t("{amount} still owed of {amount2}", { amount: money2(balance), amount2: money2(invoice.amount) })}
+      footer={<><Button onClick={onClose}>{t("Cancel")}</Button><Button variant="primary" onClick={save}>{t("Record payment")}</Button></>}
     >
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Field label="Amount" hint="Less than the balance records a part payment" error={error}>{(id) => <Input id={id} type="number" min={0.01} step="0.01" max={balance} value={f.amount} onChange={(e) => { setF({ ...f, amount: e.target.value }); setError(""); }} />}</Field>
-        <Field label="Paid on">{(id) => <Input id={id} type="date" max={today()} value={f.date} onChange={(e) => { setF({ ...f, date: e.target.value }); setError(""); }} />}</Field>
-        <Field label="Method">{(id) => <Select id={id} value={f.method} onChange={(e) => setF({ ...f, method: e.target.value as PaymentMethod })}>{(["Card", "Bank transfer", "Cash", "Check"] as const).map((m) => <option key={m}>{m}</option>)}</Select>}</Field>
+        <Field label={t("Amount")} hint={t("Less than the balance records a part payment")} error={error}>{(id) => <Input id={id} type="number" min={0.01} step="0.01" max={balance} value={f.amount} onChange={(e) => { setF({ ...f, amount: e.target.value }); setError(""); }} />}</Field>
+        <Field label={t("Paid on")}>{(id) => <Input id={id} type="date" max={today()} value={f.date} onChange={(e) => { setF({ ...f, date: e.target.value }); setError(""); }} />}</Field>
+        <Field label={t("Method")}>{(id) => <Select id={id} value={f.method} onChange={(e) => setF({ ...f, method: e.target.value as PaymentMethod })}>{(["Card", "Bank transfer", "Cash", "Check"] as const).map((m) => <option key={m} value={m}>{t(m)}</option>)}</Select>}</Field>
       </div>
     </Modal>
   );
@@ -77,7 +77,7 @@ function InvoiceStatus({ inv }: { inv: Invoice }) {
   return (
     <span className="inline-flex flex-wrap items-center gap-1">
       <InvoiceBadge status={inv.status} />
-      {part && <Badge tone="info" icon={CircleDollarSign}>Part paid</Badge>}
+      {part && <Badge tone="info" icon={CircleDollarSign}>{t("Part paid")}</Badge>}
     </span>
   );
 }
@@ -105,13 +105,13 @@ function InvoiceDetail({ invoice: inv, onClose }: { invoice: Invoice; onClose: (
       wide
       onClose={onClose}
       title={live.number}
-      description={`Booking ${bk.code}`}
+      description={t("Booking {code}", { code: bk.code })}
       footer={
         <>
-          <Button icon={Printer} onClick={() => window.print()}>Print</Button>
-          {open && <Button icon={Ban} onClick={() => setVoiding(true)}>Void</Button>}
-          {open && <Button icon={Send} onClick={() => remind(live)}>Send reminder</Button>}
-          {open && <Button variant="primary" icon={CircleCheck} onClick={() => setPaying(true)}>Record payment</Button>}
+          <Button icon={Printer} onClick={() => window.print()}>{t("Print")}</Button>
+          {open && <Button icon={Ban} onClick={() => setVoiding(true)}>{t("Void")}</Button>}
+          {open && <Button icon={Send} onClick={() => remind(live)}>{t("Send reminder")}</Button>}
+          {open && <Button variant="primary" icon={CircleCheck} onClick={() => setPaying(true)}>{t("Record payment")}</Button>}
         </>
       }
     >
@@ -125,57 +125,57 @@ function InvoiceDetail({ invoice: inv, onClose }: { invoice: Invoice; onClose: (
               <p className="text-ink-3">{marina?.name} · {marina?.address}</p>
             </div>
           </div>
-          <div className="text-right">
+          <div className="text-end">
             <InvoiceStatus inv={live} />
-            <p className="mt-2 text-ink-3">Issued {fmtDate(live.issued)}</p>
-            <p className="text-ink-3">Due {fmtDate(live.due)}</p>
+            <p className="mt-2 text-ink-3">{t("Issued")} {fmtDate(live.issued)}</p>
+            <p className="text-ink-3">{t("Due")} {fmtDate(live.due)}</p>
           </div>
         </div>
         <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <p className="text-xs text-ink-3">Bill to</p>
+            <p className="text-xs text-ink-3">{t("Bill to")}</p>
             <p className="font-medium">{owner?.name}</p>
             <p className="text-ink-3">{owner?.email}</p>
             {owner?.phone && <p className="text-ink-3">{owner.phone}</p>}
           </div>
           <div>
-            <p className="text-xs text-ink-3">Vessel</p>
+            <p className="text-xs text-ink-3">{t("Vessel")}</p>
             <p className="font-medium">{boat?.name}</p>
-            <p className="text-ink-3">{boat?.type} · {boat?.length} ft · {boat?.registration}</p>
+            <p className="text-ink-3">{t(boat?.type)} · {boat?.length} {t("ft ·")} {boat?.registration}</p>
           </div>
         </div>
         <table className="w-full">
           <thead>
-            <tr className="border-b border-line text-left text-xs text-ink-3">
-              <th className="py-2 font-medium">Description</th>
-              <th className="py-2 text-right font-medium">Qty</th>
-              <th className="py-2 text-right font-medium">Rate</th>
-              <th className="py-2 text-right font-medium">Amount</th>
+            <tr className="border-b border-line text-start text-xs text-ink-3">
+              <th className="py-2 font-medium">{t("Description")}</th>
+              <th className="py-2 text-end font-medium">{t("Qty")}</th>
+              <th className="py-2 text-end font-medium">{t("Rate")}</th>
+              <th className="py-2 text-end font-medium">{t("Amount")}</th>
             </tr>
           </thead>
           <tbody>
             <tr className="border-b border-line">
               <td className="py-3">
-                Berth {berth?.code} ({berth?.maxLength} ft {berth?.type.toLowerCase()})
+                {t("Berth")} {berth?.code} ({berth?.maxLength} {t("ft")} {berth?.type.toLowerCase()})
                 <span className="block text-xs text-ink-3">{fmtDate(bk.start)} – {fmtDate(bk.end)}</span>
               </td>
-              <td className="py-3 text-right num">{monthly ? `${(nights / 30).toFixed(2)} mo` : `${nights} nights`}</td>
-              <td className="py-3 text-right num">{money2(monthly ? berth?.monthlyRate ?? 0 : berth?.dailyRate ?? 0)}</td>
-              <td className="py-3 text-right num">{money2(live.amount - linesTotal(live))}</td>
+              <td className="py-3 text-end num">{monthly ? t("{n} mo", { n: (nights / 30).toFixed(2) }) : tn(nights, "{n} night", "{n} nights")}</td>
+              <td className="py-3 text-end num">{money2(monthly ? berth?.monthlyRate ?? 0 : berth?.dailyRate ?? 0)}</td>
+              <td className="py-3 text-end num">{money2(live.amount - linesTotal(live))}</td>
             </tr>
             {(live.lines ?? []).map((l, k) => (
               <tr key={k} className="border-b border-line">
-                <td className="py-3">{l.label}<span className="block text-xs text-ink-3">{fmtDate(l.at.slice(0, 10))} · added by {l.by}</span></td>
-                <td className="py-3 text-right num">{l.qty} {l.unit}</td>
-                <td className="py-3 text-right num">{money2(l.unitPrice)}</td>
-                <td className="py-3 text-right num">{money2(l.amount)}</td>
+                <td className="py-3">{t(l.label)}<span className="block text-xs text-ink-3">{fmtDate(l.at.slice(0, 10))} {t("· added by")} {l.by}</span></td>
+                <td className="py-3 text-end num">{l.qty} {l.unit}</td>
+                <td className="py-3 text-end num">{money2(l.unitPrice)}</td>
+                <td className="py-3 text-end num">{money2(l.amount)}</td>
               </tr>
             ))}
           </tbody>
           <tfoot>
             <tr>
-              <td colSpan={3} className="pt-3 text-right font-semibold">Total</td>
-              <td className="pt-3 text-right text-base font-semibold num" style={{ color: brand }}>{money2(live.amount)}</td>
+              <td colSpan={3} className="pt-3 text-end font-semibold">{t("Total")}</td>
+              <td className="pt-3 text-end text-base font-semibold num" style={{ color: brand }}>{money2(live.amount)}</td>
             </tr>
           </tfoot>
         </table>
@@ -184,27 +184,27 @@ function InvoiceDetail({ invoice: inv, onClose }: { invoice: Invoice; onClose: (
             <ul className="mb-2 space-y-1">
               {live.payments.map((p, k) => (
                 <li key={k} className="flex justify-between gap-4">
-                  <span>Paid {fmtDate(p.date)} by {p.method.toLowerCase()}</span>
+                  <span>{t("Paid")} {fmtDate(p.date)} {t("by")} {p.method.toLowerCase()}</span>
                   <span className="num font-medium">{money2(p.amount)}</span>
                 </li>
               ))}
             </ul>
           )}
-          {open && <p className="flex justify-between gap-4"><strong>Balance due</strong><span className="num font-semibold">{money2(ix.balance(live))}</span></p>}
-          {live.status === "overdue" && <p><strong>{daysBetween(live.due, today())} {daysBetween(live.due, today()) === 1 ? "day" : "days"} overdue.</strong></p>}
-          {live.status === "void" && <p><strong>Void.</strong> This invoice is no longer payable.</p>}
-          <p className="text-ink-3">{live.reminders.length ? `Reminders sent: ${live.reminders.map(fmtDate).join(", ")}` : "No reminders sent."}</p>
+          {open && <p className="flex justify-between gap-4"><strong>{t("Balance due")}</strong><span className="num font-semibold">{money2(ix.balance(live))}</span></p>}
+          {live.status === "overdue" && <p><strong>{tn(daysBetween(live.due, today()), "{n} day overdue.", "{n} days overdue.")}</strong></p>}
+          {live.status === "void" && <p><strong>{t("Void.")}</strong> {t("This invoice is no longer payable.")}</p>}
+          <p className="text-ink-3">{live.reminders.length ? t("Reminders sent: {join}", { join: live.reminders.map(fmtDate).join(", ") }) : t("No reminders sent.")}</p>
         </div>
         {db.settings.branding?.invoiceFooter && <p className="mt-6 border-t border-line pt-3 text-xs whitespace-pre-line text-ink-3">{db.settings.branding.invoiceFooter}</p>}
       </div>
-      <button className="mt-4 text-[13px] font-semibold text-green-text hover:underline cursor-pointer print:hidden" onClick={() => navigate(`/bookings?q=${bk.code}`)}>Open booking {bk.code}</button>
+      <button className="mt-4 text-[13px] font-semibold text-green-text hover:underline cursor-pointer print:hidden" onClick={() => navigate(`/bookings?q=${bk.code}`)}>{t("Open booking")} {bk.code}</button>
       {paying && <RecordPayment invoice={live} onClose={() => setPaying(false)} />}
       <ConfirmDialog
         open={voiding}
         onClose={() => setVoiding(false)}
-        title={`Void ${live.number}?`}
-        body="The invoice will no longer be payable or count as outstanding. The booking itself is not cancelled."
-        confirmLabel="Void invoice"
+        title={t("Void {number}?", { number: live.number })}
+        body={t("The invoice will no longer be payable or count as outstanding. The booking itself is not cancelled.")}
+        confirmLabel={t("Void invoice")}
         onConfirm={() => {
           const before = db;
           update((d) => ({ ...d, invoices: d.invoices.map((i) => (i.id === live.id ? { ...i, status: "void" } : i)) }), { text: `Voided ${live.number}`, to: `/billing?open=${live.id}`, marinaId: ix.marinaOfInvoice(live) });
@@ -266,8 +266,8 @@ export function Billing() {
   return (
     <>
       <PageHeader
-        title="Billing & Invoicing"
-        description={`Invoices are created when a booking is confirmed and are due after ${db.settings.invoiceDueDays} days`}
+        title={t("Billing & Invoicing")}
+        description={t("Invoices are created when a booking is confirmed and are due after {invoiceDueDays} days", { invoiceDueDays: db.settings.invoiceDueDays })}
         actions={
           <Button
             icon={Download}
@@ -277,41 +277,41 @@ export function Billing() {
               ]))
             }
           >
-            Export CSV
+            {t("Export CSV")}
           </Button>
         }
       />
       <div className="mb-4 grid grid-cols-2 gap-4 min-[1400px]:grid-cols-4">
-        <StatCard active={status === "due"} onClick={() => { setStatus(status === "due" ? "all" : "due"); setPage(1); }} label="Outstanding" icon={Clock} value={money(outstanding)} sub={`${invoices.filter((r) => r.i.status === "due" || r.i.status === "overdue").length} invoices`} />
-        <StatCard active={status === "overdue"} onClick={() => { setStatus(status === "overdue" ? "all" : "overdue"); setPage(1); }} label="Overdue" icon={CircleAlert} value={money(overdue)} sub={`${invoices.filter((r) => r.i.status === "overdue").length} invoices`} />
-        <StatCard active={status === "paid"} onClick={() => { setStatus(status === "paid" ? "all" : "paid"); setPage(1); }} label="Collected this month" icon={CircleCheck} value={money(collected)} sub="Payments received this month, including part payments" />
-        <StatCard to="/analytics" label="Revenue booked this month" icon={DollarSign} value={money(ix.metrics(ids).revenue)} sub="From stays this month, paid or not" />
+        <StatCard active={status === "due"} onClick={() => { setStatus(status === "due" ? "all" : "due"); setPage(1); }} label={t("Outstanding")} icon={Clock} value={money(outstanding)} sub={tn(invoices.filter((r) => r.i.status === "due" || r.i.status === "overdue").length, "{n} invoice", "{n} invoices")} />
+        <StatCard active={status === "overdue"} onClick={() => { setStatus(status === "overdue" ? "all" : "overdue"); setPage(1); }} label={t("Overdue")} icon={CircleAlert} value={money(overdue)} sub={tn(invoices.filter((r) => r.i.status === "overdue").length, "{n} invoice", "{n} invoices")} />
+        <StatCard active={status === "paid"} onClick={() => { setStatus(status === "paid" ? "all" : "paid"); setPage(1); }} label={t("Collected this month")} icon={CircleCheck} value={money(collected)} sub={t("Payments received this month, including part payments")} />
+        <StatCard to="/analytics" label={t("Revenue booked this month")} icon={DollarSign} value={money(ix.metrics(ids).revenue)} sub={t("From stays this month, paid or not")} />
       </div>
       <Card>
         <Toolbar active={filters} onClear={clearFilters}>
-          <SearchInput value={q} onChange={(v) => { setQ(v); setPage(1); }} placeholder="Search invoice, booking or owner" />
-          <Select aria-label="Filter by marina" value={marinaId} onChange={(e) => { setMarinaId(e.target.value); setPage(1); }} className="sm:w-56">
-            <option value="all">All marinas</option>
+          <SearchInput value={q} onChange={(v) => { setQ(v); setPage(1); }} placeholder={t("Search invoice, booking or owner")} />
+          <Select aria-label={t("Filter by marina")} value={marinaId} onChange={(e) => { setMarinaId(e.target.value); setPage(1); }} className="sm:w-56">
+            <option value="all">{t("All marinas")}</option>
             {db.marinas.filter((m) => scope.includes(m.id)).map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
           </Select>
-          <Select aria-label="Filter by status" value={status} onChange={(e) => { setStatus(e.target.value as typeof status); setPage(1); }} className="sm:w-40">
-            <option value="all">All statuses</option>
-            <option value="due">Due</option>
-            <option value="overdue">Overdue</option>
-            <option value="paid">Paid</option>
-            <option value="void">Void</option>
+          <Select aria-label={t("Filter by status")} value={status} onChange={(e) => { setStatus(e.target.value as typeof status); setPage(1); }} className="sm:w-40">
+            <option value="all">{t("All statuses")}</option>
+            <option value="due">{t("Due")}</option>
+            <option value="overdue">{t("Overdue")}</option>
+            <option value="paid">{t("Paid")}</option>
+            <option value="void">{t("Void")}</option>
           </Select>
         </Toolbar>
         {status === "overdue" && overdueVisible.length > 1 && (
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-surface-2 px-4 py-2.5 text-[13px]">
-            <span>{overdueVisible.length} invoices are overdue.</span>
-            <Button size="sm" variant="primary" icon={Send} onClick={() => setBulkRemind(true)}>Send {overdueVisible.length} reminders</Button>
+            <span>{overdueVisible.length} {t("invoices are overdue.")}</span>
+            <Button size="sm" variant="primary" icon={Send} onClick={() => setBulkRemind(true)}>{t("Send")} {overdueVisible.length} {t("reminders")}</Button>
           </div>
         )}
         <Table
           sort={sort}
           empty={rows.length === 0}
-          head={[{ label: "Invoice", sortKey: "number" }, { label: "Boat owner", sortKey: "owner" }, "Marina", { label: "Issued", sortKey: "issued" }, { label: "Due", sortKey: "due" }, { label: "Amount", sortKey: "amount" }, { label: "Status", sortKey: "status" }, "Actions"]}
+          head={[{ label: t("Invoice"), sortKey: "number" }, { label: t("Boat owner"), sortKey: "owner" }, "Marina", { label: t("Issued"), sortKey: "issued" }, { label: t("Due"), sortKey: "due" }, { label: t("Amount"), sortKey: "amount" }, { label: t("Status"), sortKey: "status" }, "Actions"]}
         >
           {pg.rows.map(({ i, bk }) => {
             const late = i.status === "overdue" ? daysBetween(i.due, now) : 0;
@@ -321,18 +321,18 @@ export function Billing() {
                 <td>{ix.ownerOfBooking(bk)?.name}<span className="block text-xs text-ink-3">{ix.boat(bk.boatId)?.name}</span></td>
                 <td>{ix.marinaOfBerth(bk.berthId)?.name}</td>
                 <td className="whitespace-nowrap">{fmtDate(i.issued)}</td>
-                <td className="whitespace-nowrap">{fmtDate(i.due)}{late > 0 && <span className="block text-xs font-semibold">{late} {late === 1 ? "day" : "days"} late</span>}</td>
+                <td className="whitespace-nowrap">{fmtDate(i.due)}{late > 0 && <span className="block text-xs font-semibold">{tn(late, "{n} day late", "{n} days late")}</span>}</td>
                 <td className={`font-medium num ${i.status === "void" ? "text-ink-3 line-through" : ""}`}>
                   {money(i.amount)}
-                  {ix.paidSoFar(i) > 0 && ix.balance(i) > 0 && <span className="block text-xs font-normal text-ink-3">{money(ix.balance(i))} left</span>}
+                  {ix.paidSoFar(i) > 0 && ix.balance(i) > 0 && <span className="block text-xs font-normal text-ink-3">{money(ix.balance(i))} {t("left")}</span>}
                 </td>
                 <td><InvoiceStatus inv={i} /></td>
                 <td className="whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                  <IconButton icon={Eye} label={`Open ${i.number}`} onClick={() => open(i.id)} />
+                  <IconButton icon={Eye} label={t("Open {number}", { number: i.number })} onClick={() => open(i.id)} />
                   {(i.status === "due" || i.status === "overdue") && (
                     <>
-                      <IconButton icon={Send} label={`Send reminder for ${i.number}`} onClick={() => remind(i)} />
-                      <IconButton icon={CircleCheck} label={`Record payment for ${i.number}`} onClick={() => setPaying(i)} />
+                      <IconButton icon={Send} label={t("Send reminder for {number}", { number: i.number })} onClick={() => remind(i)} />
+                      <IconButton icon={CircleCheck} label={t("Record payment for {number}", { number: i.number })} onClick={() => setPaying(i)} />
                     </>
                   )}
                 </td>
@@ -347,12 +347,12 @@ export function Billing() {
       <ConfirmDialog
         open={bulkRemind}
         onClose={() => setBulkRemind(false)}
-        title={`Send ${overdueVisible.length} payment reminders?`}
-        body="Each boat owner with an overdue invoice in this list gets a reminder email, and the date is saved on the invoice."
-        confirmLabel={`Send ${overdueVisible.length} reminders`}
+        title={t("Send {n} payment reminders?", { n: overdueVisible.length })}
+        body={t("Each boat owner with an overdue invoice in this list gets a reminder email, and the date is saved on the invoice.")}
+        confirmLabel={t("Send {n} reminders", { n: overdueVisible.length })}
         onConfirm={() => {
           overdueVisible.forEach((r) => remind(r.i, true));
-          toast(`${overdueVisible.length} reminders sent`);
+          toast(t("{n} reminders sent", { n: overdueVisible.length }));
         }}
       />
     </>

@@ -6,6 +6,7 @@ import { CircleAlert, Compass, Lock, Smartphone, WifiOff, type LucideIcon } from
 import { useStore } from "@/data/store";
 import { Logomark } from "./Logo";
 import { Button } from "./ui";
+import { t } from "@marina/shared";
 
 export function FullPageState({ icon: Icon, title, body, action }: { icon: LucideIcon; title: string; body: string; action: ReactNode }) {
   return (
@@ -29,11 +30,11 @@ export function NotFoundPage() {
   return (
     <FullPageState
       icon={Compass}
-      title="Page not found"
-      body="This page doesn't exist or has moved. Check the link, or go back to the overview."
+      title={t("Page not found")}
+      body={t("This page doesn't exist or has moved. Check the link, or go back to the overview.")}
       action={
         <Link to="/">
-          <Button variant="primary">Back to overview</Button>
+          <Button variant="primary">{t("Back to overview")}</Button>
         </Link>
       }
     />
@@ -47,10 +48,10 @@ export function NoAccess({ area }: { area?: string }) {
       <span className="flex size-12 items-center justify-center rounded-full bg-surface-3">
         <Lock className="size-5 text-ink-2" aria-hidden />
       </span>
-      <h1 className="mt-4 text-[22px] leading-[30px] font-medium">You don't have access to {area ?? "this page"}</h1>
-      <p className="mt-2 max-w-[44ch] text-sm text-ink-2">Your role doesn't include it. Ask a company admin to change your permissions in Access Control.</p>
+      <h1 className="mt-4 text-[22px] leading-[30px] font-medium">{t("You don't have access to")} {area ?? t("this page")}</h1>
+      <p className="mt-2 max-w-[44ch] text-sm text-ink-2">{t("Your role doesn't include it. Ask a company admin to change your permissions in Access Control.")}</p>
       <Link to="/" className="mt-6">
-        <Button>Go to overview</Button>
+        <Button>{t("Go to overview")}</Button>
       </Link>
     </div>
   );
@@ -70,11 +71,11 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, { failed: 
     return (
       <FullPageState
         icon={CircleAlert}
-        title="Something went wrong"
-        body="Sorry, this page couldn't load. Reload to try again. Your saved changes are safe."
+        title={t("Something went wrong")}
+        body={t("Sorry, this page couldn't load. Reload to try again. Your saved changes are safe.")}
         action={
           <Button variant="primary" onClick={() => window.location.reload()}>
-            Reload page
+            {t("Reload page")}
           </Button>
         }
       />
@@ -99,7 +100,7 @@ export function OfflineBanner() {
   return (
     <div role="status" className="flex items-center justify-center gap-2 bg-accent px-4 py-2 text-[13px] font-medium text-on-accent">
       <WifiOff className="size-4" aria-hidden />
-      You're offline. Changes are saved in this browser and the app keeps working.
+      {t("You're offline. Changes are saved in this browser and the app keeps working.")}
     </div>
   );
 }
@@ -110,8 +111,8 @@ export function StaffUseMobile() {
   return (
     <FullPageState
       icon={Smartphone}
-      title="Use the Marina Staff app"
-      body="Staff accounts work in the Marina Staff app on your phone. Ask your manager for the download link, then sign in there with the same email and password."
+      title={t("Use the Marina Staff app")}
+      body={t("Staff accounts work in the Marina Staff app on your phone. Ask your manager for the download link, then sign in there with the same email and password.")}
       action={
         <Button
           onClick={() => {
@@ -119,7 +120,7 @@ export function StaffUseMobile() {
             window.location.href = "/login";
           }}
         >
-          Sign out
+          {t("Sign out")}
         </Button>
       }
     />

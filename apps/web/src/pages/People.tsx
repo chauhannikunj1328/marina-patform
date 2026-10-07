@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Ban, CalendarPlus, MailPlus, Pencil, Plus, RotateCcw, Sailboat, UserPlus, Users } from "lucide-react";
 import { nextId, useStore } from "@/data/store";
 import type { Boat, BoatOwner, BoatType, Role, SystemUser } from "@marina/shared";
-import { withMessage } from "@marina/shared";
+import { t, withMessage } from "@marina/shared";
 import { fmtDate, relative, today } from "@marina/shared";
 import { money } from "@marina/shared";
 import { Avatar, Badge, Button, Card, Field, IconButton, Input, Modal, PageHeader, Pagination, paginate, SearchInput, Select, StatCard, Table, Tabs, Toolbar, useDirty, useSort } from "@/components/ui";
@@ -20,12 +20,12 @@ function OwnerForm({ owner, onClose, onSaved }: { owner?: BoatOwner; onClose: ()
   const dirty = useDirty(f);
   const save = () => {
     const e: Record<string, string> = {};
-    if (!f.name.trim()) e.name = "Enter the owner's name.";
-    if (!isEmail(f.email)) e.email = "Enter a valid email.";
-    else if (db.owners.some((o) => o.email.toLowerCase() === f.email.trim().toLowerCase() && o.id !== owner?.id)) e.email = "Another owner already uses this email.";
+    if (!f.name.trim()) e.name = t("Enter the owner's name.");
+    if (!isEmail(f.email)) e.email = t("Enter a valid email.");
+    else if (db.owners.some((o) => o.email.toLowerCase() === f.email.trim().toLowerCase() && o.id !== owner?.id)) e.email = t("Another owner already uses this email.");
     if (!owner) {
-      if (!f.boat.trim()) e.boat = "Enter the boat name.";
-      if (!(Number(f.length) >= 10)) e.length = "Enter the length in feet.";
+      if (!f.boat.trim()) e.boat = t("Enter the boat name.");
+      if (!(Number(f.length) >= 10)) e.length = t("Enter the length in feet.");
     }
     setErrors(e);
     if (Object.keys(e).length) return;
@@ -43,18 +43,18 @@ function OwnerForm({ owner, onClose, onSaved }: { owner?: BoatOwner; onClose: ()
     onClose();
   };
   return (
-    <Modal open dirty={dirty} onClose={onClose} title={owner ? `Edit ${owner.name}` : "Add boat owner"} footer={<><Button onClick={onClose}>Cancel</Button><Button variant="primary" onClick={save}>{owner ? "Save changes" : "Add owner"}</Button></>}>
+    <Modal open dirty={dirty} onClose={onClose} title={owner ? t("Edit {name}", { name: owner.name }) : t("Add boat owner")} footer={<><Button onClick={onClose}>{t("Cancel")}</Button><Button variant="primary" onClick={save}>{owner ? t("Save changes") : t("Add owner")}</Button></>}>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="sm:col-span-2"><Field label="Full name" error={errors.name}>{(id) => <Input id={id} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />}</Field></div>
-        <Field label="Email" error={errors.email}>{(id) => <Input id={id} type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} />}</Field>
-        <Field label="Phone">{(id) => <Input id={id} value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} />}</Field>
+        <div className="sm:col-span-2"><Field label={t("Full name")} error={errors.name}>{(id) => <Input id={id} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />}</Field></div>
+        <Field label={t("Email")} error={errors.email}>{(id) => <Input id={id} type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} />}</Field>
+        <Field label={t("Phone")}>{(id) => <Input id={id} value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} />}</Field>
         {!owner && (
           <>
-            <p className="pt-2 text-[13px] font-semibold sm:col-span-2">First boat</p>
-            <Field label="Boat name" error={errors.boat}>{(id) => <Input id={id} value={f.boat} onChange={(e) => setF({ ...f, boat: e.target.value })} />}</Field>
-            <Field label="Registration">{(id) => <Input id={id} value={f.registration} onChange={(e) => setF({ ...f, registration: e.target.value })} placeholder="Optional" />}</Field>
-            <Field label="Type">{(id) => <Select id={id} value={f.type} onChange={(e) => setF({ ...f, type: e.target.value as BoatType })}>{BOAT_TYPES.map((t) => <option key={t}>{t}</option>)}</Select>}</Field>
-            <Field label="Length (ft)" error={errors.length}>{(id) => <Input id={id} type="number" min={10} value={f.length} onChange={(e) => setF({ ...f, length: e.target.value })} />}</Field>
+            <p className="pt-2 text-[13px] font-semibold sm:col-span-2">{t("First boat")}</p>
+            <Field label={t("Boat name")} error={errors.boat}>{(id) => <Input id={id} value={f.boat} onChange={(e) => setF({ ...f, boat: e.target.value })} />}</Field>
+            <Field label={t("Registration")}>{(id) => <Input id={id} value={f.registration} onChange={(e) => setF({ ...f, registration: e.target.value })} placeholder={t("Optional")} />}</Field>
+            <Field label={t("Type")}>{(id) => <Select id={id} value={f.type} onChange={(e) => setF({ ...f, type: e.target.value as BoatType })}>{BOAT_TYPES.map((bt) => <option key={bt} value={bt}>{t(bt)}</option>)}</Select>}</Field>
+            <Field label={t("Length (ft)")} error={errors.length}>{(id) => <Input id={id} type="number" min={10} value={f.length} onChange={(e) => setF({ ...f, length: e.target.value })} />}</Field>
           </>
         )}
       </div>
@@ -69,8 +69,8 @@ function BoatForm({ ownerId, boat, onClose }: { ownerId: string; boat?: Boat; on
   const dirty = useDirty(f);
   const save = () => {
     const e: Record<string, string> = {};
-    if (!f.name.trim()) e.name = "Enter the boat name.";
-    if (!(Number(f.length) >= 10 && Number(f.length) <= 300)) e.length = "Enter a length between 10 and 300 ft.";
+    if (!f.name.trim()) e.name = t("Enter the boat name.");
+    if (!(Number(f.length) >= 10 && Number(f.length) <= 300)) e.length = t("Enter a length between 10 and 300 ft.");
     setErrors(e);
     if (Object.keys(e).length) return;
     const data = { name: f.name.trim(), type: f.type, length: Number(f.length), registration: f.registration.trim() || "Pending" };
@@ -79,12 +79,12 @@ function BoatForm({ ownerId, boat, onClose }: { ownerId: string; boat?: Boat; on
     onClose();
   };
   return (
-    <Modal open dirty={dirty} onClose={onClose} title={boat ? `Edit ${boat.name}` : "Add boat"} footer={<><Button onClick={onClose}>Cancel</Button><Button variant="primary" onClick={save}>{boat ? "Save changes" : "Add boat"}</Button></>}>
+    <Modal open dirty={dirty} onClose={onClose} title={boat ? t("Edit {name}", { name: boat.name }) : t("Add boat")} footer={<><Button onClick={onClose}>{t("Cancel")}</Button><Button variant="primary" onClick={save}>{boat ? t("Save changes") : t("Add boat")}</Button></>}>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Field label="Boat name" error={errors.name}>{(id) => <Input id={id} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />}</Field>
-        <Field label="Registration">{(id) => <Input id={id} value={f.registration} onChange={(e) => setF({ ...f, registration: e.target.value })} />}</Field>
-        <Field label="Type">{(id) => <Select id={id} value={f.type} onChange={(e) => setF({ ...f, type: e.target.value as BoatType })}>{BOAT_TYPES.map((t) => <option key={t}>{t}</option>)}</Select>}</Field>
-        <Field label="Length (ft)" error={errors.length}>{(id) => <Input id={id} type="number" value={f.length} onChange={(e) => setF({ ...f, length: e.target.value })} />}</Field>
+        <Field label={t("Boat name")} error={errors.name}>{(id) => <Input id={id} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />}</Field>
+        <Field label={t("Registration")}>{(id) => <Input id={id} value={f.registration} onChange={(e) => setF({ ...f, registration: e.target.value })} />}</Field>
+        <Field label={t("Type")}>{(id) => <Select id={id} value={f.type} onChange={(e) => setF({ ...f, type: e.target.value as BoatType })}>{BOAT_TYPES.map((bt) => <option key={bt} value={bt}>{t(bt)}</option>)}</Select>}</Field>
+        <Field label={t("Length (ft)")} error={errors.length}>{(id) => <Input id={id} type="number" value={f.length} onChange={(e) => setF({ ...f, length: e.target.value })} />}</Field>
       </div>
     </Modal>
   );
@@ -114,35 +114,35 @@ function OwnerDetail({ owner, onClose }: { owner: BoatOwner; onClose: () => void
       wide
       onClose={onClose}
       title={o.name}
-      description={`${o.email}${o.phone ? ` · ${o.phone}` : ""} · customer since ${fmtDate(o.since)}`}
+      description={t("{email}{v} · customer since {date}", { email: o.email, v: o.phone ? ` · ${o.phone}` : "", date: fmtDate(o.since) })}
       footer={
         <>
-          <Button icon={Pencil} onClick={() => setEditing(true)}>Edit owner</Button>
-          <Button variant="primary" icon={CalendarPlus} onClick={() => navigate("/bookings?new=1")}>New booking</Button>
+          <Button icon={Pencil} onClick={() => setEditing(true)}>{t("Edit owner")}</Button>
+          <Button variant="primary" icon={CalendarPlus} onClick={() => navigate("/bookings?new=1")}>{t("New booking")}</Button>
         </>
       }
     >
       <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="rounded-md bg-surface-2 p-3"><p className="text-xs text-ink-3">Boats</p><p className="text-lg font-semibold">{boats.length}</p></div>
-        <div className="rounded-md bg-surface-2 p-3"><p className="text-xs text-ink-3">Bookings</p><p className="text-lg font-semibold">{bookings.length}</p></div>
-        <div className="rounded-md bg-surface-2 p-3"><p className="text-xs text-ink-3">Lifetime value</p><p className="text-lg font-semibold">{money(spent)}</p></div>
-        <div className="rounded-md bg-surface-2 p-3"><p className="text-xs text-ink-3">Balance owed</p><p className="text-lg font-semibold">{money(owed)}</p></div>
+        <div className="rounded-md bg-surface-2 p-3"><p className="text-xs text-ink-3">{t("Boats")}</p><p className="text-lg font-semibold">{boats.length}</p></div>
+        <div className="rounded-md bg-surface-2 p-3"><p className="text-xs text-ink-3">{t("Bookings")}</p><p className="text-lg font-semibold">{bookings.length}</p></div>
+        <div className="rounded-md bg-surface-2 p-3"><p className="text-xs text-ink-3">{t("Lifetime value")}</p><p className="text-lg font-semibold">{money(spent)}</p></div>
+        <div className="rounded-md bg-surface-2 p-3"><p className="text-xs text-ink-3">{t("Balance owed")}</p><p className="text-lg font-semibold">{money(owed)}</p></div>
       </div>
       <div className="mb-2 flex items-center justify-between">
-        <h3 className="text-[13px] font-semibold">Boats</h3>
-        <Button size="sm" icon={Plus} onClick={() => setBoatForm("new")}>Add boat</Button>
+        <h3 className="text-[13px] font-semibold">{t("Boats")}</h3>
+        <Button size="sm" icon={Plus} onClick={() => setBoatForm("new")}>{t("Add boat")}</Button>
       </div>
       <ul className="mb-5 space-y-2">
         {boats.map((b) => (
           <li key={b.id} className="flex items-center gap-3 rounded-md border border-line px-3 py-2 text-[13px]">
             <Sailboat className="size-4 text-ink-3" aria-hidden />
             <span className="font-medium">{b.name}</span>
-            <span className="flex-1 text-ink-3">{b.type} · {b.length} ft · {b.registration}</span>
-            <IconButton icon={Pencil} label={`Edit ${b.name}`} onClick={() => setBoatForm(b)} />
+            <span className="flex-1 text-ink-3">{t(b.type)} · {b.length} {t("ft ·")} {b.registration}</span>
+            <IconButton icon={Pencil} label={t("Edit {name}", { name: b.name })} onClick={() => setBoatForm(b)} />
           </li>
         ))}
       </ul>
-      <h3 className="mb-2 text-[13px] font-semibold">Bookings</h3>
+      <h3 className="mb-2 text-[13px] font-semibold">{t("Bookings")}</h3>
       <Table head={["Booking", "Marina", "Dates", "Status", "Invoice"]} empty={bookings.length === 0}>
         {bookings.slice(0, 8).map((b) => {
           const inv = invoices.find((i) => i.bookingId === b.id);
@@ -157,7 +157,7 @@ function OwnerDetail({ owner, onClose }: { owner: BoatOwner; onClose: () => void
           );
         })}
       </Table>
-      {bookings.length > 8 && <p className="mt-2 text-xs text-ink-3">Showing the latest 8 of {bookings.length} bookings.</p>}
+      {bookings.length > 8 && <p className="mt-2 text-xs text-ink-3">{t("Showing the latest 8 of")} {bookings.length} {t("bookings.")}</p>}
     </Modal>
   );
 }
@@ -169,10 +169,10 @@ function InviteForm({ user, onClose }: { user?: SystemUser; onClose: () => void 
   const dirty = useDirty(f);
   const save = () => {
     const e: Record<string, string> = {};
-    if (!f.name.trim()) e.name = "Enter a name.";
-    if (!isEmail(f.email)) e.email = "Enter a valid email.";
-    else if (db.users.some((u) => u.email.toLowerCase() === f.email.toLowerCase() && u.id !== user?.id)) e.email = "This person already has access.";
-    if (f.role !== "admin" && f.marinaIds.length === 0) e.marinas = "Choose at least one marina.";
+    if (!f.name.trim()) e.name = t("Enter a name.");
+    if (!isEmail(f.email)) e.email = t("Enter a valid email.");
+    else if (db.users.some((u) => u.email.toLowerCase() === f.email.toLowerCase() && u.id !== user?.id)) e.email = t("This person already has access.");
+    if (f.role !== "admin" && f.marinaIds.length === 0) e.marinas = t("Choose at least one marina.");
     setErrors(e);
     if (Object.keys(e).length) return;
     const data = { ...f, marinaIds: f.role === "admin" ? [] : f.marinaIds };
@@ -181,18 +181,18 @@ function InviteForm({ user, onClose }: { user?: SystemUser; onClose: () => void 
       const next = { ...d, users: [...d.users, { ...data, id: nextId("u", d.users), lastActive: today(), status: "invited" as const }] };
       return withMessage(next, { to: data.email, subject: `You're invited to ${d.settings.company}`, kind: "invite" });
     }, user ? `Changed ${f.name}'s access to ${ROLE_LABEL[f.role]}` : `Invited ${f.name} as ${ROLE_LABEL[f.role]}`);
-    toast(user ? `${f.name} updated` : `Invite sent to ${f.email}`);
+    toast(user ? `${f.name} updated` : t("Invite sent to {email}", { email: f.email }));
     onClose();
   };
   return (
-    <Modal open dirty={dirty} onClose={onClose} title={user ? `Edit ${user.name}` : "Invite user"} description={user ? undefined : "They'll get an email to set a password."} footer={<><Button onClick={onClose}>Cancel</Button><Button variant="primary" onClick={save}>{user ? "Save changes" : "Send invite"}</Button></>}>
+    <Modal open dirty={dirty} onClose={onClose} title={user ? t("Edit {name}", { name: user.name }) : t("Invite user")} description={user ? undefined : t("They'll get an email to set a password.")} footer={<><Button onClick={onClose}>{t("Cancel")}</Button><Button variant="primary" onClick={save}>{user ? t("Save changes") : t("Send invite")}</Button></>}>
       <div className="space-y-4">
-        <Field label="Full name" error={errors.name}>{(id) => <Input id={id} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />}</Field>
-        <Field label="Work email" error={errors.email}>{(id) => <Input id={id} type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} disabled={!!user} />}</Field>
-        <Field label="Role" hint="See Access Control for what each role can do.">{(id) => <Select id={id} value={f.role} onChange={(e) => setF({ ...f, role: e.target.value as Role })}>{(Object.keys(ROLE_LABEL) as Role[]).map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}</Select>}</Field>
+        <Field label={t("Full name")} error={errors.name}>{(id) => <Input id={id} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />}</Field>
+        <Field label={t("Work email")} error={errors.email}>{(id) => <Input id={id} type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} disabled={!!user} />}</Field>
+        <Field label={t("Role")} hint={t("See Access Control for what each role can do.")}>{(id) => <Select id={id} value={f.role} onChange={(e) => setF({ ...f, role: e.target.value as Role })}>{(Object.keys(ROLE_LABEL) as Role[]).map((r) => <option key={r} value={r}>{t(ROLE_LABEL[r])}</option>)}</Select>}</Field>
         {f.role !== "admin" && (
           <fieldset>
-            <legend className="mb-2 text-[13px] font-medium">Marinas they can access</legend>
+            <legend className="mb-2 text-[13px] font-medium">{t("Marinas they can access")}</legend>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {db.marinas.map((m) => (
                 <label key={m.id} className="flex items-center gap-2 text-[13px]">
@@ -239,36 +239,36 @@ export function People() {
   return (
     <>
       <PageHeader
-        title={isAdmin ? "Boat Owners & Users" : "Boat Owners"}
-        description={isAdmin ? "Customers who book berths, and team members who sign in" : "Customers who book berths at your marinas"}
+        title={isAdmin ? t("Boat Owners & Users") : t("Boat Owners")}
+        description={isAdmin ? t("Customers who book berths, and team members who sign in") : t("Customers who book berths at your marinas")}
         actions={
           tab === "owners" ? (
-            can("owners") !== "view" && <Button variant="primary" icon={UserPlus} onClick={() => setAddingOwner(true)}>Add boat owner</Button>
+            can("owners") !== "view" && <Button variant="primary" icon={UserPlus} onClick={() => setAddingOwner(true)}>{t("Add boat owner")}</Button>
           ) : (
-            isAdmin && <Button variant="primary" icon={MailPlus} onClick={() => setEditing("new")}>Invite user</Button>
+            isAdmin && <Button variant="primary" icon={MailPlus} onClick={() => setEditing("new")}>{t("Invite user")}</Button>
           )
         }
       />
       <div className={`mb-4 grid grid-cols-2 gap-4 ${isAdmin ? "min-[1400px]:grid-cols-4" : "min-[1400px]:grid-cols-3"}`}>
-        <StatCard label="Boat owners" icon={Users} value={visibleOwners.length} active={tab === "owners"} onClick={() => { setTab("owners"); setQ(""); setPage(1); }} />
-        <StatCard label="Boats registered" icon={Sailboat} value={db.boats.filter((b) => visibleOwners.some((o) => o.id === b.ownerId)).length} />
-        <StatCard to="/bookings?status=checked-in" label="Boats in your marinas now" icon={Sailboat} value={boatsIn} />
-        {isAdmin && <StatCard active={tab === "users"} onClick={() => { setTab("users"); setQ(""); }} label="System users" icon={UserPlus} value={db.users.length} sub={`${db.users.filter((u) => u.status === "invited").length} invite pending`} />}
+        <StatCard label={t("Boat owners")} icon={Users} value={visibleOwners.length} active={tab === "owners"} onClick={() => { setTab("owners"); setQ(""); setPage(1); }} />
+        <StatCard label={t("Boats registered")} icon={Sailboat} value={db.boats.filter((b) => visibleOwners.some((o) => o.id === b.ownerId)).length} />
+        <StatCard to="/bookings?status=checked-in" label={t("Boats in your marinas now")} icon={Sailboat} value={boatsIn} />
+        {isAdmin && <StatCard active={tab === "users"} onClick={() => { setTab("users"); setQ(""); }} label={t("System users")} icon={UserPlus} value={db.users.length} sub={t("{n} invite pending", { n: db.users.filter((u) => u.status === "invited").length })} />}
       </div>
-      {isAdmin && <Tabs value={tab} onChange={(t) => { setTab(t); setQ(""); setPage(1); }} items={[{ value: "owners", label: "Boat owners", count: visibleOwners.length }, { value: "users", label: "System users", count: db.users.length }]} />}
+      {isAdmin && <Tabs value={tab} onChange={(t) => { setTab(t); setQ(""); setPage(1); }} items={[{ value: "owners", label: t("Boat owners"), count: visibleOwners.length }, { value: "users", label: t("System users"), count: db.users.length }]} />}
       <Card>
-        <Toolbar><SearchInput value={q} onChange={(v) => { setQ(v); setPage(1); }} placeholder={tab === "owners" ? "Search owners, emails or boat names" : "Search users"} /></Toolbar>
+        <Toolbar><SearchInput value={q} onChange={(v) => { setQ(v); setPage(1); }} placeholder={tab === "owners" ? t("Search owners, emails or boat names") : t("Search users")} /></Toolbar>
         {tab === "owners" ? (
           <>
-            <Table sort={sort} head={[{ label: "Owner", sortKey: "name" }, "Contact", { label: "Boats", sortKey: "boats" }, "Status", { label: "Customer since", sortKey: "since" }, ""]} empty={owners.length === 0}>
+            <Table sort={sort} head={[{ label: t("Owner"), sortKey: "name" }, "Contact", { label: t("Boats"), sortKey: "boats" }, "Status", { label: t("Customer since"), sortKey: "since" }, ""]} empty={owners.length === 0}>
               {pg.rows.map(({ o, boats, active }) => (
                 <tr key={o.id} className="cursor-pointer hover:bg-row-hover" onClick={() => openOwner(o.id)}>
                   <td><div className="flex items-center gap-3"><Avatar name={o.name} /><span className="font-medium">{o.name}</span></div></td>
-                  <td>{o.email}<span className="block text-xs text-ink-3">{o.phone || "No phone"}</span></td>
+                  <td>{o.email}<span className="block text-xs text-ink-3">{o.phone || t("No phone")}</span></td>
                   <td>{boats.map((b) => b.name).join(", ")}</td>
-                  <td>{active ? <Badge tone="info" icon={Sailboat}>Boat in marina</Badge> : <Badge tone="outline">No current stay</Badge>}</td>
+                  <td>{active ? <Badge tone="info" icon={Sailboat}>{t("Boat in marina")}</Badge> : <Badge tone="outline">{t("No current stay")}</Badge>}</td>
                   <td className="whitespace-nowrap">{fmtDate(o.since)}</td>
-                  <td><Button size="sm" onClick={(e) => { e.stopPropagation(); openOwner(o.id); }}>View</Button></td>
+                  <td><Button size="sm" onClick={(e) => { e.stopPropagation(); openOwner(o.id); }}>{t("View")}</Button></td>
                 </tr>
               ))}
             </Table>
@@ -278,32 +278,32 @@ export function People() {
           <Table head={["User", "Role", "Marinas", "Last active", "Status", "Actions"]} empty={users.length === 0}>
             {users.map((u) => (
               <tr key={u.id}>
-                <td><div className="flex items-center gap-3"><Avatar name={u.name} /><div><p className="font-medium">{u.name}{u.id === me?.id && <span className="ml-1 text-xs text-ink-3">(you)</span>}</p><p className="text-xs text-ink-3">{u.email}</p></div></div></td>
-                <td>{ROLE_LABEL[u.role]}</td>
-                <td className="max-w-64">{u.marinaIds.length ? u.marinaIds.map((id) => ix.marina(id)?.name).join(", ") : "All marinas"}</td>
-                <td className="whitespace-nowrap">{u.status === "invited" ? "Never" : relative(u.lastActive)}</td>
+                <td><div className="flex items-center gap-3"><Avatar name={u.name} /><div><p className="font-medium">{u.name}{u.id === me?.id && <span className="ms-1 text-xs text-ink-3">{t("(you)")}</span>}</p><p className="text-xs text-ink-3">{u.email}</p></div></div></td>
+                <td>{t(ROLE_LABEL[u.role])}</td>
+                <td className="max-w-64">{u.marinaIds.length ? u.marinaIds.map((id) => ix.marina(id)?.name).join(", ") : t("All marinas")}</td>
+                <td className="whitespace-nowrap">{u.status === "invited" ? t("Never") : relative(u.lastActive)}</td>
                 <td><ActiveBadge status={u.status} /></td>
                 <td className="whitespace-nowrap">
                   {isAdmin && u.id !== me?.id && (
                     <>
-                      <IconButton icon={Pencil} label={`Edit ${u.name}`} onClick={() => setEditing(u)} />
+                      <IconButton icon={Pencil} label={t("Edit {name}", { name: u.name })} onClick={() => setEditing(u)} />
                       {u.status === "invited" && (
                         <IconButton
                           icon={MailPlus}
-                          label={`Resend invite to ${u.name}`}
+                          label={t("Resend invite to {name}", { name: u.name })}
                           onClick={() => {
                             update((d) => withMessage(d, { to: u.email, subject: `Reminder: you're invited to ${d.settings.company}`, kind: "invite" }), `Resent invite to ${u.name}`);
-                            toast(`Invite resent to ${u.email}`);
+                            toast(t("Invite resent to {email}", { email: u.email }));
                           }}
                         />
                       )}
                       <IconButton
                         icon={u.status === "disabled" ? RotateCcw : Ban}
-                        label={u.status === "disabled" ? `Re-enable ${u.name}` : `Disable ${u.name}`}
+                        label={u.status === "disabled" ? t("Re-enable {name}", { name: u.name }) : t("Disable {name}", { name: u.name })}
                         onClick={() => {
                           const before = db;
                           update((d) => ({ ...d, users: d.users.map((x) => (x.id === u.id ? { ...x, status: u.status === "disabled" ? "active" : "disabled" } : x)) }), `${u.status === "disabled" ? "Re-enabled" : "Disabled"} ${u.name}`);
-                          toast(u.status === "disabled" ? `${u.name} re-enabled` : `${u.name} can no longer sign in`, before);
+                          toast(u.status === "disabled" ? `${u.name} re-enabled` : t("{name} can no longer sign in", { name: u.name }), before);
                         }}
                       />
                     </>

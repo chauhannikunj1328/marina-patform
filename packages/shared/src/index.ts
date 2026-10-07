@@ -16,3 +16,4 @@ export * from "./notify";
 export * from "./brand";
 export * from "./workforce";
 export * from "./audit";
+export * from "./i18n";

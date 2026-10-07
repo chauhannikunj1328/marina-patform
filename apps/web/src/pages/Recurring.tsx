@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Pause, Pencil, Play, Plus, Repeat } from "lucide-react";
 import { nextId, useStore } from "@/data/store";
-import { addDays, fmtDate, PLAN_LEAD_DAYS, RECURRENCE_LABEL, today, withRecurringTasks, type MaintenancePlan, type Priority, type Recurrence } from "@marina/shared";
+import { t, addDays, fmtDate, PLAN_LEAD_DAYS, RECURRENCE_LABEL, today, withRecurringTasks, type MaintenancePlan, type Priority, type Recurrence } from "@marina/shared";
 import { Badge, Button, Card, CardHeader, EmptyState, Field, IconButton, Input, Modal, Select, Table, useDirty } from "@/components/ui";
 import { PriorityBadge } from "@/components/status";
 
@@ -18,23 +18,23 @@ export function RecurringPlans({ ids, canEdit }: { ids: string[]; canEdit: boole
   };
   return (
     <Card className="mt-4">
-      <CardHeader title="Recurring jobs" description={`Routine work. Each work order is created ${PLAN_LEAD_DAYS} days before it's due.`} icon={Repeat} actions={canEdit && <Button size="sm" icon={Plus} onClick={() => setEditing("new")}>New recurring job</Button>} />
+      <CardHeader title={t("Recurring jobs")} description={t("Routine work. Each work order is created {PLANLEADDAYS} days before it's due.", { PLANLEADDAYS: PLAN_LEAD_DAYS })} icon={Repeat} actions={canEdit && <Button size="sm" icon={Plus} onClick={() => setEditing("new")}>{t("New recurring job")}</Button>} />
       {plans.length === 0 ? (
-        <EmptyState icon={Repeat} title="No recurring jobs" body="For example: clean the pump-out station every week, inspect pilings every month." />
+        <EmptyState icon={Repeat} title={t("No recurring jobs")} body={t("For example: clean the pump-out station every week, inspect pilings every month.")} />
       ) : (
         <Table head={["Job", "Location", "How often", "Next due", "Assigned to", "Priority", "Actions"]}>
           {plans.map((p) => (
             <tr key={p.id} className={p.active ? undefined : "text-ink-3"}>
-              <td className="font-medium">{p.title}{!p.active && <span className="ml-2"><Badge tone="muted">Paused</Badge></span>}</td>
-              <td>{ix.marina(p.marinaId)?.name}<span className="block text-xs text-ink-3">{p.berthId ? `Berth ${ix.berth(p.berthId)?.code}` : "Facility"}</span></td>
-              <td>{RECURRENCE_LABEL[p.every]}</td>
+              <td className="font-medium">{p.title}{!p.active && <span className="ms-2"><Badge tone="muted">{t("Paused")}</Badge></span>}</td>
+              <td>{ix.marina(p.marinaId)?.name}<span className="block text-xs text-ink-3">{p.berthId ? t("Berth {code}", { code: ix.berth(p.berthId)?.code }) : t("Facility")}</span></td>
+              <td>{t(RECURRENCE_LABEL[p.every])}</td>
               <td className="whitespace-nowrap">{p.active ? fmtDate(p.nextDue) : "—"}</td>
-              <td>{ix.staffMember(p.assigneeId)?.name ?? <span className="text-ink-3">Unassigned</span>}</td>
+              <td>{ix.staffMember(p.assigneeId)?.name ?? <span className="text-ink-3">{t("Unassigned")}</span>}</td>
               <td><PriorityBadge priority={p.priority} /></td>
               <td className="whitespace-nowrap">
                 {canEdit && (
                   <>
-                    <IconButton icon={Pencil} label={`Edit ${p.title}`} onClick={() => setEditing(p)} />
+                    <IconButton icon={Pencil} label={t("Edit {title}", { title: p.title })} onClick={() => setEditing(p)} />
                     <IconButton icon={p.active ? Pause : Play} label={`${p.active ? "Pause" : "Resume"} ${p.title}`} onClick={() => toggle(p)} />
                   </>
                 )}
@@ -56,8 +56,8 @@ function PlanForm({ plan, ids, onClose }: { plan?: MaintenancePlan; ids: string[
   const set = (patch: Partial<typeof f>) => { setF({ ...f, ...patch }); setErrors({}); };
   const save = () => {
     const e: Record<string, string> = {};
-    if (!f.title.trim()) e.title = "Say what the job is.";
-    if (f.nextDue < today()) e.nextDue = "Pick today or later.";
+    if (!f.title.trim()) e.title = t("Say what the job is.");
+    if (f.nextDue < today()) e.nextDue = t("Pick today or later.");
     setErrors(e);
     if (Object.keys(e).length) return;
     const data = { title: f.title.trim(), marinaId: f.marinaId, berthId: f.berthId || undefined, every: f.every, nextDue: f.nextDue, priority: f.priority, assigneeId: f.assigneeId || undefined };
@@ -68,19 +68,19 @@ function PlanForm({ plan, ids, onClose }: { plan?: MaintenancePlan; ids: string[
       }),
       { text: `${plan ? "Updated" : "Added"} recurring job: ${data.title} (${RECURRENCE_LABEL[data.every].toLowerCase()})`, to: "/maintenance", marinaId: data.marinaId },
     );
-    toast(plan ? "Recurring job saved" : `Recurring job added. The first work order appears ${data.nextDue <= addDays(today(), 7) ? "now" : `on ${fmtDate(addDays(data.nextDue, -7))}`}.`);
+    toast(plan ? t("Recurring job saved") : t("Recurring job added. The first work order appears {v}.", { v: data.nextDue <= addDays(today(), 7) ? "now" : `on ${fmtDate(addDays(data.nextDue, -7))}` }));
     onClose();
   };
   return (
-    <Modal open dirty={dirty} onClose={onClose} title={plan ? "Edit recurring job" : "New recurring job"} footer={<><Button onClick={onClose}>Cancel</Button><Button variant="primary" onClick={save}>{plan ? "Save" : "Add job"}</Button></>}>
+    <Modal open dirty={dirty} onClose={onClose} title={plan ? t("Edit recurring job") : t("New recurring job")} footer={<><Button onClick={onClose}>{t("Cancel")}</Button><Button variant="primary" onClick={save}>{plan ? t("Save") : t("Add job")}</Button></>}>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="sm:col-span-2"><Field label="Job" error={errors.title}>{(id) => <Input id={id} value={f.title} placeholder="e.g. Clean pump-out station" onChange={(e) => set({ title: e.target.value })} />}</Field></div>
-        <Field label="Marina">{(id) => <Select id={id} value={f.marinaId} onChange={(e) => set({ marinaId: e.target.value, berthId: "", assigneeId: "" })}>{db.marinas.filter((m) => ids.includes(m.id)).map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}</Select>}</Field>
-        <Field label="Berth (optional)">{(id) => <Select id={id} value={f.berthId} onChange={(e) => set({ berthId: e.target.value })}><option value="">Facility, not a berth</option>{ix.berthsIn([f.marinaId]).map((b) => <option key={b.id} value={b.id}>{b.code}</option>)}</Select>}</Field>
-        <Field label="How often">{(id) => <Select id={id} value={f.every} onChange={(e) => set({ every: e.target.value as Recurrence })}>{(Object.keys(RECURRENCE_LABEL) as Recurrence[]).map((r) => <option key={r} value={r}>{RECURRENCE_LABEL[r]}</option>)}</Select>}</Field>
-        <Field label="Next due" error={errors.nextDue}>{(id) => <Input id={id} type="date" min={today()} value={f.nextDue} onChange={(e) => set({ nextDue: e.target.value })} />}</Field>
-        <Field label="Priority">{(id) => <Select id={id} value={f.priority} onChange={(e) => set({ priority: e.target.value as Priority })}><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></Select>}</Field>
-        <Field label="Assign to">{(id) => <Select id={id} value={f.assigneeId} onChange={(e) => set({ assigneeId: e.target.value })}><option value="">Unassigned</option>{db.staff.filter((s) => s.marinaId === f.marinaId && s.status === "active").map((s) => <option key={s.id} value={s.id}>{s.name} · {s.position}</option>)}</Select>}</Field>
+        <div className="sm:col-span-2"><Field label={t("Job")} error={errors.title}>{(id) => <Input id={id} value={f.title} placeholder={t("e.g. Clean pump-out station")} onChange={(e) => set({ title: e.target.value })} />}</Field></div>
+        <Field label={t("Marina")}>{(id) => <Select id={id} value={f.marinaId} onChange={(e) => set({ marinaId: e.target.value, berthId: "", assigneeId: "" })}>{db.marinas.filter((m) => ids.includes(m.id)).map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}</Select>}</Field>
+        <Field label={t("Berth (optional)")}>{(id) => <Select id={id} value={f.berthId} onChange={(e) => set({ berthId: e.target.value })}><option value="">{t("Facility, not a berth")}</option>{ix.berthsIn([f.marinaId]).map((b) => <option key={b.id} value={b.id}>{b.code}</option>)}</Select>}</Field>
+        <Field label={t("How often")}>{(id) => <Select id={id} value={f.every} onChange={(e) => set({ every: e.target.value as Recurrence })}>{(Object.keys(RECURRENCE_LABEL) as Recurrence[]).map((r) => <option key={r} value={r}>{t(RECURRENCE_LABEL[r])}</option>)}</Select>}</Field>
+        <Field label={t("Next due")} error={errors.nextDue}>{(id) => <Input id={id} type="date" min={today()} value={f.nextDue} onChange={(e) => set({ nextDue: e.target.value })} />}</Field>
+        <Field label={t("Priority")}>{(id) => <Select id={id} value={f.priority} onChange={(e) => set({ priority: e.target.value as Priority })}><option value="low">{t("Low")}</option><option value="medium">{t("Medium")}</option><option value="high">{t("High")}</option></Select>}</Field>
+        <Field label={t("Assign to")}>{(id) => <Select id={id} value={f.assigneeId} onChange={(e) => set({ assigneeId: e.target.value })}><option value="">{t("Unassigned")}</option>{db.staff.filter((s) => s.marinaId === f.marinaId && s.status === "active").map((s) => <option key={s.id} value={s.id}>{s.name} · {s.position}</option>)}</Select>}</Field>
       </div>
     </Modal>
   );

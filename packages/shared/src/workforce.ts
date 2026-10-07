@@ -2,6 +2,7 @@
 import type { Db } from "./seed";
 import type { Berth, Shift, Staff, StaffRequest, TimeEntry } from "./types";
 import { fromISO, toISO } from "./date";
+import { getLang, locale } from "./i18n";
 
 export type DayPlan =
   | { working: true; covering?: StaffRequest }
@@ -30,18 +31,17 @@ export function minutesWorked(entries: TimeEntry[], staffId: string, from: strin
     .reduce((t, e) => t + Math.max(0, ((e.end ? Date.parse(e.end) : now) - Date.parse(e.start)) / 60_000), 0);
 }
 
-/** "7 h 45 m", "25 m". */
+/** "7 h 45 m", "25 m" (Arabic: "7 س 45 د"). */
 export function fmtDuration(minutes: number): string {
   const m = Math.round(minutes);
   const h = Math.floor(m / 60);
-  return h ? `${h} h${m % 60 ? ` ${m % 60} m` : ""}` : `${m} m`;
+  const [H, M] = getLang() === "ar" ? ["س", "د"] : ["h", "m"];
+  return h ? `${h} ${H}${m % 60 ? ` ${m % 60} ${M}` : ""}` : `${m} ${M}`;
 }
 
-/** "9:02 am" in the device's clock. */
+/** "9:02 am" (or "09:02" in Spanish, "9:02 ص" in Arabic) in the device's clock. */
 export function fmtTime(iso: string): string {
-  const d = new Date(iso);
-  const h = d.getHours();
-  return `${h % 12 || 12}:${String(d.getMinutes()).padStart(2, "0")} ${h < 12 ? "am" : "pm"}`;
+  return new Intl.DateTimeFormat(locale(), { hour: "numeric", minute: "2-digit", hourCycle: getLang() === "es" ? "h23" : "h12" }).format(new Date(iso)).replace(/AM|PM/, (m) => m.toLowerCase()).replace(/[\u202f\u00a0]/g, " ");
 }
 
 /** Local calendar day of a date-time, as ISO date. */

@@ -2,7 +2,7 @@
 import type { ReactNode } from "react";
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Sailboat } from "lucide-react";
-import { fmtMonth } from "@marina/shared";
+import { t, isRtl, fmtMonth } from "@marina/shared";
 import { moneyShort, money } from "@marina/shared";
 
 const axis = { fontSize: 11, fill: "var(--chart-axis)", fontFamily: "var(--font-num)" };
@@ -12,7 +12,8 @@ const tooltipStyle = {
   itemStyle: { padding: 0 },
   cursor: { fill: "var(--surface-3)" },
 };
-const legendProps = { verticalAlign: "top" as const, align: "right" as const, iconType: "circle" as const, iconSize: 8, wrapperStyle: { fontSize: 12, paddingBottom: 12, color: "var(--text-2)" } };
+// Arabic reads right to left: the time axis runs from the right and the legend sits on the left.
+const legendProps = () => ({ verticalAlign: "top" as const, align: (isRtl() ? "left" : "right") as "left" | "right", iconType: "circle" as const, iconSize: 8, wrapperStyle: { fontSize: 12, paddingBottom: 12, color: "var(--text-2)" } });
 
 /**
  * Categorical palette in order of use. #10B981 is left out because green means
@@ -27,7 +28,7 @@ function EmptyChart() {
       <span className="flex size-12 items-center justify-center rounded-full bg-surface-3">
         <Sailboat className="size-5 text-ink-2" aria-hidden />
       </span>
-      <p className="mt-3 text-[13px] text-ink-3">No bookings for this period</p>
+      <p className="mt-3 text-[13px] text-ink-3">{t("No bookings for this period")}</p>
     </div>
   );
 }
@@ -51,10 +52,10 @@ export function RevenueChart({ months, series }: { months: string[]; series: { n
       <ResponsiveContainer>
         <BarChart data={data} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
           <CartesianGrid vertical={false} stroke="var(--chart-grid)" strokeDasharray="3 3" />
-          <XAxis dataKey="month" tick={axis} tickLine={false} axisLine={false} dy={6} />
-          <YAxis tickFormatter={moneyShort} ticks={ticks} domain={[0, ticks[ticks.length - 1]]} tick={axis} tickLine={false} axisLine={false} width={52} />
+          <XAxis dataKey="month" tick={axis} tickLine={false} axisLine={false} dy={6} reversed={isRtl()} />
+          <YAxis orientation={isRtl() ? "right" : "left"} tickFormatter={moneyShort} ticks={ticks} domain={[0, ticks[ticks.length - 1]]} tick={axis} tickLine={false} axisLine={false} width={52} />
           <Tooltip {...tooltipStyle} formatter={(v) => money(Number(v))} />
-          {series.length > 1 && <Legend {...legendProps} />}
+          {series.length > 1 && <Legend {...legendProps()} />}
           {series.map((s, i) => (
             <Bar
               key={s.name}
@@ -83,10 +84,10 @@ export function OccupancyChart({ months, series }: { months: string[]; series: {
       <ResponsiveContainer>
         <LineChart data={data} margin={{ top: 0, right: 8, left: 0, bottom: 0 }}>
           <CartesianGrid vertical={false} stroke="var(--chart-grid)" strokeDasharray="3 3" />
-          <XAxis dataKey="month" tick={axis} tickLine={false} axisLine={false} dy={6} />
-          <YAxis domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tickFormatter={(v) => `${v}%`} tick={axis} tickLine={false} axisLine={false} width={40} />
+          <XAxis dataKey="month" tick={axis} tickLine={false} axisLine={false} dy={6} reversed={isRtl()} />
+          <YAxis orientation={isRtl() ? "right" : "left"} domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tickFormatter={(v) => `${v}%`} tick={axis} tickLine={false} axisLine={false} width={40} />
           <Tooltip {...tooltipStyle} cursor={{ stroke: "var(--border-strong)" }} formatter={(v) => `${Number(v).toFixed(1)}%`} />
-          {series.length > 1 && <Legend {...legendProps} iconType="circle" />}
+          {series.length > 1 && <Legend {...legendProps()} iconType="circle" />}
           {series.map((s, i) => (
             <Line
               key={s.name}

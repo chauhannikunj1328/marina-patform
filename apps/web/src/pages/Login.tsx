@@ -4,13 +4,14 @@ import { ArrowLeft, CircleAlert, Eye, EyeOff, MailCheck } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { useStore } from "@/data/store";
 import { Button, Field, Input } from "@/components/ui";
+import { t } from "@marina/shared";
 
 /** 14 Login and sign-up: canvas gradient background, centered white card (radius 20), logo top, Slate pill button. */
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="bg-canvas flex min-h-full flex-col items-center justify-center px-4 py-10">
       <div className="w-full max-w-md rounded-[20px] bg-surface p-8 shadow-e3 sm:p-10">{children}</div>
-      <p className="mt-6 text-xs text-ink-2">© {new Date().getFullYear()} Marina Management System</p>
+      <p className="mt-6 text-xs text-ink-2">© {new Date().getFullYear()} {t("Marina Management System")}</p>
     </div>
   );
 }
@@ -41,7 +42,7 @@ export function Login() {
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !password) {
-      setError("Enter your email and password.");
+      setError(t("Enter your email and password."));
       return;
     }
     setBusy(true);
@@ -55,23 +56,23 @@ export function Login() {
     <Shell>
       <Brand />
       <div className="mb-8 text-center">
-        <h1 className="text-[22px] leading-[30px] font-medium">Welcome back</h1>
-        <p className="mt-1 text-sm text-ink-2">Sign in to manage your marinas, berths and bookings.</p>
+        <h1 className="text-[22px] leading-[30px] font-medium">{t("Welcome back")}</h1>
+        <p className="mt-1 text-sm text-ink-2">{t("Sign in to manage your marinas, berths and bookings.")}</p>
       </div>
       <form onSubmit={submit} className="space-y-4" noValidate>
-        <Field label="Email address">
+        <Field label={t("Email address")}>
           {(id) => <Input id={id} type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" />}
         </Field>
-        <Field label="Password">
+        <Field label={t("Password")}>
           {(id) => (
             <div className="relative">
-              <Input id={id} type={show ? "text" : "password"} autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} className="pr-10" />
+              <Input id={id} type={show ? "text" : "password"} autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} className="pe-10" />
               <button
                 type="button"
                 onClick={() => setShow((s) => !s)}
-                aria-label={show ? "Hide password" : "Show password"}
-                title={show ? "Hide password" : "Show password"}
-                className="absolute top-1/2 right-2 -translate-y-1/2 rounded-full p-1.5 text-ink-2 hover:bg-sidebar hover:text-ink cursor-pointer"
+                aria-label={show ? t("Hide password") : t("Show password")}
+                title={show ? t("Hide password") : t("Show password")}
+                className="absolute top-1/2 end-2 -translate-y-1/2 rounded-full p-1.5 text-ink-2 hover:bg-sidebar hover:text-ink cursor-pointer"
               >
                 {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
               </button>
@@ -80,10 +81,10 @@ export function Login() {
         </Field>
         <div className="flex items-center justify-between text-[13px]">
           <label className="flex items-center gap-2 text-ink-2">
-            <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="size-4 rounded-sm border-line-strong accent-[var(--primary)]" /> Remember me
+            <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="size-4 rounded-sm border-line-strong accent-[var(--primary)]" /> {t("Remember me")}
           </label>
           <Link to="/forgot-password" className="font-semibold text-green-text hover:underline">
-            Forgot password?
+            {t("Forgot password?")}
           </Link>
         </div>
         {error && (
@@ -93,18 +94,18 @@ export function Login() {
           </p>
         )}
         <Button type="submit" variant="primary" className="h-12 w-full text-[15px]" disabled={busy}>
-          {busy ? "Signing in…" : "Sign in"}
+          {busy ? t("Signing in…") : t("Sign in")}
         </Button>
         <p className="text-center text-[13px] text-ink-2">
-          New here?{" "}
+          {t("New here?")}{" "}
           <Link to="/register" state={{ from }} className="font-semibold text-green-text hover:underline">
-            Create an account
+            {t("Create an account")}
           </Link>
         </p>
       </form>
       {import.meta.env.DEV && (
         <div className="mt-8 border-t border-line pt-5 text-xs text-ink-3">
-          <p className="mb-3 text-center">Demo accounts (development only)</p>
+          <p className="mb-3 text-center">{t("Demo accounts (development only)")}</p>
           <div className="grid grid-cols-2 gap-2">
             {[
               ["Admin", "admin@marina.com", "admin123"],
@@ -118,7 +119,7 @@ export function Login() {
                   setPassword(p);
                   setError(null);
                 }}
-                className="rounded-[12px] border border-line px-3 py-2.5 text-left hover:bg-sidebar cursor-pointer"
+                className="rounded-[12px] border border-line px-3 py-2.5 text-start hover:bg-sidebar cursor-pointer"
               >
                 <span className="block text-[13px] font-semibold text-ink">{role}</span>
                 <span className="block truncate">{e}</span>
@@ -143,38 +144,38 @@ export function ForgotPassword() {
           <span className="mx-auto flex size-12 items-center justify-center rounded-full bg-success-bg">
             <MailCheck className="size-5 text-success-fg" aria-hidden />
           </span>
-          <h1 className="mt-4 text-[22px] leading-[30px] font-medium">Check your email</h1>
+          <h1 className="mt-4 text-[22px] leading-[30px] font-medium">{t("Check your email")}</h1>
           <p className="mt-2 text-[13px] text-ink-2">
-            If an account exists for <strong>{email}</strong>, we sent a link to reset your password. It expires in 30 minutes.
+            {t("If an account exists for")} <strong>{email}</strong>{t(", we sent a link to reset your password. It expires in 30 minutes.")}
           </p>
           <Link to="/login" className="mt-6 inline-flex items-center gap-1 text-[13px] font-semibold text-green-text hover:underline">
-            <ArrowLeft className="size-4" aria-hidden /> Back to sign in
+            <ArrowLeft className="flip-rtl size-4" aria-hidden /> {t("Back to sign in")}
           </Link>
         </div>
       ) : (
         <>
           <Brand />
           <div className="mb-8 text-center">
-            <h1 className="text-[22px] leading-[30px] font-medium">Reset your password</h1>
-            <p className="mt-1 text-sm text-ink-2">Enter your work email and we'll send you a reset link.</p>
+            <h1 className="text-[22px] leading-[30px] font-medium">{t("Reset your password")}</h1>
+            <p className="mt-1 text-sm text-ink-2">{t("Enter your work email and we'll send you a reset link.")}</p>
           </div>
           <form
             className="space-y-4"
             noValidate
             onSubmit={(e) => {
               e.preventDefault();
-              if (!/^\S+@\S+\.\S+$/.test(email)) return setError("Enter a valid email address.");
+              if (!/^\S+@\S+\.\S+$/.test(email)) return setError(t("Enter a valid email address."));
               setSent(true);
             }}
           >
-            <Field label="Email address" error={error}>
+            <Field label={t("Email address")} error={error}>
               {(id) => <Input id={id} type="email" value={email} onChange={(e) => { setEmail(e.target.value); setError(""); }} placeholder="you@company.com" />}
             </Field>
             <Button type="submit" variant="primary" className="h-12 w-full text-[15px]">
-              Send reset link
+              {t("Send reset link")}
             </Button>
             <Link to="/login" className="flex items-center justify-center gap-1 text-[13px] font-semibold text-green-text hover:underline">
-              <ArrowLeft className="size-4" aria-hidden /> Back to sign in
+              <ArrowLeft className="flip-rtl size-4" aria-hidden /> {t("Back to sign in")}
             </Link>
           </form>
         </>
@@ -214,28 +215,28 @@ export function Register() {
     <Shell>
       <Brand />
       <div className="mb-8 text-center">
-        <h1 className="text-[22px] leading-[30px] font-medium">Create your account</h1>
-        <p className="mt-1 text-sm text-ink-2">Explore the full Marina dashboard with sample data.</p>
+        <h1 className="text-[22px] leading-[30px] font-medium">{t("Create your account")}</h1>
+        <p className="mt-1 text-sm text-ink-2">{t("Explore the full Marina dashboard with sample data.")}</p>
       </div>
       <form onSubmit={submit} className="space-y-4" noValidate>
-        <Field label="Full name" error={errors.name}>
+        <Field label={t("Full name")} error={errors.name}>
           {(id) => <Input id={id} autoComplete="name" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />}
         </Field>
-        <Field label="Work email" error={errors.email}>
+        <Field label={t("Work email")} error={errors.email}>
           {(id) => <Input id={id} type="email" autoComplete="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} placeholder="you@company.com" />}
         </Field>
-        <Field label="Company" hint="Optional">
+        <Field label={t("Company")} hint={t("Optional")}>
           {(id) => <Input id={id} autoComplete="organization" value={f.company} onChange={(e) => setF({ ...f, company: e.target.value })} />}
         </Field>
-        <Field label="Password" error={errors.password} hint="At least 8 characters">
+        <Field label={t("Password")} error={errors.password} hint={t("At least 8 characters")}>
           {(id) => (
             <div className="relative">
-              <Input id={id} type={show ? "text" : "password"} autoComplete="new-password" value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} className="pr-10" />
+              <Input id={id} type={show ? "text" : "password"} autoComplete="new-password" value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} className="pe-10" />
               <button
                 type="button"
                 onClick={() => setShow((v) => !v)}
-                aria-label={show ? "Hide password" : "Show password"}
-                className="absolute top-1/2 right-2 -translate-y-1/2 rounded-full p-1.5 text-ink-2 hover:bg-sidebar hover:text-ink cursor-pointer"
+                aria-label={show ? t("Hide password") : t("Show password")}
+                className="absolute top-1/2 end-2 -translate-y-1/2 rounded-full p-1.5 text-ink-2 hover:bg-sidebar hover:text-ink cursor-pointer"
               >
                 {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
               </button>
@@ -249,15 +250,15 @@ export function Register() {
           </p>
         )}
         <p className="rounded-[12px] bg-surface-2 px-3.5 py-2.5 text-xs leading-[18px] text-ink-3">
-          The product owner is emailed your name, email, company and sign-in times so they know who is reviewing the demo. Your password is never shared. Your account and any changes you make are saved only in this browser.
+          {t("The product owner is emailed your name, email, company and sign-in times so they know who is reviewing the demo. Your password is never shared. Your account and any changes you make are saved only in this browser.")}
         </p>
         <Button type="submit" variant="primary" className="h-12 w-full text-[15px]" disabled={busy}>
-          {busy ? "Creating account…" : "Create account"}
+          {busy ? t("Creating account…") : t("Create account")}
         </Button>
         <p className="text-center text-[13px] text-ink-2">
-          Already have an account?{" "}
+          {t("Already have an account?")}{" "}
           <Link to="/login" state={{ from }} className="font-semibold text-green-text hover:underline">
-            Sign in
+            {t("Sign in")}
           </Link>
         </p>
       </form>

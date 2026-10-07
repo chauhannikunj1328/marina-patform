@@ -2,7 +2,7 @@
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Anchor, ArrowUpRight, CalendarDays, CalendarPlus, CircleAlert, DollarSign, Download, FileText, Gauge, LogIn, LogOut, Plus, Wrench } from "lucide-react";
 import { useStore } from "@/data/store";
-import { fmtDateTime, lastMonths } from "@marina/shared";
+import { tn, t, tx, fmtDateTime, lastMonths } from "@marina/shared";
 import { count, money, pct } from "@marina/shared";
 import { Button, Card, CardHeader, HighlightPill, Meter, PageHeader, Select, StatCard, Table } from "@/components/ui";
 import { MAX_SERIES, OccupancyChart, RevenueChart, RingChart } from "@/components/charts";
@@ -15,30 +15,30 @@ function KpiRow({ ids, scopeLabel }: { ids: string[]; scopeLabel: string }) {
   const m = ix.metrics(ids);
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 min-[1400px]:grid-cols-4">
-      <StatCard label="Marinas" icon={Anchor} value={count(m.marinas)} sub={scopeLabel} to="/marinas" />
+      <StatCard label={t("Marinas")} icon={Anchor} value={count(m.marinas)} sub={scopeLabel} to="/marinas" />
       <StatCard
-        label="Berths occupied today"
+        label={t("Berths occupied today")}
         icon={Gauge}
         value={`${count(m.occupied)} / ${count(m.berths)}`}
-        sub={`${m.available} free · ${m.reserved} reserved this week · ${m.maintenance} in repair`}
+        sub={t("{available} free · {reserved} reserved this week · {maintenance} in repair", { available: m.available, reserved: m.reserved, maintenance: m.maintenance })}
         to="/berths"
-        hint="Berths with a confirmed or checked-in boat today, out of all berths."
+        hint={t("Berths with a confirmed or checked-in boat today, out of all berths.")}
       />
       <StatCard
-        label="Revenue booked this month"
+        label={t("Revenue booked this month")}
         icon={DollarSign}
         value={money(m.revenue)}
         trend={{ value: m.revenueChange }}
         to="/billing"
-        hint="Price of every confirmed, checked-in or completed stay, counted for the nights that fall in this month. Includes stays booked for later this month."
+        hint={t("Price of every confirmed, checked-in or completed stay, counted for the nights that fall in this month. Includes stays booked for later this month.")}
       />
       <StatCard
-        label="Occupancy rate"
+        label={t("Occupancy rate")}
         icon={CalendarDays}
         value={pct(m.occupancy)}
-        trend={{ value: m.occupancy - m.occupancyPrev, label: "vs 30 days ago", unit: "pts" }}
+        trend={{ value: m.occupancy - m.occupancyPrev, label: t("vs 30 days ago"), unit: "pts" }}
         to="/analytics"
-        hint="Occupied berths today divided by all berths, including berths in repair."
+        hint={t("Occupied berths today divided by all berths, including berths in repair.")}
       />
     </div>
   );
@@ -49,16 +49,16 @@ function BerthRing({ ids }: { ids: string[] }) {
   const { ix } = useStore();
   const m = ix.metrics(ids);
   const segments = [
-    { label: "Occupied", value: m.occupied, color: "var(--ring-1)" },
-    { label: "Reserved this week", value: m.reserved, color: "var(--ring-2)" },
-    { label: "Free", value: m.available, color: "var(--ring-3)" },
-    { label: "In repair", value: m.maintenance, color: "var(--ring-4)" },
+    { label: t("Occupied"), value: m.occupied, color: "var(--ring-1)" },
+    { label: t("Reserved this week"), value: m.reserved, color: "var(--ring-2)" },
+    { label: t("Free"), value: m.available, color: "var(--ring-3)" },
+    { label: t("In repair"), value: m.maintenance, color: "var(--ring-4)" },
   ];
   return (
     <Card>
-      <CardHeader title="Berths today" actions={<Link to="/berths" className="text-[13px] font-semibold text-green-text hover:underline">View all</Link>} />
+      <CardHeader title={t("Berths today")} actions={<Link to="/berths" className="text-[13px] font-semibold text-green-text hover:underline">{t("View all")}</Link>} />
       <div className="px-6 pb-6">
-        <RingChart segments={segments} center={<HighlightPill><span className="num">{pct(m.occupancy).replace(".0", "")}</span>&nbsp;full</HighlightPill>} />
+        <RingChart segments={segments} center={<HighlightPill>{t("{pct} full", { pct: pct(m.occupancy).replace(".0", "") })}</HighlightPill>} />
         <ul className="mt-6 space-y-3">
           {segments.map((sg) => (
             <li key={sg.label} className="flex items-center justify-between gap-3 text-[15px]">
@@ -67,7 +67,7 @@ function BerthRing({ ids }: { ids: string[] }) {
                   <span className="h-0.5 w-4 rounded-full" style={{ background: sg.color }} />
                   <span className="absolute left-1/2 size-2 -translate-x-1/2 rounded-full" style={{ background: sg.color }} />
                 </span>
-                {sg.label}
+                {t(sg.label)}
               </span>
               <span className="num font-semibold text-ink">
                 {sg.value} <span className="font-normal text-ink-3">· {m.berths ? Math.round((sg.value / m.berths) * 100) : 0}%</span>
@@ -84,17 +84,17 @@ function BerthRing({ ids }: { ids: string[] }) {
 function UpdateCard({ onDownload }: { onDownload: () => void }) {
   return (
     <div className="bg-promo relative overflow-hidden rounded-[20px] border border-transparent p-6 text-ink dark:border-line">
-      <span className="inline-flex rounded-full bg-surface px-3 py-1 text-xs font-semibold text-ink">New update</span>
-      <p className="mt-4 max-w-[12ch] text-[26px] leading-[34px] font-medium tracking-[-0.005em]">Monthly marina report</p>
-      <p className="mt-2 max-w-[28ch] text-[13px] leading-5 text-ink-2">Revenue, occupancy and berths for every marina in one CSV.</p>
+      <span className="inline-flex rounded-full bg-surface px-3 py-1 text-xs font-semibold text-ink">{t("New update")}</span>
+      <p className="mt-4 max-w-[12ch] text-[26px] leading-[34px] font-medium tracking-[-0.005em]">{t("Monthly marina report")}</p>
+      <p className="mt-2 max-w-[28ch] text-[13px] leading-5 text-ink-2">{t("Revenue, occupancy and berths for every marina in one CSV.")}</p>
       <button
         onClick={onDownload}
-        aria-label="Download monthly report"
+        aria-label={t("Download monthly report")}
         className="mt-5 inline-flex size-12 items-center justify-center rounded-full bg-primary text-on-primary transition-colors hover:bg-primary-hover cursor-pointer"
       >
         <Download className="size-5" aria-hidden />
       </button>
-      <FileText className="absolute -right-4 -bottom-6 size-36 text-promo-art" aria-hidden />
+      <FileText className="absolute -end-4 -bottom-6 size-36 text-promo-art" aria-hidden />
     </div>
   );
 }
@@ -105,20 +105,20 @@ function TodayPanel({ ids }: { ids: string[] }) {
   const set = new Set(ids);
   const openTasks = db.tasks.filter((t) => set.has(t.marinaId) && t.status !== "done").length;
   const rows = [
-    { icon: LogIn, label: "Arrivals today", value: m.arrivalsToday, to: "/bookings?view=today" },
-    { icon: LogOut, label: "Departures today", value: m.departuresToday, to: "/bookings?view=today" },
-    { icon: CircleAlert, label: "Bookings awaiting approval", value: m.pending, to: "/bookings?status=pending" },
-    { icon: Wrench, label: "Open work orders", value: openTasks, to: "/maintenance" },
+    { icon: LogIn, label: t("Arrivals today"), value: m.arrivalsToday, to: "/bookings?view=today" },
+    { icon: LogOut, label: t("Departures today"), value: m.departuresToday, to: "/bookings?view=today" },
+    { icon: CircleAlert, label: t("Bookings awaiting approval"), value: m.pending, to: "/bookings?status=pending" },
+    { icon: Wrench, label: t("Open work orders"), value: openTasks, to: "/maintenance" },
   ];
   return (
     <Card>
-      <CardHeader title="Today" description="What needs attention" />
+      <CardHeader title={t("Today")} description={t("What needs attention")} />
       <ul>
         {rows.map((r) => (
           <li key={r.label} className="border-b border-line last:border-0">
             <Link to={r.to} className="flex items-center justify-between px-5 py-3 hover:bg-row-hover">
               <span className="flex items-center gap-3 text-[13px]">
-                <r.icon className="size-4 text-ink-2" aria-hidden /> {r.label}
+                <r.icon className="size-4 text-ink-2" aria-hidden /> {t(r.label)}
               </span>
               <span className="flex items-center gap-1 font-semibold num">
                 {r.value} <ArrowUpRight className="size-3.5 text-ink-3" aria-hidden />
@@ -136,16 +136,16 @@ function RecentActivity() {
   const items = activity.slice(0, 6);
   return (
     <Card>
-      <CardHeader title="Recent activity" actions={user?.role === "admin" && <Link to="/access" className="text-[13px] font-semibold text-green-text hover:underline">Audit log</Link>} />
+      <CardHeader title={t("Recent activity")} actions={user?.role === "admin" && <Link to="/access" className="text-[13px] font-semibold text-green-text hover:underline">{t("Audit log")}</Link>} />
       {items.length === 0 ? (
-        <p className="px-5 py-6 text-[13px] text-ink-3">Nothing yet. Changes you make appear here.</p>
+        <p className="px-5 py-6 text-[13px] text-ink-3">{t("Nothing yet. Changes you make appear here.")}</p>
       ) : (
         <ol>
           {items.map((a) => {
             const body = (
               <>
-                <p className="text-[13px]">{a.text}</p>
-                <p className="text-xs text-ink-3">{a.by} · {fmtDateTime(a.at)}</p>
+                <p className="text-[13px]">{tx(a.text)}</p>
+                <p className="text-xs text-ink-3">{t(a.by)} · {fmtDateTime(a.at)}</p>
               </>
             );
             return (
@@ -170,7 +170,7 @@ function RankTable({ title, rows, nameHead }: { title: string; nameHead: string;
   const showCount = data.some((r) => r.ids.length > 1);
   return (
     <Card>
-      <CardHeader title={title} description="Ranked by revenue booked this month" />
+      <CardHeader title={title} description={t("Ranked by revenue booked this month")} />
       <Table head={showCount ? [nameHead, "Marinas", "Berths", "Occupancy", "Revenue (month)", ""] : [nameHead, "Berths", "Occupancy", "Revenue (month)", ""]}>
         {data.map((r, i) => (
           <tr key={r.id}>
@@ -193,7 +193,7 @@ function RankTable({ title, rows, nameHead }: { title: string; nameHead: string;
             <td className="font-medium num">{money(r.m.revenue)}</td>
             <td>
               <Link to={r.to} className="text-[13px] font-semibold text-green-text hover:underline">
-                Open
+                {t("Open")}
               </Link>
             </td>
           </tr>
@@ -207,17 +207,17 @@ function Charts({ groups }: { groups: { name: string; ids: string[] }[] }) {
   const { ix } = useStore();
   const months = lastMonths(MONTHS);
   // Up to six series get their own color; any more are grouped as "Other".
-  const shown = groups.length > MAX_SERIES ? [...groups.slice(0, MAX_SERIES - 1), { name: "Other", ids: groups.slice(MAX_SERIES - 1).flatMap((g) => g.ids) }] : groups;
+  const shown = groups.length > MAX_SERIES ? [...groups.slice(0, MAX_SERIES - 1), { name: t("Other"), ids: groups.slice(MAX_SERIES - 1).flatMap((g) => g.ids) }] : groups;
   return (
     <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
       <Card>
-        <CardHeader title="Revenue" description={`Last ${MONTHS} months · this month includes confirmed upcoming stays`} />
+        <CardHeader title={t("Revenue")} description={t("Last {MONTHS} months · this month includes confirmed upcoming stays", { MONTHS: MONTHS })} />
         <div className="p-4">
           <RevenueChart months={months} series={shown.map((g) => ({ name: g.name, values: ix.revenueByMonth(g.ids, months) }))} />
         </div>
       </Card>
       <Card>
-        <CardHeader title="Occupancy" description={`Booked berth-nights, last ${MONTHS} months`} />
+        <CardHeader title={t("Occupancy")} description={t("Booked berth-nights, last {MONTHS} months", { MONTHS: MONTHS })} />
         <div className="p-4">
           <OccupancyChart months={months} series={shown.map((g) => ({ name: g.name, values: ix.occupancyByMonth(g.ids, months) }))} />
         </div>
@@ -246,26 +246,26 @@ export function GlobalOverview() {
   return (
     <>
       <PageHeader
-        title={user?.role === "admin" ? "Global Overview" : "Overview"}
-        description="Performance across every marina you manage"
+        title={user?.role === "admin" ? t("Global Overview") : t("Overview")}
+        description={t("Performance across every marina you manage")}
         actions={
           <>
             <Button icon={Download} onClick={() => exportSummary(ix, counties.map((x) => ({ name: x.c.name, ids: x.ids })), "overview.csv")}>
-              Export CSV
+              {t("Export CSV")}
             </Button>
             <Button variant="primary" icon={CalendarPlus} onClick={() => navigate("/bookings?new=1")}>
-              New booking
+              {t("New booking")}
             </Button>
           </>
         }
       />
       <div className="space-y-4">
-        <KpiRow ids={scope} scopeLabel={`${counties.length} ${counties.length === 1 ? "county" : "counties"}`} />
+        <KpiRow ids={scope} scopeLabel={tn(counties.length, "{n} county", "{n} counties")} />
         <Charts groups={counties.map((x) => ({ name: x.c.name.replace(" County", ""), ids: x.ids }))} />
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
           <div className="space-y-4 xl:col-span-2">
             <RankTable
-              title="Marinas"
+              title={t("Marinas")}
               nameHead="Marina"
               rows={db.marinas
                 .filter((m) => scope.includes(m.id))
@@ -280,8 +280,8 @@ export function GlobalOverview() {
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button icon={Plus} onClick={() => navigate("/marinas?new=1")}>Add marina</Button>
-          <Button icon={FileText} onClick={() => navigate("/reports")}>View reports</Button>
+          <Button icon={Plus} onClick={() => navigate("/marinas?new=1")}>{t("Add marina")}</Button>
+          <Button icon={FileText} onClick={() => navigate("/reports")}>{t("View reports")}</Button>
         </div>
       </div>
     </>
@@ -294,31 +294,31 @@ export function CountyDashboard() {
   const navigate = useNavigate();
   const counties = db.counties.filter((c) => ix.marinaIdsInCounty(c.id).some((m) => scope.includes(m)));
   const county = counties.find((c) => c.id === id) ?? counties[0];
-  if (!county) return <PageHeader title="County Dashboard" description="You don't have access to any county yet." />;
+  if (!county) return <PageHeader title={t("County Dashboard")} description={t("You don't have access to any county yet.")} />;
   const ids = ix.marinaIdsInCounty(county.id).filter((m) => scope.includes(m));
   const cities = db.cities.filter((c) => c.countyId === county.id).map((c) => ({ c, ids: ix.marinaIdsInCity(c.id).filter((m) => scope.includes(m)) })).filter((x) => x.ids.length);
   return (
     <>
       <PageHeader
         title={county.name}
-        description={`${county.state} · ${cities.length} ${cities.length === 1 ? "city" : "cities"}`}
+        description={`${t(county.state)} · ${tn(cities.length, "{n} city", "{n} cities")}`}
         actions={
           <>
-            <Select look="plain" aria-label="Choose county" value={county.id} onChange={(e) => navigate(`/county/${e.target.value}`)}>
+            <Select look="plain" aria-label={t("Choose county")} value={county.id} onChange={(e) => navigate(`/county/${e.target.value}`)}>
               {counties.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </Select>
-            <Button icon={Download} onClick={() => exportSummary(ix, cities.map((x) => ({ name: x.c.name, ids: x.ids })), `${county.name}.csv`)}>Export CSV</Button>
+            <Button icon={Download} onClick={() => exportSummary(ix, cities.map((x) => ({ name: x.c.name, ids: x.ids })), `${county.name}.csv`)}>{t("Export CSV")}</Button>
           </>
         }
       />
       <div className="space-y-4">
-        <KpiRow ids={ids} scopeLabel={`in ${cities.length} ${cities.length === 1 ? "city" : "cities"}`} />
+        <KpiRow ids={ids} scopeLabel={tn(cities.length, "in {n} city", "in {n} cities")} />
         <Charts groups={cities.map((x) => ({ name: x.c.name, ids: x.ids }))} />
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
           <div className="xl:col-span-2">
-            <RankTable title={`Cities in ${county.name}`} nameHead="City" rows={cities.map((x) => ({ id: x.c.id, name: x.c.name, sub: `${x.ids.length} marinas`, ids: x.ids, to: `/city/${x.c.id}` }))} />
+            <RankTable title={t("Cities in {name}", { name: county.name })} nameHead="City" rows={cities.map((x) => ({ id: x.c.id, name: x.c.name, sub: tn(x.ids.length, "{n} marina", "{n} marinas"), ids: x.ids, to: `/city/${x.c.id}` }))} />
           </div>
           <div className="space-y-4">
             <BerthRing ids={ids} />
@@ -336,7 +336,7 @@ export function CityDashboard() {
   const navigate = useNavigate();
   const cities = db.cities.filter((c) => ix.marinaIdsInCity(c.id).some((m) => scope.includes(m)));
   const city = cities.find((c) => c.id === id) ?? cities[0];
-  if (!city) return <PageHeader title="City Dashboard" description="You don't have access to any city yet." />;
+  if (!city) return <PageHeader title={t("City Dashboard")} description={t("You don't have access to any city yet.")} />;
   const marinas = db.marinas.filter((m) => m.cityId === city.id && scope.includes(m.id));
   const ids = marinas.map((m) => m.id);
   const county = ix.county(city.countyId);
@@ -347,21 +347,21 @@ export function CityDashboard() {
         description={`${county?.name}, ${county?.state}`}
         actions={
           <>
-            <Select look="plain" aria-label="Choose city" value={city.id} onChange={(e) => navigate(`/city/${e.target.value}`)}>
+            <Select look="plain" aria-label={t("Choose city")} value={city.id} onChange={(e) => navigate(`/city/${e.target.value}`)}>
               {cities.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </Select>
-            <Button icon={Download} onClick={() => exportSummary(ix, marinas.map((m) => ({ name: m.name, ids: [m.id] })), `${city.name}.csv`)}>Export CSV</Button>
+            <Button icon={Download} onClick={() => exportSummary(ix, marinas.map((m) => ({ name: m.name, ids: [m.id] })), `${city.name}.csv`)}>{t("Export CSV")}</Button>
           </>
         }
       />
       <div className="space-y-4">
-        <KpiRow ids={ids} scopeLabel={`in ${city.name}`} />
+        <KpiRow ids={ids} scopeLabel={t("in {name}", { name: city.name })} />
         <Charts groups={marinas.map((m) => ({ name: m.name, ids: [m.id] }))} />
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
           <div className="xl:col-span-2">
-            <RankTable title={`Marinas in ${city.name}`} nameHead="Marina" rows={marinas.map((m) => ({ id: m.id, name: m.name, sub: m.address, ids: [m.id], to: `/marinas/${m.id}` }))} />
+            <RankTable title={t("Marinas in {name}", { name: city.name })} nameHead="Marina" rows={marinas.map((m) => ({ id: m.id, name: m.name, sub: m.address, ids: [m.id], to: `/marinas/${m.id}` }))} />
           </div>
           <div className="space-y-4">
             <BerthRing ids={ids} />

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Gauge } from "lucide-react";
 import { useStore } from "@/data/store";
-import { DEFAULT_UTILITIES, fmtDateTime, lastReading, METER_UNIT, money2, withMeterReading, type Berth, type MeterKind } from "@marina/shared";
+import { t, DEFAULT_UTILITIES, fmtDateTime, lastReading, METER_UNIT, money2, withMeterReading, type Berth, type MeterKind } from "@marina/shared";
 import { Button, EmptyState, Field, Input, Modal, Table } from "@/components/ui";
 
 export function MetersPanel({ berths, canEdit }: { berths: Berth[]; canEdit: boolean }) {
@@ -14,13 +14,13 @@ export function MetersPanel({ berths, canEdit }: { berths: Berth[]; canEdit: boo
   const cell = (b: Berth, kind: MeterKind) => {
     if (!(kind === "power" ? b.power : b.water)) return <span className="text-ink-3">—</span>;
     const r = lastReading(db, b.id, kind);
-    return r ? <span className="num">{r.value.toLocaleString()} {METER_UNIT[kind]}<span className="block text-xs text-ink-3">{fmtDateTime(r.at)}</span></span> : <span className="text-xs text-ink-3">No reading yet</span>;
+    return r ? <span className="num">{r.value.toLocaleString()} {METER_UNIT[kind]}<span className="block text-xs text-ink-3">{fmtDateTime(r.at)}</span></span> : <span className="text-xs text-ink-3">{t("No reading yet")}</span>;
   };
   return (
     <div>
-      <p className="px-4 py-3 text-[13px] text-ink-2">Electricity {money2(rates.powerPerKwh)}/kWh · water {money2(rates.waterPerGallon)}/gal. Change the rates in Settings › Pricing.</p>
+      <p className="px-4 py-3 text-[13px] text-ink-2">{t("Electricity")} {money2(rates.powerPerKwh)}{t("/kWh · water")} {money2(rates.waterPerGallon)}{t("/gal. Change the rates in Settings › Pricing.")}</p>
       {metered.length === 0 ? (
-        <EmptyState icon={Gauge} title="No metered berths here" />
+        <EmptyState icon={Gauge} title={t("No metered berths here")} />
       ) : (
         <Table head={["Berth", "Boat here now", "Power meter", "Water meter", "Actions"]}>
           {metered.slice(0, 120).map((b) => {
@@ -28,10 +28,10 @@ export function MetersPanel({ berths, canEdit }: { berths: Berth[]; canEdit: boo
             return (
               <tr key={b.id}>
                 <td className="font-medium">{b.code}<span className="block text-xs font-normal text-ink-3">{ix.marina(b.marinaId)?.name}</span></td>
-                <td>{cur ? <>{ix.boat(cur.boatId)?.name}<span className="block text-xs text-ink-3">{cur.code}</span></> : <span className="text-ink-3">Empty</span>}</td>
+                <td>{cur ? <>{ix.boat(cur.boatId)?.name}<span className="block text-xs text-ink-3">{cur.code}</span></> : <span className="text-ink-3">{t("Empty")}</span>}</td>
                 <td>{cell(b, "power")}</td>
                 <td>{cell(b, "water")}</td>
-                <td>{canEdit && <Button size="sm" icon={Gauge} onClick={() => setReading(b)}>Record reading</Button>}</td>
+                <td>{canEdit && <Button size="sm" icon={Gauge} onClick={() => setReading(b)}>{t("Record reading")}</Button>}</td>
               </tr>
             );
           })}
@@ -61,10 +61,10 @@ function ReadingForm({ berth, onClose }: { berth: Berth; onClose: () => void }) 
     for (const k of kinds) {
       if (!values[k]) continue;
       const prev = lastReading(db, berth.id, k);
-      if (!(Number(values[k]) >= 0)) e[k] = "Enter the number on the meter.";
-      else if (prev && Number(values[k]) < prev.value) e[k] = `Lower than the last reading (${prev.value.toLocaleString()}). Check the meter.`;
+      if (!(Number(values[k]) >= 0)) e[k] = t("Enter the number on the meter.");
+      else if (prev && Number(values[k]) < prev.value) e[k] = t("Lower than the last reading ({toLocaleString}). Check the meter.", { toLocaleString: prev.value.toLocaleString() });
     }
-    if (!kinds.some((k) => values[k])) e.power = "Enter at least one reading.";
+    if (!kinds.some((k) => values[k])) e.power = t("Enter at least one reading.");
     setErrors(e);
     if (Object.keys(e).length) return;
     const before = db;
@@ -79,17 +79,17 @@ function ReadingForm({ berth, onClose }: { berth: Berth; onClose: () => void }) 
       }
       return next;
     }, { text: `Meter readings for berth ${berth.code}${cur ? `, billed to ${ix.boat(cur.boatId)?.name}` : ""}`, to: "/berths", marinaId: berth.marinaId });
-    toast(cur && total > 0 ? `Readings saved. ${money2(total)} added to ${ix.boat(cur.boatId)?.name}'s invoice.` : "Readings saved", before);
+    toast(cur && total > 0 ? t("Readings saved. {amount} added to {name}'s invoice.", { amount: money2(total), name: ix.boat(cur.boatId)?.name }) : t("Readings saved"), before);
     onClose();
   };
   return (
-    <Modal open onClose={onClose} title={`Meter readings · berth ${berth.code}`} description={cur ? `Usage since the last reading is billed to ${ix.boat(cur.boatId)?.name} (${cur.code}).` : "No boat in the berth, so nothing is billed. The reading sets the starting point."} footer={<><Button onClick={onClose}>Cancel</Button><Button variant="primary" onClick={save}>Save readings</Button></>}>
+    <Modal open onClose={onClose} title={t("Meter readings · berth {code}", { code: berth.code })} description={cur ? t("Usage since the last reading is billed to {name} ({code}).", { name: ix.boat(cur.boatId)?.name, code: cur.code }) : t("No boat in the berth, so nothing is billed. The reading sets the starting point.")} footer={<><Button onClick={onClose}>{t("Cancel")}</Button><Button variant="primary" onClick={save}>{t("Save readings")}</Button></>}>
       <div className="space-y-4">
         {kinds.map((k) => {
           const prev = lastReading(db, berth.id, k);
           const p = preview(k);
           return (
-            <Field key={k} label={`${k === "power" ? "Power" : "Water"} meter (${METER_UNIT[k]})`} hint={p ? `${p.usage.toLocaleString()} ${METER_UNIT[k]} used · ${money2(p.charge)}` : prev ? `Last: ${prev.value.toLocaleString()} on ${fmtDateTime(prev.at)}` : "First reading"} error={errors[k]}>
+            <Field key={k} label={t("{v} meter ({v2})", { v: k === "power" ? t("Power") : t("Water"), v2: METER_UNIT[k] })} hint={p ? t("{toLocaleString} {v} used · {amount}", { toLocaleString: p.usage.toLocaleString(), v: METER_UNIT[k], amount: money2(p.charge) }) : prev ? t("Last: {toLocaleString} on {at}", { toLocaleString: prev.value.toLocaleString(), at: fmtDateTime(prev.at) }) : t("First reading")} error={errors[k]}>
               {(id) => <Input id={id} type="number" min={0} inputMode="numeric" value={values[k]} onChange={(e) => { setValues({ ...values, [k]: e.target.value }); setErrors({}); }} />}
             </Field>
           );

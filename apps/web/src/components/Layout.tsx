@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { ShieldAlert, FileSignature,
+import { Languages, Check, ShieldAlert, FileSignature,
   Anchor, ArrowLeft, ArrowRight, Bell, Eye, Building, CalendarDays, ChartLine, CircleAlert, CircleCheck, EllipsisVertical, FileText, Globe, House, Info, Landmark,
   Keyboard, LogOut, MapPin, Menu, Moon, Sparkles, Receipt, Search, Settings, ShieldCheck, Sun, TriangleAlert, UserCog, Users, Warehouse, Wrench, X,
   type LucideIcon,
 } from "lucide-react";
 import { useStore } from "@/data/store";
-import { cx } from "@marina/shared";
+import { useLang } from "@/lib/lang";
+import { cx, LANGS, t } from "@marina/shared";
 import { buildNotifications } from "@marina/shared";
 import { Avatar, Badge, IconButton, Modal, Tooltip } from "./ui";
 import { OfflineBanner } from "./StatusPage";
@@ -70,10 +71,10 @@ export const NAV: { group: string; items: NavItem[] }[] = [
 ];
 
 function navLabel(it: NavItem, role?: string) {
-  if (role === "admin") return it.label;
-  if (it.to === "/") return "Overview";
-  if (it.to === "/users") return "Boat Owners";
-  return it.label;
+  if (role === "admin") return t(it.label);
+  if (it.to === "/") return t("Overview");
+  if (it.to === "/users") return t("Boat Owners");
+  return t(it.label);
 }
 
 function useTheme() {
@@ -93,6 +94,31 @@ function useTheme() {
     }
   }, [theme]);
   return [theme, setTheme] as const;
+}
+
+/** Language menu: English, Español, العربية. Arabic switches the whole app to right to left. */
+function LanguageMenu() {
+  const { lang, setLang } = useLang();
+  const [open, setOpen] = useState(false);
+  const close = useCallback(() => setOpen(false), []);
+  const ref = useClickOutside(close);
+  return (
+    <div ref={ref} className="relative">
+      <IconButton look="outline" icon={Languages} label={t("Language")} onClick={() => setOpen(!open)} aria-expanded={open} />
+      {open && (
+        <ul role="menu" className="absolute end-0 top-12 z-50 w-44 rounded-[12px] border border-line bg-raised p-1 shadow-[0_16px_40px_-12px_rgba(23,25,30,0.25)]">
+          {LANGS.map((l) => (
+            <li key={l.code}>
+              <button role="menuitemradio" aria-checked={lang === l.code} lang={l.code} dir={l.rtl ? "rtl" : "ltr"} onClick={() => { setLang(l.code); setOpen(false); }} className={cx("flex w-full items-center justify-between gap-2 rounded-[8px] px-3 py-2 text-start text-[13px] hover:bg-sidebar-hover cursor-pointer", lang === l.code && "font-semibold")}>
+                <span>{l.name}</span>
+                {lang === l.code && <Check className="size-4 text-green-text" aria-hidden />}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
 }
 
 function useClickOutside(onOutside: () => void) {
@@ -135,20 +161,20 @@ function Sidebar({ onNavigate, collapsed = false, onToggle }: { onNavigate?: () 
   const { user, scope, can } = useStore();
   return (
     <div className="flex h-full flex-col">
-      <div className={cx("flex h-20 shrink-0 items-center", collapsed ? "justify-center px-2" : "justify-between gap-2 pr-3 pl-6")}>
-        <Link to="/" onClick={onNavigate} className="rounded-md" aria-label="Marina home">
+      <div className={cx("flex h-20 shrink-0 items-center", collapsed ? "justify-center px-2" : "justify-between gap-2 pe-3 ps-6")}>
+        <Link to="/" onClick={onNavigate} className="rounded-md" aria-label={t("Marina home")}>
           {collapsed ? <Logomark size={20} /> : <Logo />}
         </Link>
         {onToggle && !collapsed && (
-          <IconButton icon={ArrowLeft} label="Collapse sidebar" onClick={onToggle} className="max-lg:hidden" />
+          <IconButton icon={ArrowLeft} label={t("Collapse sidebar")} onClick={onToggle} className="max-lg:hidden" />
         )}
       </div>
       {onToggle && collapsed && (
         <div className="hidden justify-center pb-2 lg:flex">
-          <IconButton icon={ArrowRight} label="Expand sidebar" onClick={onToggle} />
+          <IconButton icon={ArrowRight} label={t("Expand sidebar")} onClick={onToggle} />
         </div>
       )}
-      <nav className={cx("flex-1 overflow-y-auto pb-6", collapsed ? "px-3" : "px-4")} aria-label="Main">
+      <nav className={cx("flex-1 overflow-y-auto pb-6", collapsed ? "px-3" : "px-4")} aria-label={t("Main")}>
         {NAV.map((g) => {
           // A single-marina manager doesn't need county and city roll-ups.
           const items = g.items.filter((i) => (!i.adminOnly || user?.role === "admin") && !(i.multiMarina && scope.length < 2) && can(areaForPath(i.to)) !== "none");
@@ -158,7 +184,7 @@ function Sidebar({ onNavigate, collapsed = false, onToggle }: { onNavigate?: () 
               {collapsed ? (
                 <div className="mx-auto mb-2 h-px w-6 bg-line-strong" aria-hidden />
               ) : (
-                <p className="text-label mb-2 px-4 text-ink-3">{g.group}</p>
+                <p className="text-label mb-2 px-4 text-ink-3">{t(g.group)}</p>
               )}
               <ul className="space-y-1">
                 {items.map((it) => {
@@ -181,7 +207,7 @@ function Sidebar({ onNavigate, collapsed = false, onToggle }: { onNavigate?: () 
                         <>
                           {isActive && (
                             <span
-                              className={cx("absolute top-1/2 h-7 w-[3px] -translate-y-1/2 rounded-r-full bg-primary", collapsed ? "-left-3" : "-left-4")}
+                              className={cx("absolute top-1/2 h-7 w-[3px] -translate-y-1/2 rounded-e-full bg-primary", collapsed ? "-start-3" : "-start-4")}
                               aria-hidden
                             />
                           )}
@@ -219,32 +245,32 @@ function UserCard({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: 
     <div ref={ref} className={cx("relative shrink-0 border-t border-line-strong py-5", collapsed ? "px-3" : "mx-8 px-0")}>
       <button
         onClick={() => setOpen((o) => !o)}
-        aria-label="Account menu"
+        aria-label={t("Account menu")}
         aria-expanded={open}
-        className={cx("flex w-full items-center gap-3 rounded-full text-left hover:bg-sidebar-hover cursor-pointer", collapsed ? "justify-center p-1" : "-mx-2 w-[calc(100%+16px)] p-2")}
+        className={cx("flex w-full items-center gap-3 rounded-full text-start hover:bg-sidebar-hover cursor-pointer", collapsed ? "justify-center p-1" : "-mx-2 w-[calc(100%+16px)] p-2")}
       >
         <Avatar name={user.name} size={10} online />
         {!collapsed && (
           <>
             <span className="min-w-0 flex-1 leading-tight">
               <span className="block truncate text-[15px] font-semibold">{user.name}</span>
-              <span className="block truncate text-[13px] text-ink-3 capitalize">{user.role === "manager" ? "Marina manager" : user.role}</span>
+              <span className="block truncate text-[13px] text-ink-3 capitalize">{user.role === "manager" ? t("Marina manager") : t(user.role)}</span>
             </span>
             <EllipsisVertical className="size-5 text-ink-2" aria-hidden />
           </>
         )}
       </button>
       {open && (
-        <div className={cx("absolute bottom-full z-40 mb-2 w-60 overflow-hidden rounded-[16px] border border-line bg-raised py-2 shadow-e2 animate-fade", collapsed ? "left-3" : "left-0")}>
+        <div className={cx("absolute bottom-full z-40 mb-2 w-60 overflow-hidden rounded-[16px] border border-line bg-raised py-2 shadow-e2 animate-fade", collapsed ? "start-3" : "start-0")}>
           <div className="border-b border-line px-4 pt-1 pb-3">
             <p className="truncate text-[13px] font-semibold">{user.name}</p>
             <p className="truncate text-xs text-ink-3">{user.email}</p>
           </div>
           <button className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-ink-2 hover:bg-sidebar hover:text-ink cursor-pointer" onClick={() => go("/settings")}>
-            <Settings className="size-5" aria-hidden /> Settings
+            <Settings className="size-5" aria-hidden /> {t("Settings")}
           </button>
           <button className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-ink-2 hover:bg-sidebar hover:text-ink cursor-pointer" onClick={() => { signOut(); navigate("/login"); }}>
-            <LogOut className="size-5" aria-hidden /> Sign out
+            <LogOut className="size-5" aria-hidden /> {t("Sign out")}
           </button>
         </div>
       )}
@@ -273,7 +299,7 @@ function GlobalSearch() {
     }
     for (const st of db.staff) {
       if (inScope.has(st.marinaId) && st.name.toLowerCase().includes(s))
-        out.push({ kind: "Staff", label: st.name, sub: `${st.position} · ${ix.marina(st.marinaId)?.name}`, to: `/staff?q=${encodeURIComponent(st.name)}` });
+        out.push({ kind: "Staff", label: st.name, sub: `${t(st.position)} · ${ix.marina(st.marinaId)?.name}`, to: `/staff?q=${encodeURIComponent(st.name)}` });
     }
     for (const bk of db.bookings) {
       if (out.length > 12) break;
@@ -289,7 +315,7 @@ function GlobalSearch() {
 
   return (
     <div ref={ref} className="relative w-full max-w-sm">
-      <Search className="pointer-events-none absolute top-1/2 left-0 size-5 -translate-y-1/2 text-ink-3" aria-hidden />
+      <Search className="pointer-events-none absolute top-1/2 start-0 size-5 -translate-y-1/2 text-ink-3" aria-hidden />
       <input
         id="global-search"
         type="search"
@@ -299,21 +325,21 @@ function GlobalSearch() {
           setOpen(true);
         }}
         onFocus={() => setOpen(true)}
-        placeholder="Search…"
-        aria-label="Search marinas, bookings, owners and staff (press /)"
-        className="h-10 w-full border-0 border-b border-line bg-transparent pr-10 pl-8 text-[15px] placeholder:text-ink-3 hover:border-line-hover focus:border-focus focus:outline-none"
+        placeholder={t("Search…")}
+        aria-label={t("Search marinas, bookings, owners and staff (press /)")}
+        className="h-10 w-full border-0 border-b border-line bg-transparent pe-10 ps-8 text-[15px] placeholder:text-ink-3 hover:border-line-hover focus:border-focus focus:outline-none"
       />
-      <kbd className="pointer-events-none absolute top-1/2 right-0 hidden -translate-y-1/2 rounded-sm border border-line px-1.5 text-xs text-ink-3 sm:block">/</kbd>
+      <kbd className="pointer-events-none absolute top-1/2 end-0 hidden -translate-y-1/2 rounded-sm border border-line px-1.5 text-xs text-ink-3 sm:block">/</kbd>
       {open && q.trim().length >= 2 && (
-        <div className="absolute top-12 left-0 z-40 w-full min-w-72 overflow-hidden rounded-[16px] border border-line bg-raised shadow-e2 animate-fade">
+        <div className="absolute top-12 start-0 z-40 w-full min-w-72 overflow-hidden rounded-[16px] border border-line bg-raised shadow-e2 animate-fade">
           {results.length === 0 ? (
-            <p className="px-4 py-6 text-center text-[13px] text-ink-3">No matches for “{q}”</p>
+            <p className="px-4 py-6 text-center text-[13px] text-ink-3">{t("No matches for “")}{q}”</p>
           ) : (
             <ul className="max-h-80 overflow-y-auto py-1">
               {results.map((r, i) => (
                 <li key={i}>
                   <button
-                    className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left hover:bg-sidebar cursor-pointer"
+                    className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-start hover:bg-sidebar cursor-pointer"
                     onClick={() => {
                       navigate(r.to);
                       setOpen(false);
@@ -321,10 +347,10 @@ function GlobalSearch() {
                     }}
                   >
                     <span className="min-w-0">
-                      <span className="block truncate text-[13px] font-medium">{r.label}</span>
+                      <span className="block truncate text-[13px] font-medium">{t(r.label)}</span>
                       <span className="block truncate text-xs text-ink-3">{r.sub}</span>
                     </span>
-                    <span className="text-label text-ink-3">{r.kind}</span>
+                    <span className="text-label text-ink-3">{t(r.kind)}</span>
                   </button>
                 </li>
               ))}
@@ -347,36 +373,36 @@ function Notifications() {
   const markRead = (ids: string[]) => update((d) => ({ ...d, readNotifications: [...new Set([...d.readNotifications, ...ids])] }));
   return (
     <div ref={ref} className="relative">
-      <Tooltip label="Notifications">
+      <Tooltip label={t("Notifications")}>
         <button
-          aria-label={`Notifications, ${unread} unread`}
+          aria-label={t("Notifications, {unread} unread", { unread: unread })}
           onClick={() => setOpen((o) => !o)}
           className="relative inline-flex size-10 items-center justify-center rounded-full border border-line bg-surface text-ink-2 hover:bg-sidebar hover:text-ink cursor-pointer"
         >
           <Bell className="size-5" aria-hidden />
           {unread > 0 && (
-            <span className="num absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-surface bg-green px-1 text-[10px] font-semibold text-white">{unread}</span>
+            <span className="num absolute -top-1 -end-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-surface bg-green px-1 text-[10px] font-semibold text-white">{unread}</span>
           )}
         </button>
       </Tooltip>
       {open && (
-        <div className="absolute top-12 right-0 z-40 w-96 max-w-[calc(100vw-2rem)] overflow-hidden rounded-[16px] border border-line bg-raised shadow-e2 animate-fade">
+        <div className="absolute top-12 end-0 z-40 w-96 max-w-[calc(100vw-2rem)] overflow-hidden rounded-[16px] border border-line bg-raised shadow-e2 animate-fade">
           <div className="flex items-center justify-between border-b border-line px-5 py-4">
-            <p className="text-[18px] leading-[26px] font-medium">Notifications</p>
+            <p className="text-[18px] leading-[26px] font-medium">{t("Notifications")}</p>
             {unread > 0 && (
               <button className="text-[13px] font-semibold text-green-text hover:underline cursor-pointer" onClick={() => markRead(items.map((n) => n.id))}>
-                Mark all as read
+                {t("Mark all as read")}
               </button>
             )}
           </div>
           {items.length === 0 ? (
-            <p className="px-4 py-8 text-center text-[13px] text-ink-3">You're all caught up.</p>
+            <p className="px-4 py-8 text-center text-[13px] text-ink-3">{t("You're all caught up.")}</p>
           ) : (
             <ul className="max-h-96 overflow-y-auto">
               {items.map((n) => (
                 <li key={n.id} className="border-b border-line last:border-0">
                   <button
-                    className="flex w-full gap-3 px-5 py-3.5 text-left hover:bg-sidebar cursor-pointer"
+                    className="flex w-full gap-3 px-5 py-3.5 text-start hover:bg-sidebar cursor-pointer"
                     onClick={() => {
                       markRead([n.id]);
                       navigate(n.to);
@@ -393,8 +419,8 @@ function Notifications() {
               ))}
             </ul>
           )}
-          <div className="border-t border-line px-5 py-3 text-right">
-            <button className="text-[13px] font-medium text-ink-2 hover:text-ink cursor-pointer" onClick={() => { navigate("/settings"); setOpen(false); }}>Notification settings</button>
+          <div className="border-t border-line px-5 py-3 text-end">
+            <button className="text-[13px] font-medium text-ink-2 hover:text-ink cursor-pointer" onClick={() => { navigate("/settings"); setOpen(false); }}>{t("Notification settings")}</button>
           </div>
         </div>
       )}
@@ -409,7 +435,7 @@ function useCrumbs() {
   const crumbs: { label: string; to?: string }[] = [];
   if (item) crumbs.push({ label: navLabel(item, user?.role), to: item.to });
   const marinaMatch = pathname.match(/^\/marinas\/([^/]+)/);
-  if (marinaMatch) crumbs.push({ label: db.marinas.find((m) => m.id === marinaMatch[1])?.name ?? "Marina" });
+  if (marinaMatch) crumbs.push({ label: db.marinas.find((m) => m.id === marinaMatch[1])?.name ?? t("Marina") });
   const placeMatch = pathname.match(/^\/(city|county)\/([^/]+)/);
   if (placeMatch) crumbs.push({ label: (placeMatch[1] === "city" ? db.cities : db.counties).find((c) => c.id === placeMatch[2])?.name ?? "" });
   return crumbs;
@@ -421,24 +447,24 @@ function Breadcrumb() {
   const { pathname } = useLocation();
   const viewOnly = can(areaForPath(pathname)) === "view";
   useEffect(() => {
-    document.title = [crumbs[crumbs.length - 1]?.label, "Marina"].filter(Boolean).join(" · ");
+    document.title = [t(crumbs[crumbs.length - 1]?.label), "Marina"].filter(Boolean).join(" · ");
   }, [crumbs]);
   return (
-    <nav aria-label="Breadcrumb" className="hidden min-w-0 items-center gap-2 text-sm text-ink-3 md:flex">
-      <Link to="/" aria-label="Home" className="hover:text-ink">
+    <nav aria-label={t("Breadcrumb")} className="hidden min-w-0 items-center gap-2 text-sm text-ink-3 md:flex">
+      <Link to="/" aria-label={t("Home")} className="hover:text-ink">
         <House className="size-5" aria-hidden />
       </Link>
       {crumbs.map((c, i) => (
         <span key={i} className="flex min-w-0 items-center gap-1.5">
           <span aria-hidden>/</span>
           {c.to && i < crumbs.length - 1 ? (
-            <Link to={c.to} className="truncate hover:text-ink">{c.label}</Link>
+            <Link to={c.to} className="truncate hover:text-ink">{t(c.label)}</Link>
           ) : (
-            <span className="truncate font-semibold text-ink" aria-current="page">{c.label}</span>
+            <span className="truncate font-semibold text-ink" aria-current="page">{t(c.label)}</span>
           )}
         </span>
       ))}
-      {viewOnly && <Badge tone="info" icon={Eye}>View only</Badge>}
+      {viewOnly && <Badge tone="info" icon={Eye}>{t("View only")}</Badge>}
     </nav>
   );
 }
@@ -517,7 +543,7 @@ export default function Layout() {
         <div className="fixed inset-0 z-50 md:hidden">
           <div className="absolute inset-0 bg-[var(--scrim)] animate-fade" onClick={() => setDrawer(false)} aria-hidden />
           <aside className="relative h-full w-[280px] max-w-[85vw] bg-sidebar shadow-e3 animate-in">
-            <IconButton icon={X} label="Close menu" onClick={() => setDrawer(false)} className="absolute top-6 right-3 z-10" />
+            <IconButton icon={X} label={t("Close menu")} onClick={() => setDrawer(false)} className="absolute top-6 end-3 z-10" />
             <Sidebar onNavigate={() => setDrawer(false)} />
           </aside>
         </div>
@@ -526,18 +552,19 @@ export default function Layout() {
       <div className="flex min-w-0 flex-1 flex-col">
         <OfflineBanner />
         <header className="flex h-16 shrink-0 items-center gap-4 border-b border-line bg-surface px-4 md:px-8">
-          <IconButton look="outline" icon={Menu} label="Open menu" onClick={() => setDrawer(true)} className="md:hidden" />
+          <IconButton look="outline" icon={Menu} label={t("Open menu")} onClick={() => setDrawer(true)} className="md:hidden" />
           <Breadcrumb />
           <div className="flex flex-1 justify-end">
             <GlobalSearch />
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            <IconButton look="outline" icon={Keyboard} label="Keyboard shortcuts (?)" onClick={openHelp} className="max-lg:hidden" />
+            <IconButton look="outline" icon={Keyboard} label={t("Keyboard shortcuts (?)")} onClick={openHelp} className="max-lg:hidden" />
             <Notifications />
+            <LanguageMenu />
             <IconButton
               look="outline"
               icon={theme === "dark" ? Sun : Moon}
-              label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              label={theme === "dark" ? t("Switch to light mode") : t("Switch to dark mode")}
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             />
           </div>
@@ -551,11 +578,11 @@ export default function Layout() {
 
       <Welcome />
 
-      <Modal open={help} onClose={() => setHelp(false)} title="Keyboard shortcuts">
+      <Modal open={help} onClose={() => setHelp(false)} title={t("Keyboard shortcuts")}>
         <dl className="divide-y divide-line text-sm">
           {SHORTCUTS.map(([k, d]) => (
             <div key={k} className="flex items-center justify-between py-3">
-              <dt className="text-ink-2">{d}</dt>
+              <dt className="text-ink-2">{t(d)}</dt>
               <dd><kbd className="num rounded-sm border border-line-strong bg-sidebar px-2 py-0.5 text-xs font-medium">{k}</kbd></dd>
             </div>
           ))}
@@ -563,16 +590,16 @@ export default function Layout() {
       </Modal>
 
       {/* 07 Toasts: bottom right, white card with border and a colored leading icon per state */}
-      <div className="pointer-events-none fixed right-4 bottom-4 z-[60] flex max-w-[calc(100vw-2rem)] flex-col gap-2 md:right-6 md:bottom-6" aria-live="polite">
-        {toasts.map((t) => {
-          const { icon: Icon, cls } = TOAST_ICON[t.kind];
+      <div className="pointer-events-none fixed end-4 bottom-4 z-[60] flex max-w-[calc(100vw-2rem)] flex-col gap-2 md:end-6 md:bottom-6" aria-live="polite">
+        {toasts.map((item) => {
+          const { icon: Icon, cls } = TOAST_ICON[item.kind];
           return (
-            <div key={t.id} className={cx("pointer-events-auto flex max-w-md items-center gap-3 rounded-[16px] border border-line bg-raised px-4 py-3 text-sm text-ink shadow-e2 animate-in", t.kind === "celebrate" && "glow-accent border-accent")}>
+            <div key={item.id} className={cx("pointer-events-auto flex max-w-md items-center gap-3 rounded-[16px] border border-line bg-raised px-4 py-3 text-sm text-ink shadow-e2 animate-in", item.kind === "celebrate" && "glow-accent border-accent")}>
               <Icon className={cx("size-5 shrink-0", cls)} aria-hidden />
-              <span className="min-w-0">{t.message}</span>
-              {t.undo && (
-                <button onClick={t.undo} className="ml-1 shrink-0 rounded-full px-3 py-1 text-[13px] font-semibold text-green-text hover:bg-success-bg cursor-pointer">
-                  Undo
+              <span className="min-w-0">{item.message}</span>
+              {item.undo && (
+                <button onClick={item.undo} className="ms-1 shrink-0 rounded-full px-3 py-1 text-[13px] font-semibold text-green-text hover:bg-success-bg cursor-pointer">
+                  {t("Undo")}
                 </button>
               )}
             </div>

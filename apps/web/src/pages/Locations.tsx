@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Building, Landmark, MapPin, Pencil, Plus, Trash, Warehouse } from "lucide-react";
 import { nextId, useStore } from "@/data/store";
 import type { City, County } from "@marina/shared";
-import { count, money, pct } from "@marina/shared";
+import { t, count, money, pct } from "@marina/shared";
 import { Button, Card, CardHeader, ConfirmDialog, Field, IconButton, Input, Meter, Modal, PageHeader, Select, StatCard, Table, Tabs, useDirty } from "@/components/ui";
 
 type Target = { kind: "city"; item?: City } | { kind: "county"; item?: County };
@@ -26,12 +26,12 @@ function LocationForm({ target, onClose }: { target: Target; onClose: () => void
   const save = () => {
     const e: Record<string, string> = {};
     const name = f.name.trim();
-    if (!name) e.name = "Enter a name.";
-    else if (kind === "city" && db.cities.some((c) => c.name.toLowerCase() === name.toLowerCase() && c.countyId === f.countyId && c.id !== city?.id)) e.name = "This city already exists in that county.";
-    else if (kind === "county" && db.counties.some((c) => c.name.toLowerCase() === name.toLowerCase() && c.id !== county?.id)) e.name = "This county already exists.";
-    if (kind === "county" && !f.state.trim()) e.state = "Enter the state.";
+    if (!name) e.name = t("Enter a name.");
+    else if (kind === "city" && db.cities.some((c) => c.name.toLowerCase() === name.toLowerCase() && c.countyId === f.countyId && c.id !== city?.id)) e.name = t("This city already exists in that county.");
+    else if (kind === "county" && db.counties.some((c) => c.name.toLowerCase() === name.toLowerCase() && c.id !== county?.id)) e.name = t("This county already exists.");
+    if (kind === "county" && !f.state.trim()) e.state = t("Enter the state.");
     const lat = Number(f.lat), lng = Number(f.lng);
-    if (kind === "city" && (!f.lat || !f.lng || isNaN(lat) || isNaN(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180)) e.coords = "Enter latitude (−90 to 90) and longitude (−180 to 180).";
+    if (kind === "city" && (!f.lat || !f.lng || isNaN(lat) || isNaN(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180)) e.coords = t("Enter latitude (−90 to 90) and longitude (−180 to 180).");
     setErrors(e);
     if (Object.keys(e).length) return;
     update((d) => {
@@ -46,20 +46,20 @@ function LocationForm({ target, onClose }: { target: Target; onClose: () => void
     onClose();
   };
   return (
-    <Modal open dirty={dirty} onClose={onClose} title={editing ? `Edit ${f.name}` : "Add location"} footer={<><Button onClick={onClose}>Cancel</Button><Button variant="primary" onClick={save}>{editing ? "Save changes" : `Add ${kind}`}</Button></>}>
+    <Modal open dirty={dirty} onClose={onClose} title={editing ? t("Edit {name}", { name: f.name }) : t("Add location")} footer={<><Button onClick={onClose}>{t("Cancel")}</Button><Button variant="primary" onClick={save}>{editing ? t("Save changes") : t("Add {kind}", { kind: kind })}</Button></>}>
       <div className="space-y-4">
-        {!editing && <Field label="Type">{(id) => <Select id={id} value={kind} onChange={(e) => setKind(e.target.value as typeof kind)}><option value="city">City</option><option value="county">County</option></Select>}</Field>}
-        <Field label={kind === "city" ? "City name" : "County name"} error={errors.name}>{(id) => <Input id={id} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />}</Field>
+        {!editing && <Field label={t("Type")}>{(id) => <Select id={id} value={kind} onChange={(e) => setKind(e.target.value as typeof kind)}><option value="city">{t("City")}</option><option value="county">{t("County")}</option></Select>}</Field>}
+        <Field label={kind === "city" ? t("City name") : t("County name")} error={errors.name}>{(id) => <Input id={id} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />}</Field>
         {kind === "city" ? (
           <>
-            <Field label="County">{(id) => <Select id={id} value={f.countyId} onChange={(e) => setF({ ...f, countyId: e.target.value })}>{db.counties.map((c) => <option key={c.id} value={c.id}>{c.name}, {c.state}</option>)}</Select>}</Field>
+            <Field label={t("County")}>{(id) => <Select id={id} value={f.countyId} onChange={(e) => setF({ ...f, countyId: e.target.value })}>{db.counties.map((c) => <option key={c.id} value={c.id}>{c.name}, {t(c.state)}</option>)}</Select>}</Field>
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Latitude" error={errors.coords}>{(id) => <Input id={id} value={f.lat} onChange={(e) => setF({ ...f, lat: e.target.value })} placeholder="37.7749" />}</Field>
-              <Field label="Longitude">{(id) => <Input id={id} value={f.lng} onChange={(e) => setF({ ...f, lng: e.target.value })} placeholder="-122.4194" />}</Field>
+              <Field label={t("Latitude")} error={errors.coords}>{(id) => <Input id={id} value={f.lat} onChange={(e) => setF({ ...f, lat: e.target.value })} placeholder="37.7749" />}</Field>
+              <Field label={t("Longitude")}>{(id) => <Input id={id} value={f.lng} onChange={(e) => setF({ ...f, lng: e.target.value })} placeholder="-122.4194" />}</Field>
             </div>
           </>
         ) : (
-          <Field label="State" error={errors.state}>{(id) => <Input id={id} value={f.state} onChange={(e) => setF({ ...f, state: e.target.value })} />}</Field>
+          <Field label={t("State")} error={errors.state}>{(id) => <Input id={id} value={f.state} onChange={(e) => setF({ ...f, state: e.target.value })} />}</Field>
         )}
       </div>
     </Modal>
@@ -90,14 +90,14 @@ function LocationMap() {
   return (
     <div className="grid grid-cols-1 xl:grid-cols-[1fr_300px]">
       <div className="p-4">
-        <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label="Map of cities with marinas">
+        <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label={t("Map of cities with marinas")}>
           <path d={path} fill="var(--surface-3)" stroke="var(--border-strong)" strokeWidth={1.5} />
           {placed.map(({ c, px, py, stack }) => {
             const n = ix.marinaIdsInCity(c.id).length;
             const r = 6 + n * 3;
             const on = c.id === selected;
             return (
-              <g key={c.id} onClick={() => setSelected(c.id)} className="cursor-pointer" role="button" aria-label={`${c.name}, ${n} marinas`} tabIndex={0} onKeyDown={(e) => e.key === "Enter" && setSelected(c.id)}>
+              <g key={c.id} onClick={() => setSelected(c.id)} className="cursor-pointer" role="button" aria-label={t("{name}, {n} marinas", { name: c.name, n: n })} tabIndex={0} onKeyDown={(e) => e.key === "Enter" && setSelected(c.id)}>
                 {stack > 0 && <line x1={x(c.lng)} y1={y(c.lat)} x2={px} y2={py} stroke="var(--border-strong)" />}
                 <circle cx={px} cy={py} r={r} fill={on ? "var(--ring-1)" : "var(--surface)"} stroke="var(--ring-1)" strokeWidth={2} />
                 <text x={px + r + 4} y={py + 4} fontSize={12} fill="var(--text)" fontWeight={on ? 600 : 400} paintOrder="stroke" stroke="var(--surface-2)" strokeWidth={3}>{c.name}</text>
@@ -105,27 +105,27 @@ function LocationMap() {
             );
           })}
         </svg>
-        <p className="mt-2 text-xs text-ink-3">Circle size shows the number of marinas. Click a city for details.</p>
+        <p className="mt-2 text-xs text-ink-3">{t("Circle size shows the number of marinas. Click a city for details.")}</p>
       </div>
-      <div className="border-t border-line xl:border-t-0 xl:border-l">
+      <div className="border-t border-line xl:border-t-0 xl:border-s">
         {city ? (
           <>
             <CardHeader title={city.name} description={`${ix.county(city.countyId)?.name}, ${ix.county(city.countyId)?.state}`} />
             <dl className="space-y-3 p-5 text-[13px]">
-              <div className="flex justify-between"><dt className="text-ink-3">Marinas</dt><dd className="font-medium">{ids.length}</dd></div>
-              <div className="flex justify-between"><dt className="text-ink-3">Berths</dt><dd className="font-medium">{m.berths}</dd></div>
-              <div className="flex justify-between"><dt className="text-ink-3">Occupancy today</dt><dd className="font-medium">{pct(m.occupancy)}</dd></div>
-              <div className="flex justify-between"><dt className="text-ink-3">Revenue booked this month</dt><dd className="font-medium">{money(m.revenue)}</dd></div>
+              <div className="flex justify-between"><dt className="text-ink-3">{t("Marinas")}</dt><dd className="font-medium">{ids.length}</dd></div>
+              <div className="flex justify-between"><dt className="text-ink-3">{t("Berths")}</dt><dd className="font-medium">{m.berths}</dd></div>
+              <div className="flex justify-between"><dt className="text-ink-3">{t("Occupancy today")}</dt><dd className="font-medium">{pct(m.occupancy)}</dd></div>
+              <div className="flex justify-between"><dt className="text-ink-3">{t("Revenue booked this month")}</dt><dd className="font-medium">{money(m.revenue)}</dd></div>
             </dl>
             <ul className="border-t border-line">
               {ids.map((id) => (
                 <li key={id}><Link to={`/marinas/${id}`} className="block px-5 py-2.5 text-[13px] hover:bg-row-hover">{ix.marina(id)?.name}</Link></li>
               ))}
             </ul>
-            {ids.length > 0 && <div className="p-5"><Link to={`/city/${city.id}`}><Button className="w-full">Open city dashboard</Button></Link></div>}
+            {ids.length > 0 && <div className="p-5"><Link to={`/city/${city.id}`}><Button className="w-full">{t("Open city dashboard")}</Button></Link></div>}
           </>
         ) : (
-          <p className="p-5 text-[13px] text-ink-3">Select a city on the map.</p>
+          <p className="p-5 text-[13px] text-ink-3">{t("Select a city on the map.")}</p>
         )}
       </div>
     </div>
@@ -145,14 +145,14 @@ export function Locations() {
 
   return (
     <>
-      <PageHeader title="Locations" description="Counties and cities your marinas belong to" actions={<Button variant="primary" icon={Plus} onClick={() => setForm({ kind: tab === "counties" ? "county" : "city" })}>Add location</Button>} />
+      <PageHeader title={t("Locations")} description={t("Counties and cities your marinas belong to")} actions={<Button variant="primary" icon={Plus} onClick={() => setForm({ kind: tab === "counties" ? "county" : "city" })}>{t("Add location")}</Button>} />
       <div className="mb-4 grid grid-cols-2 gap-4 min-[1400px]:grid-cols-4">
-        <StatCard label="Counties" icon={Landmark} value={db.counties.length} active={tab === "counties"} onClick={() => setTab("counties")} />
-        <StatCard label="Cities" icon={Building} value={db.cities.length} active={tab === "cities"} onClick={() => setTab("cities")} />
-        <StatCard label="Marinas" icon={MapPin} value={db.marinas.length} to="/marinas" />
-        <StatCard label="Berths" icon={Warehouse} value={count(db.berths.length)} to="/berths" />
+        <StatCard label={t("Counties")} icon={Landmark} value={db.counties.length} active={tab === "counties"} onClick={() => setTab("counties")} />
+        <StatCard label={t("Cities")} icon={Building} value={db.cities.length} active={tab === "cities"} onClick={() => setTab("cities")} />
+        <StatCard label={t("Marinas")} icon={MapPin} value={db.marinas.length} to="/marinas" />
+        <StatCard label={t("Berths")} icon={Warehouse} value={count(db.berths.length)} to="/berths" />
       </div>
-      <Tabs value={tab} onChange={setTab} items={[{ value: "counties", label: "Counties", count: db.counties.length }, { value: "cities", label: "Cities", count: db.cities.length }, { value: "map", label: "Map" }]} />
+      <Tabs value={tab} onChange={setTab} items={[{ value: "counties", label: t("Counties"), count: db.counties.length }, { value: "cities", label: t("Cities"), count: db.cities.length }, { value: "map", label: t("Map") }]} />
       <Card>
         {tab === "counties" && (
           <Table head={["County", "State", "Cities", "Marinas", "Berths", "Occupancy", "Revenue (month)", "Actions"]}>
@@ -162,15 +162,15 @@ export function Locations() {
               return (
                 <tr key={c.id}>
                   <td className="font-medium">{ids.length ? <Link to={`/county/${c.id}`} className="underline-offset-2 hover:underline">{c.name}</Link> : c.name}</td>
-                  <td>{c.state}</td>
+                  <td>{t(c.state)}</td>
                   <td>{db.cities.filter((x) => x.countyId === c.id).length}</td>
                   <td>{ids.length}</td>
                   <td>{m.berths}</td>
-                  <td className="w-40">{m.berths ? <Meter value={m.occupancy} label={`${c.name} occupancy`} /> : <span className="text-xs text-ink-3">No berths</span>}</td>
+                  <td className="w-40">{m.berths ? <Meter value={m.occupancy} label={`${c.name} occupancy`} /> : <span className="text-xs text-ink-3">{t("No berths")}</span>}</td>
                   <td className="num">{money(m.revenue)}</td>
                   <td className="whitespace-nowrap">
-                    <IconButton icon={Pencil} label={`Edit ${c.name}`} onClick={() => setForm({ kind: "county", item: c })} />
-                    <IconButton icon={Trash} label={`Delete ${c.name}`} onClick={() => setDeleting({ kind: "county", item: c })} />
+                    <IconButton icon={Pencil} label={t("Edit {name}", { name: c.name })} onClick={() => setForm({ kind: "county", item: c })} />
+                    <IconButton icon={Trash} label={t("Delete {name}", { name: c.name })} onClick={() => setDeleting({ kind: "county", item: c })} />
                   </td>
                 </tr>
               );
@@ -186,14 +186,14 @@ export function Locations() {
               return (
                 <tr key={c.id}>
                   <td className="font-medium">{ids.length ? <Link to={`/city/${c.id}`} className="underline-offset-2 hover:underline">{c.name}</Link> : c.name}</td>
-                  <td>{county?.name}<span className="block text-xs text-ink-3">{county?.state}</span></td>
+                  <td>{county?.name}<span className="block text-xs text-ink-3">{t(county?.state)}</span></td>
                   <td>{ids.length}</td>
                   <td>{m.berths}</td>
-                  <td className="w-40">{m.berths ? <Meter value={m.occupancy} label={`${c.name} occupancy`} /> : <span className="text-xs text-ink-3">No berths</span>}</td>
+                  <td className="w-40">{m.berths ? <Meter value={m.occupancy} label={`${c.name} occupancy`} /> : <span className="text-xs text-ink-3">{t("No berths")}</span>}</td>
                   <td className="text-xs text-ink-3 num">{c.lat.toFixed(4)}, {c.lng.toFixed(4)}</td>
                   <td className="whitespace-nowrap">
-                    <IconButton icon={Pencil} label={`Edit ${c.name}`} onClick={() => setForm({ kind: "city", item: c })} />
-                    <IconButton icon={Trash} label={`Delete ${c.name}`} onClick={() => setDeleting({ kind: "city", item: c })} />
+                    <IconButton icon={Pencil} label={t("Edit {name}", { name: c.name })} onClick={() => setForm({ kind: "city", item: c })} />
+                    <IconButton icon={Trash} label={t("Delete {name}", { name: c.name })} onClick={() => setDeleting({ kind: "city", item: c })} />
                   </td>
                 </tr>
               );
@@ -206,9 +206,9 @@ export function Locations() {
       <ConfirmDialog
         open={!!deleting}
         onClose={() => setDeleting(undefined)}
-        title={`Delete ${deleting?.item?.name}?`}
-        body={(deleting && blocker(deleting)) || "It will be removed permanently."}
-        confirmLabel="Delete"
+        title={t("Delete {name}?", { name: deleting?.item?.name })}
+        body={(deleting && blocker(deleting)) || t("It will be removed permanently.")}
+        confirmLabel={t("Delete")}
         onConfirm={() => {
           if (!deleting?.item) return;
           const why = blocker(deleting);

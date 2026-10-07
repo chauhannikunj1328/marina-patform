@@ -1,5 +1,5 @@
 // Guide 11: skeletons in Neutral 100 (#F1F0EC on white) with a subtle 1.4 s shimmer, matching card radius.
-import { cx } from "@marina/shared";
+import { t, cx } from "@marina/shared";
 
 export function Skeleton({ className }: { className?: string }) {
   return <div className={cx("skeleton rounded-[12px]", className)} aria-hidden />;
@@ -7,7 +7,7 @@ export function Skeleton({ className }: { className?: string }) {
 
 export function PageSkeleton() {
   return (
-    <div role="status" aria-label="Loading page">
+    <div role="status" aria-label={t("Loading page")}>
       <div className="mb-8 flex items-end justify-between gap-4">
         <div className="space-y-3">
           <Skeleton className="h-8 w-56" />
@@ -30,7 +30,7 @@ export function PageSkeleton() {
           <Skeleton key={i} className="mb-3 h-10 w-full last:mb-0" />
         ))}
       </div>
-      <span className="sr-only">Loading…</span>
+      <span className="sr-only">{t("Loading…")}</span>
     </div>
   );
 }

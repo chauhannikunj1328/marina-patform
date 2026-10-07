@@ -399,26 +399,26 @@
     display: flow-root;
     height: auto !important;
     padding: 6px 0 !important;
-    text-align: right !important;
+    text-align: end !important;
   }
   .rtable tbody > tr > td::before {
     content: attr(data-label);
-    float: left;
-    margin-right: 16px;
+    float: inline-start;
+    margin-inline-end: 16px;
     padding-top: 2px;
     font-size: 11px;
     font-weight: 500;
     letter-spacing: 0.02em;
     text-transform: uppercase;
     color: var(--text-3);
-    text-align: left;
+    text-align: start;
   }
   .rtable tbody > tr > td[data-label=""]::before {
     display: none;
   }
   /* First cell is the card title */
   .rtable tbody > tr > td:first-child {
-    text-align: left !important;
+    text-align: start !important;
     padding-bottom: 10px !important;
     margin-bottom: 4px;
     border-bottom: 1px solid var(--border);
@@ -501,4 +501,36 @@
     --primary: #2f3740;
     --on-primary: #ffffff;
   }
+}
+
+/* Arabic (right to left): Arabic font, and no letter-spacing, which would break letters apart. */
+:root[dir="rtl"] body,
+:root[dir="rtl"] button,
+:root[dir="rtl"] input,
+:root[dir="rtl"] select,
+:root[dir="rtl"] textarea {
+  font-family: "IBM Plex Sans Arabic", "Poppins", system-ui, sans-serif;
+}
+:root[dir="rtl"] * {
+  letter-spacing: 0 !important;
+}
+/* Arrows and chevrons point the other way in Arabic. */
+:root[dir="rtl"] .flip-rtl {
+  transform: scaleX(-1);
+}
+/* Emails, phone numbers, amounts, passwords and dates are written left to right even in Arabic. */
+:root[dir="rtl"] input[type="email"],
+:root[dir="rtl"] input[type="tel"],
+:root[dir="rtl"] input[type="number"],
+:root[dir="rtl"] input[type="password"],
+:root[dir="rtl"] input[type="date"],
+:root[dir="rtl"] input[type="url"] {
+  direction: ltr;
+  text-align: right;
+}
+/* Numbers, money and codes inside Arabic text keep their left-to-right order (e.g. 278 / 374, BK-0249). */
+:root[dir="rtl"] span.num,
+:root[dir="rtl"] bdi {
+  unicode-bidi: isolate;
+  direction: ltr;
 }

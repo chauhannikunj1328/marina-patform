@@ -1,5 +1,6 @@
 import type { Berth } from "./types";
 import { addDays, daysBetween, fromISO } from "./date";
+import { t, tn } from "./i18n";
 
 /** Admin pricing rules (Settings → Pricing). They apply to nightly stays booked after they're saved. */
 export interface PricingRules {
@@ -38,13 +39,13 @@ export function bookingAmount(start: string, end: string, berth: Berth, monthlyF
 
 export function priceNote(start: string, end: string, monthlyFrom = 28, rules?: PricingRules): string {
   const nights = daysBetween(start, end);
-  if (nights >= monthlyFrom) return `Monthly rate, ${nights} nights prorated`;
-  const parts = [`${nights} nights × daily rate`];
+  if (nights >= monthlyFrom) return t("Monthly rate, {n} nights prorated", { n: nights });
+  const parts = [tn(nights, "{n} night × daily rate", "{n} nights × daily rate")];
   if (rules) {
     const seasons = [...new Set(Array.from({ length: nights }, (_, i) => seasonOn(addDays(start, i), rules)?.name).filter(Boolean))];
     if (seasons.length) parts.push(seasons.join(", "));
-    if (rules.weekendPct && Array.from({ length: nights }, (_, i) => fromISO(addDays(start, i)).getDay()).some((d) => d === 5 || d === 6)) parts.push(`weekend +${rules.weekendPct}%`);
-    if (rules.longStayPct && nights >= rules.longStayNights) parts.push(`long stay −${rules.longStayPct}%`);
+    if (rules.weekendPct && Array.from({ length: nights }, (_, i) => fromISO(addDays(start, i)).getDay()).some((d) => d === 5 || d === 6)) parts.push(t("weekend +{pct}%", { pct: rules.weekendPct }));
+    if (rules.longStayPct && nights >= rules.longStayNights) parts.push(t("long stay −{pct}%", { pct: rules.longStayPct }));
   }
   return parts.join(" · ");
 }

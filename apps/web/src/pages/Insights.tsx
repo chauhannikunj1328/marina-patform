@@ -4,7 +4,7 @@ import { CalendarRange, Clock, Download, FileDown, FileText, Ruler, Sailboat, Sh
 import { Logo } from "@/components/Logo";
 import { CompanyMark, useBrandColor } from "@/components/CompanyMark";
 import { useStore } from "@/data/store";
-import { daysBetween, fmtDate, fmtMonth, lastMonths, monthKey, nightsInMonth, today } from "@marina/shared";
+import { t, daysBetween, fmtDate, fmtMonth, lastMonths, monthKey, nightsInMonth, today } from "@marina/shared";
 import { money, pct } from "@marina/shared";
 import { downloadCsv, downloadWorkbook } from "@/lib/csv";
 import { allDataSheets } from "@/lib/exportAll";
@@ -99,42 +99,42 @@ export function Reports() {
 
   return (
     <>
-      <PageHeader title="Reports" description="Pick a report, preview it, and download it as CSV, Excel or PDF" actions={<Button icon={Sheet} onClick={() => downloadWorkbook(`marina-data-${today()}.xls`, allDataSheets(db, ix, scope))}>Export all data (Excel)</Button>} />
+      <PageHeader title={t("Reports")} description={t("Pick a report, preview it, and download it as CSV, Excel or PDF")} actions={<Button icon={Sheet} onClick={() => downloadWorkbook(`marina-data-${today()}.xls`, allDataSheets(db, ix, scope))}>{t("Export all data (Excel)")}</Button>} />
       <Card className="mb-4">
         <div className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-[1fr_200px_auto] sm:items-end">
-          <Field label="Report">{(id) => <Select id={id} value={kind} onChange={(e) => setKind(e.target.value as ReportKind)}>{REPORTS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}</Select>}</Field>
-          <Field label="Month">{(id) => <Select id={id} value={month} onChange={(e) => setMonth(e.target.value)} disabled={kind === "receivables"}>{[...months].reverse().map((m) => <option key={m} value={m}>{fmtMonth(m)} {m.slice(0, 4)}{m === months[months.length - 1] ? " (to date)" : ""}</option>)}</Select>}</Field>
+          <Field label={t("Report")}>{(id) => <Select id={id} value={kind} onChange={(e) => setKind(e.target.value as ReportKind)}>{REPORTS.map((r) => <option key={r.value} value={r.value}>{t(r.label)}</option>)}</Select>}</Field>
+          <Field label={t("Month")}>{(id) => <Select id={id} value={month} onChange={(e) => setMonth(e.target.value)} disabled={kind === "receivables"}>{[...months].reverse().map((m) => <option key={m} value={m}>{fmtMonth(m)} {m.slice(0, 4)}{m === months[months.length - 1] ? t(" (to date)") : ""}</option>)}</Select>}</Field>
           <div className="flex gap-2">
-            <Button icon={Download} onClick={() => downloadCsv(`${kind}-${kind === "receivables" ? today() : month}.csv`, report.head, report.rows)}>CSV</Button>
-            <Button icon={Sheet} onClick={() => downloadWorkbook(`${kind}-${kind === "receivables" ? today() : month}.xls`, [{ name: info.label, head: report.head, rows: report.rows }])}>Excel</Button>
-            <Button variant="primary" icon={FileDown} onClick={() => window.print()}>Download PDF</Button>
+            <Button icon={Download} onClick={() => downloadCsv(`${kind}-${kind === "receivables" ? today() : month}.csv`, report.head.map((h) => t(h)), report.rows)}>{t("CSV")}</Button>
+            <Button icon={Sheet} onClick={() => downloadWorkbook(`${kind}-${kind === "receivables" ? today() : month}.xls`, [{ name: t(info.label), head: report.head.map((h) => t(h)), rows: report.rows }])}>{t("Excel")}</Button>
+            <Button variant="primary" icon={FileDown} onClick={() => window.print()}>{t("Download PDF")}</Button>
           </div>
         </div>
       </Card>
       {/* Guide 14 Exports: header with logo, Ink text, Neutral table lines. Printed via "Save as PDF". */}
-      <div className="print-area pointer-events-none fixed top-0 left-[-10000px] w-[800px] text-[12px]" aria-hidden>
+      <div className="print-area pointer-events-none fixed top-0 start-[-10000px] w-[800px] text-[12px]" aria-hidden>
         <div className="mb-6 flex items-center justify-between border-b-2 pb-4" style={{ borderColor: brand }}>
           {db.settings.branding?.logo ? <CompanyMark size={32} /> : <Logo />}
           <span className="text-[#656565]">{db.settings.company}</span>
         </div>
-        <h1 className="text-[22px] font-medium">{info.label}</h1>
+        <h1 className="text-[22px] font-medium">{t(info.label)}</h1>
         <p className="mt-1 mb-5 text-[#484848]">
-          {info.description}. {kind === "receivables" ? `As of ${fmtDate(today())}` : `${fmtMonth(month)} ${month.slice(0, 4)}`} · Generated {fmtDate(today())}
+          {t(info.description)}. {kind === "receivables" ? t("As of {date}", { date: fmtDate(today()) }) : `${fmtMonth(month)} ${month.slice(0, 4)}`} {t("· Generated")} {fmtDate(today())}
         </p>
         <table className="w-full border-collapse">
           <thead>
-            <tr>{report.head.map((h) => <th key={h} className="border-b border-[#d9d9d6] py-2 pr-3 text-left text-[10px] font-medium text-[#656565] uppercase">{h}</th>)}</tr>
+            <tr>{report.head.map((h) => <th key={h} className="border-b border-[#d9d9d6] py-2 pe-3 text-start text-[10px] font-medium text-[#656565] uppercase">{t(h)}</th>)}</tr>
           </thead>
           <tbody>
             {(report.display ?? report.rows).map((r, i) => (
-              <tr key={i}>{r.map((c, j) => <td key={j} className="num border-b border-[#e5e5e1] py-2 pr-3">{c}</td>)}</tr>
+              <tr key={i}>{r.map((c, j) => <td key={j} className="num border-b border-[#e5e5e1] py-2 pe-3">{c}</td>)}</tr>
             ))}
           </tbody>
         </table>
-        <p className="mt-6 text-[10px] text-[#656565]">Marina Management System · Sample data for demonstration</p>
+        <p className="mt-6 text-[10px] text-[#656565]">{t("Marina Management System · Sample data for demonstration")}</p>
       </div>
       <Card>
-        <CardHeader title={info.label} description={info.description} icon={FileText} />
+        <CardHeader title={t(info.label)} description={t(info.description)} icon={FileText} />
         <Table head={report.head} empty={report.rows.length === 0}>
           {(report.display ?? report.rows).map((r, i) => (
             <tr key={i}>{r.map((c, j) => <td key={j} className={j === 0 ? "font-medium" : "num"}>{c}</td>)}</tr>
@@ -156,7 +156,7 @@ function Histogram({ data, unit }: { data: { label: string; value: number }[]; u
           <CartesianGrid vertical={false} stroke="var(--chart-grid)" strokeDasharray="3 3" />
           <XAxis dataKey="label" tick={axis} tickLine={false} axisLine={false} />
           <YAxis tick={axis} tickLine={false} axisLine={false} width={32} allowDecimals={false} />
-          <Tooltip cursor={{ fill: "var(--surface-3)" }} contentStyle={{ background: "var(--raised)", border: "1px solid var(--table-line)", borderRadius: 12, fontSize: 12, boxShadow: "var(--shadow-2)" }} formatter={(v) => [`${v} ${unit}`, ""]} />
+          <Tooltip cursor={{ fill: "var(--surface-3)" }} contentStyle={{ background: "var(--raised)", border: "1px solid var(--table-line)", borderRadius: 12, fontSize: 12, boxShadow: "var(--shadow-2)" }} formatter={(v) => [`${v} ${t(unit)}`, ""]} />
           <Bar dataKey="value" fill="var(--chart-1)" radius={[4, 4, 0, 0]} maxBarSize={40} animationDuration={300} animationEasing="ease-out" />
         </BarChart>
       </ResponsiveContainer>
@@ -183,52 +183,52 @@ export function Analytics() {
   const stayBuckets = [
     { label: "1–3", min: 1, max: 3 }, { label: "4–7", min: 4, max: 7 }, { label: "8–14", min: 8, max: 14 },
     { label: "15–27", min: 15, max: 27 }, { label: "28+", min: 28, max: 999 },
-  ].map((b) => ({ label: `${b.label} nights`, value: stays.filter((s) => s >= b.min && s <= b.max).length }));
+  ].map((b) => ({ label: t("{range} nights", { range: b.label }), value: stays.filter((s) => s >= b.min && s <= b.max).length }));
 
   const types = new Map<string, number>();
   bookings.forEach((b) => {
-    const t = ix.boat(b.boatId)?.type ?? "Other";
-    types.set(t, (types.get(t) ?? 0) + 1);
+    const bt = ix.boat(b.boatId)?.type ?? "Other";
+    types.set(bt, (types.get(bt) ?? 0) + 1);
   });
 
   const series = (marinaId === "all" ? db.marinas.filter((m) => scope.includes(m.id)) : db.marinas.filter((m) => m.id === marinaId)).map((m) => ({ name: m.name, ids: [m.id] }));
-  const shown = series.length > MAX_SERIES ? [...series.slice(0, MAX_SERIES - 1), { name: "Other marinas", ids: series.slice(MAX_SERIES - 1).flatMap((s) => s.ids) }] : series;
+  const shown = series.length > MAX_SERIES ? [...series.slice(0, MAX_SERIES - 1), { name: t("Other marinas"), ids: series.slice(MAX_SERIES - 1).flatMap((s) => s.ids) }] : series;
 
   return (
     <>
       <PageHeader
-        title="Analytics"
-        description="Trends over the last 12 months"
+        title={t("Analytics")}
+        description={t("Trends over the last 12 months")}
         actions={
-          <Select look="plain" aria-label="Filter by marina" value={marinaId} onChange={(e) => setMarinaId(e.target.value)}>
-            <option value="all">All marinas</option>
+          <Select look="plain" aria-label={t("Filter by marina")} value={marinaId} onChange={(e) => setMarinaId(e.target.value)}>
+            <option value="all">{t("All marinas")}</option>
             {db.marinas.filter((m) => scope.includes(m.id)).map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
           </Select>
         }
       />
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4 min-[1400px]:grid-cols-4">
-          <StatCard label="Average stay" icon={CalendarRange} value={`${avgStay.toFixed(1)} nights`} />
-          <StatCard label="Average booking lead time" icon={Clock} value={`${avgLead.toFixed(0)} days`} sub="Booked this far ahead of arrival" />
-          <StatCard to="/bookings?status=cancelled" label="Cancellation rate" icon={Sailboat} value={pct(cancelRate)} />
-          <StatCard label="Average boat length" icon={Ruler} value={`${avgLen.toFixed(0)} ft`} />
+          <StatCard label={t("Average stay")} icon={CalendarRange} value={t("{n} nights", { n: avgStay.toFixed(1) })} />
+          <StatCard label={t("Average booking lead time")} icon={Clock} value={`${avgLead.toFixed(0)} days`} sub={t("Booked this far ahead of arrival")} />
+          <StatCard to="/bookings?status=cancelled" label={t("Cancellation rate")} icon={Sailboat} value={pct(cancelRate)} />
+          <StatCard label={t("Average boat length")} icon={Ruler} value={`${avgLen.toFixed(0)} ft`} />
         </div>
         <Card>
-          <CardHeader title="Revenue by marina" description="Last 12 months · this month includes confirmed upcoming stays" />
+          <CardHeader title={t("Revenue by marina")} description={t("Last 12 months · this month includes confirmed upcoming stays")} />
           <div className="p-4"><RevenueChart months={months} series={shown.map((s) => ({ name: s.name, values: ix.revenueByMonth(s.ids, months) }))} /></div>
         </Card>
         <Card>
-          <CardHeader title="Occupancy by marina" description="Booked berth-nights, last 12 months" />
+          <CardHeader title={t("Occupancy by marina")} description={t("Booked berth-nights, last 12 months")} />
           <div className="p-4"><OccupancyChart months={months} series={shown.map((s) => ({ name: s.name, values: ix.occupancyByMonth(s.ids, months) }))} /></div>
         </Card>
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
           <Card>
-            <CardHeader title="Length of stay" description="Number of bookings" />
+            <CardHeader title={t("Length of stay")} description={t("Number of bookings")} />
             <div className="p-4"><Histogram data={stayBuckets} unit="bookings" /></div>
           </Card>
           <Card>
-            <CardHeader title="Boat types" description="Bookings per boat type" />
-            <div className="p-4"><Histogram data={[...types.entries()].sort((a, b) => b[1] - a[1]).map(([label, value]) => ({ label, value }))} unit="bookings" /></div>
+            <CardHeader title={t("Boat types")} description={t("Bookings per boat type")} />
+            <div className="p-4"><Histogram data={[...types.entries()].sort((a, b) => b[1] - a[1]).map(([label, value]) => ({ label: t(label), value }))} unit="bookings" /></div>
           </Card>
         </div>
       </div>

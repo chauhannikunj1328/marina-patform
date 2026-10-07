@@ -4,6 +4,7 @@ import { useState } from "react";
 import { CalendarDays, Gauge, Keyboard, MousePointerClick, Undo2, Warehouse, type LucideIcon } from "lucide-react";
 import { useStore } from "@/data/store";
 import { Button, HighlightPill, Modal } from "./ui";
+import { t } from "@marina/shared";
 
 const KEY = (id: string) => `mms.welcomed.${id}`;
 
@@ -58,23 +59,23 @@ export function Welcome() {
     <Modal
       open
       onClose={done}
-      title={s.title}
+      title={t(s.title)}
       footer={
         <div className="flex w-full items-center justify-between gap-2">
           <button onClick={done} className="text-[13px] font-medium text-ink-3 hover:text-ink cursor-pointer">
-            Skip
+            {t("Skip")}
           </button>
           <div className="flex gap-2">
-            {step > 0 && <Button onClick={() => setStep(step - 1)}>Back</Button>}
+            {step > 0 && <Button onClick={() => setStep(step - 1)}>{t("Back")}</Button>}
             <Button variant="primary" onClick={() => (last ? done() : setStep(step + 1))}>
-              {last ? "Start exploring" : "Next"}
+              {last ? t("Start exploring") : t("Next")}
             </Button>
           </div>
         </div>
       }
     >
       <div className="mb-5 flex items-center gap-3">
-        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-line" role="progressbar" aria-valuenow={step + 1} aria-valuemin={1} aria-valuemax={STEPS.length} aria-label="Welcome progress">
+        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-line" role="progressbar" aria-valuenow={step + 1} aria-valuemin={1} aria-valuemax={STEPS.length} aria-label={t("Welcome progress")}>
           <div className="h-full rounded-full bg-green transition-[width] duration-300 ease-brand" style={{ width: `${((step + 1) / STEPS.length) * 100}%` }} />
         </div>
         <span className="num text-xs font-medium text-ink-3">
@@ -83,10 +84,10 @@ export function Welcome() {
       </div>
       {step === 0 && (
         <div className="mb-4">
-          <HighlightPill>Hi {user.name.split(" ")[0]}</HighlightPill>
+          <HighlightPill>{t("Hi")} {user.name.split(" ")[0]}</HighlightPill>
         </div>
       )}
-      <p className="text-[15px] text-ink-2">{s.body}</p>
+      <p className="text-[15px] text-ink-2">{t(s.body)}</p>
       {s.points.length > 0 && (
         <ul className="mt-5 space-y-3">
           {s.points.map((p) => (
@@ -94,7 +95,7 @@ export function Welcome() {
               <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-surface-3">
                 <p.icon className="size-4 text-ink-2" aria-hidden />
               </span>
-              {p.text}
+              {t(p.text)}
             </li>
           ))}
         </ul>
