@@ -8,6 +8,7 @@ import {
 } from "@marina/shared";
 import { ALL, useMe, useStore } from "../store";
 import { MarinaPicker } from "./office";
+import { OwnerSheet } from "./owner";
 import { useTheme } from "../theme";
 import { pickPhoto, takePhoto } from "../lib/photos";
 import { BerthBadge, BookingBadge, PriorityBadge, TaskBadge } from "./status";
@@ -31,6 +32,7 @@ export function BookingSheet({ booking, onClose }: { booking: Booking; onClose: 
   const setStatus = useBookingStatus();
   const [paying, setPaying] = useState<Invoice | undefined>();
   const [changing, setChanging] = useState(false);
+  const [ownerOpen, setOwnerOpen] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const { user, update, toast } = useStore();
   const office = user?.role === "admin" || user?.role === "manager";
@@ -67,7 +69,13 @@ export function BookingSheet({ booking, onClose }: { booking: Booking; onClose: 
       <Row label="Boat" value={`${boat?.type} · ${boat?.length} ft`} sub={boat?.registration} />
       <Row label="Dates" value={`${fmtShort(b.start)} – ${fmtShort(b.end)}`} sub={`${daysBetween(b.start, b.end)} ${daysBetween(b.start, b.end) === 1 ? "night" : "nights"} · ${b.guests} ${b.guests === 1 ? "guest" : "guests"}`} />
       <Row label="Berth" value={`${berth?.code} · up to ${berth?.maxLength} ft`} sub={`${berth?.type}${berth?.power ? " · power" : ""}${berth?.water ? " · water" : ""}`} />
-      <Row label="Boat owner" value={owner?.name ?? ""} sub={owner?.email} />
+      {owner && can("owners") !== "none" ? (
+        <Pressable accessibilityRole="button" accessibilityLabel={`Boat owner ${owner.name}. Open their details`} onPress={() => setOwnerOpen(true)}>
+          <Row label="Boat owner" value={`${owner.name} ›`} sub={owner.email} />
+        </Pressable>
+      ) : (
+        <Row label="Boat owner" value={owner?.name ?? ""} sub={owner?.email} />
+      )}
       {b.status === "pending" && (
         <View style={{ backgroundColor: t.status.pending.bg, borderRadius: 12, padding: 12, marginBottom: 12 }}>
           <Txt v="bodySm" color={t.status.pending.fg}>Waiting for a manager to approve this booking.</Txt>
@@ -88,6 +96,7 @@ export function BookingSheet({ booking, onClose }: { booking: Booking; onClose: 
       )}
       {paying && <PaymentSheet invoice={paying} onClose={() => setPaying(undefined)} />}
       {changing && <ChangeBookingSheet booking={b} onClose={() => setChanging(false)} />}
+      {ownerOpen && owner && <OwnerSheet owner={owner} onClose={() => setOwnerOpen(false)} />}
       {cancelling && <CancelBookingSheet booking={b} decline={b.status === "pending"} onClose={() => setCancelling(false)} />}
     </Sheet>
   );

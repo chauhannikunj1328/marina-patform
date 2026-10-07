@@ -1,7 +1,7 @@
 // Manager and admin home: how the marinas are doing today, what needs a decision, and where to look.
 import { View } from "react-native";
 import { router } from "expo-router";
-import { CalendarCheck, CircleAlert, Clock, Receipt, ScanLine, TriangleAlert, Warehouse, Wrench } from "lucide-react-native";
+import { CalendarCheck, CircleAlert, Clock, Receipt, ScanLine, TriangleAlert, UsersRound, Warehouse, Wrench } from "lucide-react-native";
 import { fmtDate, fmtDateTime, lastMonths, money, moneyShort, openEntry, pct, today } from "@marina/shared";
 import { AlertRow, Kpi, List, MarinaRow, MiniBars } from "@/components/office";
 import { Button, Screen, Section, Txt } from "@/components/ui";
@@ -77,6 +77,7 @@ export function Overview() {
           <Button style={{ flex: 1 }} icon={Wrench} label="Repairs" onPress={() => router.navigate("/tasks")} />
           <Button style={{ flex: 1 }} icon={ScanLine} label="Scan" onPress={() => router.push("/scan")} />
         </View>
+        <Button icon={UsersRound} label="Boat owners" onPress={() => router.push("/owners")} />
       </Section>
 
       <Section title="Recent activity">
