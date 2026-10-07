@@ -320,7 +320,7 @@ function useCompleteTask() {
     update(
       (d) => ({
         ...d,
-        tasks: d.tasks.map((x) => (x.id === t.id ? { ...x, status: "done" } : x)),
+        tasks: d.tasks.map((x) => (x.id === t.id ? { ...x, status: "done", doneAt: today() } : x)),
         // Return the berth to service when its last open work order is done.
         berths: d.berths.map((b) => (b.id === t.berthId && !d.tasks.some((x) => x.id !== t.id && x.berthId === b.id && x.status !== "done") ? { ...b, underMaintenance: false } : b)),
       }),

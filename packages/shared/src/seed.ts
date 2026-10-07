@@ -293,6 +293,7 @@ export function createSeed(): Db {
       created: addDays(now, -between(5, 40)), due: addDays(now, done ? -between(1, 20) : between(2, 20)),
       notes: done ? [{ at: addDays(now, -between(1, 4)), by: "Dock team", text: "Completed and inspected." }] : [],
     });
+    if (done) tasks[tasks.length - 1].doneAt = tasks[tasks.length - 1].notes[0].at;
     ti++;
   }
 

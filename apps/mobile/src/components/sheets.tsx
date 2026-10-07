@@ -477,7 +477,7 @@ export function TaskSheet({ task, onClose }: { task: MaintenanceTask; onClose: (
     update(
       (d) => ({
         ...d,
-        tasks: d.tasks.map((y) => (y.id === x.id ? { ...y, status, assigneeId: y.assigneeId ?? me?.id } : y)),
+        tasks: d.tasks.map((y) => (y.id === x.id ? { ...y, status, assigneeId: y.assigneeId ?? me?.id, doneAt: status === "done" ? today() : y.doneAt } : y)),
         // Finishing the last open job on a berth puts it back in service.
         berths: status === "done" ? d.berths.map((b) => (b.id === x.berthId && !d.tasks.some((y) => y.id !== x.id && y.berthId === b.id && y.status !== "done") ? { ...b, underMaintenance: false } : b)) : d.berths,
       }),
