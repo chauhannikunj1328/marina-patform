@@ -2180,6 +2180,7 @@ export const es: Record<string, Entry> = {
   "{n} contracts are up for renewal": {"one": "{n} contrato por renovar", "other": "{n} contratos por renovar"},
   "{n} contracts are waiting for your signature": {"one": "{n} contrato espera tu firma", "other": "{n} contratos esperan tu firma"},
   "{n} counties": {"one": "{n} condado", "other": "{n} condados"},
+  "{n} days": {"one": "{n} día", "other": "{n} días"},
   "{n} days ago": {"one": "hace {n} día", "other": "hace {n} días"},
   "{n} days late": {"one": "{n} día de retraso", "other": "{n} días de retraso"},
   "{n} days overdue.": {"one": "{n} día de retraso.", "other": "{n} días de retraso."},

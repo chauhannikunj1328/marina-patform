@@ -123,7 +123,7 @@ export function Login() {
                 }}
                 className="rounded-[12px] border border-line px-3 py-2.5 text-start hover:bg-sidebar cursor-pointer"
               >
-                <span className="block text-[13px] font-semibold text-ink">{role}</span>
+                <span className="block text-[13px] font-semibold text-ink">{t(role)}</span>
                 <span className="block truncate">{e}</span>
               </button>
             ))}

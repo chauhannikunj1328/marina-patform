@@ -91,7 +91,7 @@ function IncidentDetail({ incident, canEdit, onClose }: { incident: Incident; ca
     setNote("");
   };
   return (
-    <Modal open wide onClose={onClose} title={`${i.code} · ${INCIDENT_LABEL[i.kind]}`} description={`${ix.marina(i.marinaId)?.name}${i.berthId ? `, berth ${ix.berth(i.berthId)?.code}` : ""} · ${fmtDateTime(i.at)}`}
+    <Modal open wide onClose={onClose} title={`${i.code} · ${t(INCIDENT_LABEL[i.kind])}`} description={`${ix.marina(i.marinaId)?.name}${i.berthId ? `, ${t("Berth {code}", { code: ix.berth(i.berthId)?.code ?? "" })}` : ""} · ${fmtDateTime(i.at)}`}
       footer={
         <>
           {canEdit && i.status === "open" && <Button onClick={() => set({ status: "investigating" }, "Started investigating an incident", "Marked as investigating")}>{t("Start investigating")}</Button>}

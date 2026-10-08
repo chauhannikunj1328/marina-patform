@@ -209,9 +209,9 @@ export function Analytics() {
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4 min-[1400px]:grid-cols-4">
           <StatCard label={t("Average stay")} icon={CalendarRange} value={t("{n} nights", { n: avgStay.toFixed(1) })} />
-          <StatCard label={t("Average booking lead time")} icon={Clock} value={`${avgLead.toFixed(0)} days`} sub={t("Booked this far ahead of arrival")} />
+          <StatCard label={t("Average booking lead time")} icon={Clock} value={t("{n} days", { n: avgLead.toFixed(0) })} sub={t("Booked this far ahead of arrival")} />
           <StatCard to="/bookings?status=cancelled" label={t("Cancellation rate")} icon={Sailboat} value={pct(cancelRate)} />
-          <StatCard label={t("Average boat length")} icon={Ruler} value={`${avgLen.toFixed(0)} ft`} />
+          <StatCard label={t("Average boat length")} icon={Ruler} value={t("{n} ft", { n: avgLen.toFixed(0) })} />
         </div>
         <Card>
           <CardHeader title={t("Revenue by marina")} description={t("Last 12 months · this month includes confirmed upcoming stays")} />

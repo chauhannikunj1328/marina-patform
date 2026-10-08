@@ -20,27 +20,27 @@ export const SHOTS: Partial<Record<GuideKey, (Shot | null)[]>> = {
   "w.overview": [
     { path: "/", as: "admin", boxes: [{ text: "Berths occupied today", exact: false, card: true }, { text: "Revenue booked this month", exact: false, card: true }, { text: "Occupancy rate", exact: false, card: true }] },
     { path: "/", as: "admin", boxes: [{ role: "heading", name: "Revenue", card: true }, { role: "heading", name: "Occupancy", card: true }] },
-    { path: "/", as: "admin", boxes: [{ text: "Today", card: true }, { text: "What needs attention", card: true }] },
-    { path: "/", as: "admin", boxes: [{ role: "link", name: "New booking", exact: false }, { role: "button", name: "Export CSV" }] },
+    { path: "/", as: "admin", boxes: [{ role: "heading", name: "Today", card: true }, { role: "heading", name: "Recent activity" }] },
+    { path: "/", as: "admin", boxes: [{ role: "button", name: "New booking" }, { role: "button", name: "Export CSV" }] },
     { path: "/", as: "admin", boxes: [{ css: "#global-search" }, { role: "button", name: "Notifications", exact: false }, { role: "button", name: "Keyboard shortcuts (?)" }] },
   ],
   "w.county": [
     { path: "/county", as: "admin", boxes: [{ role: "combobox", name: "Choose county" }] },
-    { path: "/county", as: "admin", boxes: [{ text: "Berths occupied today", exact: false, card: true }, { role: "heading", name: "Cities in {name}", vars: { name: "San Francisco County" }, card: true }] },
+    { path: "/county", as: "admin", boxes: [{ role: "heading", name: "Cities in {name}", vars: { name: "San Francisco County" } }] },
     null,
   ],
   "w.city": [
     { path: "/city", as: "admin", boxes: [{ role: "combobox", name: "Choose city" }] },
-    { path: "/city", as: "admin", boxes: [{ text: "Berths occupied today", exact: false, card: true }, { role: "heading", name: "Marinas in {name}", vars: { name: "San Francisco" }, card: true }] },
+    { path: "/city", as: "admin", boxes: [{ role: "heading", name: "Marinas in {name}", vars: { name: "San Francisco" } }] },
     { path: "/locations", as: "admin", actions: [{ click: { role: "tab", name: "Map" } }, { wait: 1200 }], boxes: [{ css: ".map-shell" }] },
   ],
   "w.marinas": [
     { path: "/marinas", as: "admin", boxes: [{ label: "Search by marina or city" }, { label: "Filter by city" }, { role: "button", name: "Map" }] },
-    { path: "/marinas", as: "admin", actions: [{ click: { role: "button", name: "Add marina" } }], boxes: [{ label: "Marina name", inDialog: true }, { label: "Street address", inDialog: true }, { text: "Location on the map", inDialog: true, up: 1 }, { role: "button", name: "Add marina", inDialog: true }] },
+    { path: "/marinas", as: "admin", actions: [{ click: { role: "button", name: "Add marina" } }], boxes: [{ label: "Marina name", inDialog: true }, { label: "Street address", inDialog: true }, { text: "Location on the map", inDialog: true }, { role: "button", name: "Add marina", inDialog: true }] },
     { path: "/marinas", as: "admin", boxes: [{ role: "button", name: "Edit {name}", vars: GG }, { role: "button", name: "Delete {name}", vars: GG }] },
   ],
   "w.marina": [
-    { path: "/marinas/m-gg", as: "admin", boxes: [{ text: "Berths occupied", card: true }, { role: "heading", name: "Details", card: true }] },
+    { path: "/marinas/m-gg", as: "admin", boxes: [{ text: "Berths occupied", card: true }, { role: "heading", name: "Details" }] },
     { path: "/marinas/m-gg", as: "admin", boxes: [{ role: "button", name: "Edit" }, { role: "button", name: "New booking" }] },
   ],
   "w.berths": [
@@ -77,8 +77,8 @@ export const SHOTS: Partial<Record<GuideKey, (Shot | null)[]>> = {
   ],
   "w.maintenance": [
     { path: "/maintenance", as: "admin", actions: [{ click: { role: "button", name: "New work order" } }], boxes: [{ label: "Work needed", inDialog: true }, { label: "Assign to", inDialog: true }, { label: "Due date", inDialog: true }, { label: "Priority", inDialog: true }] },
-    { path: "/maintenance", as: "admin", boxes: [{ role: "heading", name: "Recurring jobs", card: true }] },
-    { path: "/maintenance", as: "admin", boxes: [{ role: "heading", name: "Parts & supplies", card: true }] },
+    { path: "/maintenance", as: "admin", boxes: [{ role: "heading", name: "Recurring jobs" }, { role: "button", name: "New recurring job" }] },
+    { path: "/maintenance", as: "admin", boxes: [{ role: "heading", name: "Parts & supplies" }, { role: "button", name: "Restock" }, { role: "button", name: "Add item" }] },
   ],
   "w.incidents": [
     { path: "/incidents", as: "admin", boxes: [{ label: "Search incidents" }, { label: "Show" }, firstRow] },
@@ -100,7 +100,7 @@ export const SHOTS: Partial<Record<GuideKey, (Shot | null)[]>> = {
     { path: "/reports", as: "admin", boxes: [{ role: "button", name: "Schedule a report" }] },
   ],
   "w.analytics": [
-    { path: "/analytics", as: "admin", boxes: [{ text: "Average stay", card: true }, { text: "Cancellation rate", card: true }, { role: "heading", name: "Revenue by marina", card: true }] },
+    { path: "/analytics", as: "admin", boxes: [{ text: "Average stay", card: true }, { text: "Cancellation rate", card: true }, { role: "heading", name: "Revenue by marina" }] },
     { path: "/analytics", as: "admin", boxes: [{ label: "Filter by marina" }] },
   ],
   "w.access": [
@@ -119,7 +119,7 @@ export const SHOTS: Partial<Record<GuideKey, (Shot | null)[]>> = {
   // ---- Public website ----------------------------------------------------------------------------
   "s.home": [
     { path: "/", as: "visitor", boxes: [{ label: "Marina" }, { label: "Arrive" }, { label: "date|Leave" }, { label: "Boat length (ft)" }, { role: "button", name: "Search" }] },
-    { path: "/", as: "visitor", boxes: [{ css: ".map-shell" }, { role: "link", name: "See all marinas" }] },
+    { path: "/", as: "visitor", boxes: [{ css: ".map-shell" }] },
     { path: "/", as: "visitor", boxes: [{ role: "button", name: "Language" }, { role: "button", name: "Dark mode" }, { css: "header a[href='/sign-in']" }, { css: "header a[href='/book']" }] },
   ],
   "s.marinas": [
@@ -199,7 +199,7 @@ export const SHOTS: Partial<Record<GuideKey, (Shot | null)[]>> = {
   "m.overview": [
     { path: "/", as: "admin", boxes: [{ text: "Occupancy today", up: 1 }, { text: "Revenue this month", up: 1 }] },
     { path: "/", as: "admin", boxes: [{ text: "Needs attention" }] },
-    { path: "/", as: "admin", boxes: [{ role: "button", name: "Compare" }, { text: "Quick actions" }] },
+    { path: "/", as: "admin", boxes: [{ text: "Quick actions" }] },
     { path: "/", as: "admin", boxes: [{ role: "button", name: "Showing {label}. Change marina", vars: { label: "All marinas" }, translateVars: true }] },
   ],
   "m.today": [
@@ -252,7 +252,7 @@ export const SHOTS: Partial<Record<GuideKey, (Shot | null)[]>> = {
   ],
   "m.report": [
     { path: "/report", as: "admin", boxes: [{ text: "Boats" }, { text: "Money" }] },
-    { path: "/report", as: "admin", boxes: [{ role: "tab", name: "Yesterday" }, { role: "button", name: "Share report" }] },
+    { path: "/report", as: "admin", boxes: [{ role: "tab", name: "Yesterday" }] },
   ],
   "m.owners": [
     { path: "/owners", as: "admin", boxes: [{ placeholder: "Name, phone, email, boat or registration" }] },
@@ -278,7 +278,7 @@ export const SHOTS: Partial<Record<GuideKey, (Shot | null)[]>> = {
     { path: "/compare", as: "admin", boxes: [{ text: "Choose 2 or 3" }, { text: "Green marks the best value in each row." }] },
   ],
   "m.revenue": [
-    { path: "/revenue", as: "admin", boxes: [{ text: "By county" }, { role: "button", nth: 2 }, { role: "button", name: "All" }] },
+    { path: "/revenue", as: "admin", actions: [{ click: { text: "San Francisco County" } }], boxes: [{ role: "button", name: "All" }, { text: "By city" }] },
     null,
   ],
   "m.marina": [

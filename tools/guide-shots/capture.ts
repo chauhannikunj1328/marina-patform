@@ -62,6 +62,61 @@ async function act(page: Page, a: ShotAction, lang: Lang) {
   await page.waitForTimeout(350);
 }
 
+/**
+ * Runs in the page. Scrolls the boxes' scroll containers so all of them are on screen and not under a
+ * sticky header or footer, then returns the (1-based) numbers of any box that still isn't fully visible.
+ */
+function placeInView(els: Element[]): number[] {
+  const vw = innerWidth, vh = innerHeight;
+  const MARGIN = 20; // room for the red outline and its number badge
+  // Fixed or sticky bars along the top and bottom edges (but not one that holds a box, like the site header's buttons).
+  let barTop = 0, barBottom = 0;
+  for (const e of document.querySelectorAll("body *")) {
+    const pos = getComputedStyle(e).position;
+    if (pos !== "fixed" && pos !== "sticky") continue;
+    const r = e.getBoundingClientRect();
+    if (!r.height || r.height > vh / 3 || r.width < vw / 2 || els.some((b) => e.contains(b))) continue;
+    if (r.top <= 4) barTop = Math.max(barTop, r.bottom);
+    else if (r.bottom >= vh - 4) barBottom = Math.max(barBottom, vh - r.top);
+  }
+  const scroller = (el: Element) => {
+    for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) {
+      const s = getComputedStyle(p);
+      if (/(auto|scroll)/.test(s.overflowY) && p.scrollHeight > p.clientHeight + 1) return p;
+    }
+    return document.scrollingElement ?? document.documentElement;
+  };
+  // Sideways first (wide tables), then up and down: per scroll container, bring all its boxes into view
+  // together (centred when they fit, otherwise the first ones at the top).
+  for (const el of els) {
+    const r = el.getBoundingClientRect();
+    if (r.left < 0 || r.right > vw) el.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "instant" });
+  }
+  const groups = new Map<Element, Element[]>();
+  for (const el of els) { const s = scroller(el); groups.set(s, [...(groups.get(s) ?? []), el]); }
+  // A scroll container that isn't the whole page (the app's main panel, below its top bar) clips what's shown.
+  const area = (s: Element) => {
+    const page = s === document.scrollingElement || s === document.documentElement;
+    const c = page ? { top: 0, bottom: vh } : s.getBoundingClientRect();
+    return { top: Math.max(barTop, c.top), bottom: Math.min(vh - barBottom, c.bottom) };
+  };
+  for (const [s, group] of groups) {
+    const a = area(s), lo = a.top + MARGIN, hi = a.bottom - MARGIN / 2;
+    const rs = group.map((g) => g.getBoundingClientRect());
+    const uTop = Math.min(...rs.map((r) => r.top)), uBottom = Math.max(...rs.map((r) => r.bottom));
+    if (uTop >= lo && uBottom <= hi) continue;
+    const room = hi - lo, height = uBottom - uTop;
+    const delta = height <= room ? uTop - lo - (room - height) / 2 : uTop - lo;
+    s.scrollBy({ top: delta, behavior: "instant" });
+  }
+  return els.flatMap((el, i) => {
+    const r = el.getBoundingClientRect(), a = area(scroller(el));
+    const tall = r.height > a.bottom - a.top - MARGIN; // taller than the visible area: its top must show
+    const ok = r.top >= a.top - 2 && (tall || r.bottom <= a.bottom + 2) && r.left >= -2 && r.right <= vw + 2;
+    return ok ? [] : [i + 1];
+  });
+}
+
 /** Draws numbered red boxes over the given rectangles. */
 async function drawBoxes(page: Page, rects: { x: number; y: number; width: number; height: number }[]) {
   await page.evaluate((rects) => {
@@ -142,7 +197,19 @@ async function capture(page: Page, app: "web" | "website" | "mobile", key: Guide
   // Hide the Read button and pop-up messages.
   await page.addStyleTag({ content: `[aria-label="${tr("Read the guide for this page", lang)}"], [aria-live="polite"] { visibility: hidden !important; }` });
   const boxes = await Promise.all(shot.boxes.map((b) => locate(page, b, lang)));
-  if (boxes[0]) await boxes[0].scrollIntoViewIfNeeded({ timeout: 8000 }).catch(() => {});
+  const handles = [];
+  for (const [i, b] of boxes.entries()) {
+    const h = await b.elementHandle({ timeout: 8000 }).catch(() => null);
+    if (!h) throw new Error(`box ${i + 1} not found: ${JSON.stringify(shot.boxes[i])}`);
+    handles.push(h);
+  }
+  // Scroll so every box is on screen and clear of sticky headers; fail rather than save a picture with a box missing.
+  // tsx wraps inner functions in a __name() helper that the page doesn't have.
+  await page.evaluate("globalThis.__name ??= (f) => f");
+  const offscreen = await page.evaluate(placeInView, handles);
+  if (offscreen.length) throw new Error(`box ${offscreen.join(", ")} off screen: ${offscreen.map((n) => JSON.stringify(shot.boxes[n - 1])).join(" ")}`);
+  // Let map tiles finish loading so maps aren't grey.
+  await page.waitForFunction(() => [...document.querySelectorAll<HTMLImageElement>("img.leaflet-tile")].every((i) => i.complete), null, { timeout: 10000 }).catch(() => {});
   await page.waitForTimeout(300);
   const rects = [];
   for (const [i, b] of boxes.entries()) {
