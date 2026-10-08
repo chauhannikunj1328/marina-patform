@@ -462,9 +462,9 @@ export const mobile: Record<string, Guide> = {
       {
         heading: "Read it",
         points: [
-          "Switch between By county, By city and By marina.",
+          "It starts By county. Tap a county to see its cities, then a city to see its marinas.",
           "Each one shows its share of the total and the change on last month.",
-          "Trend shows the last months for all marinas.",
+          "Use the trail at the top (All › county › city) to go back. Trend shows the last months for what you're looking at.",
         ],
       },
       { heading: "How it's counted", text: "Each confirmed or completed stay's price is spread across its nights, so a stay over two months counts in both." },

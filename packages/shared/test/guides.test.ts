@@ -25,3 +25,23 @@ describe("page guides", () => {
     }
   });
 });
+
+// ---- Screenshots ------------------------------------------------------------------------------
+import { existsSync } from "node:fs";
+import { join } from "node:path";
+import { SHOTS } from "../src/guides/specs";
+import { guideApp, shotFile } from "../src/guides/shots";
+
+const ROOT = join(import.meta.dirname, "../../..");
+const folder = (key: (typeof GUIDE_KEYS)[number]) => (guideApp(key) === "website" ? "apps/website/public/guides" : "apps/web/public/guides");
+
+describe("guide screenshots", () => {
+  it("are planned for every section of every guide", () => {
+    for (const key of GUIDE_KEYS) expect([key, SHOTS[key]?.length]).toEqual([key, en[key].sections.length]);
+  });
+
+  it.each(["en", "es", "ar"] as const)("exist in %s (run tools/guide-shots after changing a page)", (lang) => {
+    const missing = GUIDE_KEYS.flatMap((key) => (SHOTS[key] ?? []).flatMap((shot, i) => (shot && !existsSync(join(ROOT, folder(key), shotFile(key, i, lang))) ? [`${key} #${i}`] : [])));
+    expect(missing).toEqual([]);
+  });
+});

@@ -462,9 +462,9 @@ export const mobile: Record<string, Guide> = {
       {
         heading: "Cómo leerlos",
         points: [
-          "Cambia entre Por condado, Por ciudad y Por marina.",
+          "Empieza Por condado. Toca un condado para ver sus ciudades, y una ciudad para ver sus marinas.",
           "Cada uno muestra su parte del total y el cambio respecto al mes pasado.",
-          "Tendencia muestra los últimos meses de todas las marinas.",
+          "Usa la ruta de arriba (Todo › condado › ciudad) para volver atrás. Tendencia muestra los últimos meses de lo que estás viendo.",
         ],
       },
       { heading: "Cómo se cuentan", text: "El precio de cada estancia confirmada o completada se reparte entre sus noches, así que una estancia que abarca dos meses cuenta en los dos." },

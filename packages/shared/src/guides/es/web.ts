@@ -79,7 +79,7 @@ export const web: Record<string, Guide> = {
       {
         heading: "Consejos",
         points: [
-          "Usa el selector de marina, el buscador (pulsa /) y la campana de la parte superior de cada página.",
+          "Usa el buscador (pulsa /) para encontrar marinas, reservas, propietarios y personal, y la campana para las notificaciones, en la parte superior de cada página.",
           "Pulsa ? para ver todos los atajos de teclado, como G y después B para ir a Reservas.",
           "Después de la mayoría de las acciones aparece un mensaje con Deshacer, por si cambias de opinión.",
         ],
@@ -153,7 +153,7 @@ export const web: Record<string, Guide> = {
           "Selecciona Añadir marina.",
           "Escribe el nombre, la ciudad, el estado, la dirección, el teléfono y el correo de la oficina.",
           "Indica la ubicación: haz clic en el mapa donde está la marina o escribe la latitud y la longitud. Si lo dejas vacío, se usa el centro de la ciudad.",
-          "Elige los servicios y selecciona Guardar.",
+          "Elige los servicios y selecciona Añadir marina.",
         ],
       },
       {
@@ -245,7 +245,7 @@ export const web: Record<string, Guide> = {
           "Propietario: busca un propietario existente, o elige Nuevo propietario y escribe su nombre, correo y embarcación.",
           "Estancia: elige las fechas de llegada y salida y el número de personas.",
           "Amarre: solo se ofrecen amarres libres toda la estancia y con tamaño suficiente para la embarcación, con su precio.",
-          "Selecciona Confirmar reserva para confirmarla y enviar la factura, o Guardar como pendiente para decidir más tarde.",
+          "Elige el estado: Confirmada (enviar factura), o Pendiente de aprobación para decidir más tarde. Después selecciona Confirmar reserva (o Guardar como pendiente).",
         ],
       },
       {
@@ -453,7 +453,7 @@ export const web: Record<string, Guide> = {
         points: [
           "Busca por nombre, correo o nombre de la embarcación. Cada propietario muestra sus datos de contacto, desde cuándo es cliente y si tiene una embarcación en la marina ahora.",
           "Selecciona Ver para consultar sus embarcaciones, reservas, valor total y saldo pendiente.",
-          "Selecciona Añadir propietario: nombre, correo, teléfono y su primera embarcación (nombre, tipo, eslora, matrícula).",
+          "Selecciona Añadir propietario de embarcación: nombre, correo, teléfono y su primera embarcación (nombre, tipo, eslora, matrícula).",
           "Desde un propietario puedes añadir una embarcación, editar sus datos o hacer una nueva reserva.",
         ],
       },

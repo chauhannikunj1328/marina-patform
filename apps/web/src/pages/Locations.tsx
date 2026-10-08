@@ -47,7 +47,7 @@ function LocationForm({ target, onClose }: { target: Target; onClose: () => void
     onClose();
   };
   return (
-    <Modal open dirty={dirty} onClose={onClose} title={editing ? t("Edit {name}", { name: f.name }) : t("Add location")} footer={<><Button onClick={onClose}>{t("Cancel")}</Button><Button variant="primary" onClick={save}>{editing ? t("Save changes") : t("Add {kind}", { kind: kind })}</Button></>}>
+    <Modal open dirty={dirty} onClose={onClose} title={editing ? t("Edit {name}", { name: f.name }) : t("Add location")} footer={<><Button onClick={onClose}>{t("Cancel")}</Button><Button variant="primary" onClick={save}>{editing ? t("Save changes") : t("Add {kind}", { kind: t(kind) })}</Button></>}>
       <div className="space-y-4">
         {!editing && <Field label={t("Type")}>{(id) => <Select id={id} value={kind} onChange={(e) => setKind(e.target.value as typeof kind)}><option value="city">{t("City")}</option><option value="county">{t("County")}</option></Select>}</Field>}
         <Field label={kind === "city" ? t("City name") : t("County name")} error={errors.name}>{(id) => <Input id={id} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />}</Field>

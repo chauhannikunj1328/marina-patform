@@ -79,7 +79,7 @@ export const web: Record<string, Guide> = {
       {
         heading: "Tips",
         points: [
-          "Use the marina switcher, the search box (press /) and the bell at the top of every page.",
+          "Use the search box (press /) to find marinas, bookings, owners and staff, and the bell for notifications, at the top of every page.",
           "Press ? to see all keyboard shortcuts, such as G then B for Bookings.",
           "After most actions a message appears with Undo, in case you change your mind.",
         ],
@@ -153,7 +153,7 @@ export const web: Record<string, Guide> = {
           "Select Add marina.",
           "Enter the name, city, status, street address, phone and office email.",
           "Set the location: click the map where the marina is, or type latitude and longitude. Leave it empty to use the city's centre.",
-          "Choose the amenities, then select Save.",
+          "Choose the amenities, then select Add marina.",
         ],
       },
       {
@@ -245,7 +245,7 @@ export const web: Record<string, Guide> = {
           "Boat owner: search for an existing owner, or choose New owner and enter their name, email and boat.",
           "Stay: pick arrival and departure dates and the number of guests.",
           "Berth: only berths that are free for the whole stay and big enough for the boat are offered, with the price.",
-          "Select Confirm booking to confirm and send the invoice, or Save as pending to decide later.",
+          "Choose the status: Confirmed (send invoice), or Pending approval to decide later. Then select Confirm booking (or Save as pending).",
         ],
       },
       {
@@ -453,7 +453,7 @@ export const web: Record<string, Guide> = {
         points: [
           "Search by name, email or boat name. Each owner shows their contact details, customer since, and whether a boat is in the marina now.",
           "Select View to see their boats, bookings, lifetime value and balance owed.",
-          "Select Add owner: name, email, phone and their first boat (name, type, length, registration).",
+          "Select Add boat owner: name, email, phone and their first boat (name, type, length, registration).",
           "From an owner you can add a boat, edit their details or make a new booking.",
         ],
       },

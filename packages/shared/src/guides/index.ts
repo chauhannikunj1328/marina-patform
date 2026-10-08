@@ -4,6 +4,7 @@ import type { Lang } from "../i18n";
 import type { GuideBook, GuideKey } from "./types";
 
 export * from "./types";
+export * from "./shots";
 
 const books: Partial<Record<Lang, GuideBook>> = {};
 

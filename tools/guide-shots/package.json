@@ -1,0 +1,15 @@
+{
+  "name": "@marina/guide-shots",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Takes the page guides' screenshots (with red highlight boxes) in every language",
+  "scripts": {
+    "shots": "tsx capture.ts"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.57.0",
+    "sharp": "^0.34.0",
+    "tsx": "^4.20.0"
+  }
+}

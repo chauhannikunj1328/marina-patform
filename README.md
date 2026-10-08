@@ -189,11 +189,18 @@ OpenStreetMap's tiles are for light use only. For production, set these in `apps
 
 ## Page guides
 
-Every page in all three apps has a **Read** button at the bottom centre. It opens a guide to that page: what it's for, who uses it, and step-by-step how to do each thing, in English, Spanish or Arabic (whichever the app is set to).
+Every page in all three apps has a **Read** button at the bottom centre. It opens a large pop-up guide to that page, in English, Spanish or Arabic (whichever the app is set to):
 
-- The guides live in `packages/shared/src/guides/` (`en`, `es`, `ar`, one file each for the web app, the website and the phone app). The web app and website download a language's guides the first time someone opens one; the phone app ships them all, so they work offline.
-- A test checks that every page has a guide in every language, and that the Spanish and Arabic match the English section for section.
-- When a page changes, update its guide in all three languages.
+- An **Overview** tab says what the page is for and who uses it, then a tab for each part of the page, with **Previous** and **Next** to go through them in order.
+- Each part has a **screenshot** of the real page in the reader's language, with **red boxes** around what to use, numbered in the order you use them, next to the step-by-step instructions.
+
+How it's put together:
+
+- The text lives in `packages/shared/src/guides/` (`en`, `es`, `ar`, one file each for the web app, the website and the phone app). The web app and website download a language's guides the first time someone opens one; the phone app ships the text, so it works offline.
+- The screenshots are taken automatically. `packages/shared/src/guides/specs.ts` says, for each guide section, which page to open, what to click first and what to box in red. `npm run shots` (in `tools/guide-shots`, using your installed Google Chrome) opens every page in every language, draws the boxes and saves WebP pictures to `apps/web/public/guides/` (web app and phone app) and `apps/website/public/guides/` (website). The phone app loads its pictures from the deployed web app, so they show when there's a connection.
+- To retake pictures after a page changes, start the three dev servers (`npm run dev:web`, `npm run dev:website`, `npm run web:mobile`) and run `npm run shots`, or `npm run shots -- --only w.bookings --lang es` for one guide and language. Set `DEBUG=1` to list what's on the page when a target isn't found.
+- Tests check that every page has a guide in every language, that Spanish and Arabic match the English section for section, and that every screenshot exists in every language.
+- When a page changes, update its guide text in all three languages and retake its pictures.
 
 ## Languages
 
@@ -241,6 +248,8 @@ apps/
   web/          Vite app: src/pages (one file per area), src/components, src/data/store.tsx
   mobile/       Expo app: src/app (screens and routes), src/components, src/store.tsx, assets/
   website/      Vite app: public site and boat-owner portal (src/pages, src/pages/account)
+tools/
+  guide-shots/  takes the page guides' screenshots in every language
 packages/
   shared/       types, sample data, pricing, selectors, permissions, dates, brand tokens, demo accounts
 brand/          logo SVGs and the brand guide
