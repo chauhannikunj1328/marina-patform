@@ -6,6 +6,7 @@ import Layout from "@/components/Layout";
 import { ErrorBoundary, NoAccess, NotFoundPage, StaffUseMobile } from "@/components/StatusPage";
 import { PageSkeleton } from "@/components/Skeleton";
 import { ForgotPassword, Login, Register } from "@/pages/Login";
+import { GuideButton } from "@/components/GuideButton";
 
 // Each page is its own download, so the first visit only loads what it needs.
 const page = <K extends string>(load: () => Promise<Record<K, React.ComponentType>>, name: K) =>
@@ -91,6 +92,7 @@ export default function App() {
         </Route>
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
+      <GuideButton />
     </ErrorBoundary>
   );
 }

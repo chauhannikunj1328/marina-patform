@@ -12,6 +12,7 @@ import { StoreProvider, useStore } from "@/store";
 import { ThemeProvider, useTheme } from "@/theme";
 import { Toasts } from "@/components/ui";
 import { LockScreen } from "@/components/lock";
+import { GuideButton } from "@/components/guide";
 import { LangProvider } from "@/lib/i18n";
 
 SplashScreen.preventAutoHideAsync();
@@ -44,6 +45,7 @@ function Shell() {
         <Stack.Screen name="activity" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="patrol" options={{ animation: "slide_from_right" }} />
       </Stack>
+      <GuideButton />
       <Toasts />
       <LockScreen />
     </View>

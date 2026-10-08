@@ -165,7 +165,7 @@ export function IconButton({ icon: IconCmp, label, onPress, plain, badge = 0 }: 
 export function Screen({ children, title, right }: { children: ReactNode; title?: string; right?: ReactNode }) {
   const { t } = useTheme();
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: t.bg }} contentContainerStyle={{ padding: 16, paddingBottom: 32 }} keyboardShouldPersistTaps="handled">
+    <ScrollView style={{ flex: 1, backgroundColor: t.bg }} contentContainerStyle={{ padding: 16, paddingBottom: 88 }} keyboardShouldPersistTaps="handled">
       {title && (
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
           <Txt v="h1">{title}</Txt>
@@ -494,7 +494,7 @@ export function Toasts({ top }: { top?: number }) {
   const { t } = useTheme();
   if (!toasts.length) return null;
   return (
-    <View pointerEvents="box-none" style={[{ position: "absolute", start: 12, end: 12, gap: 8 }, top !== undefined ? { top } : { bottom: 96 }]} accessibilityLiveRegion="polite">
+    <View pointerEvents="box-none" style={[{ position: "absolute", start: 12, end: 12, gap: 8 }, top !== undefined ? { top } : { bottom: 136 }]} accessibilityLiveRegion="polite">
       {toasts.map((x) => {
         const IconCmp = x.kind === "warning" ? TriangleAlert : x.kind === "error" ? CircleAlert : CircleCheck;
         const color = x.kind === "warning" ? "#E0A11B" : x.kind === "error" ? t.error.base : t.green;

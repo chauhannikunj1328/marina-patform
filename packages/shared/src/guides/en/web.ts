@@ -242,9 +242,9 @@ export const web: Record<string, Guide> = {
         heading: "Make a booking",
         steps: [
           "Select New booking (or press N anywhere).",
-          "1. Boat owner: search for an existing owner, or choose New owner and enter their name, email and boat.",
-          "2. Stay: pick arrival and departure dates and the number of guests.",
-          "3. Berth: only berths that are free for the whole stay and big enough for the boat are offered, with the price.",
+          "Boat owner: search for an existing owner, or choose New owner and enter their name, email and boat.",
+          "Stay: pick arrival and departure dates and the number of guests.",
+          "Berth: only berths that are free for the whole stay and big enough for the boat are offered, with the price.",
           "Select Confirm booking to confirm and send the invoice, or Save as pending to decide later.",
         ],
       },

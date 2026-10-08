@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { t } from "@marina/shared";
 import { useStore } from "@/data/store";
 import Layout from "@/components/Layout";
+import { GuideButton } from "@/components/GuideButton";
 import { ButtonLink, Container, EmptyState, usePageTitle } from "@/components/ui";
 import { Home } from "@/pages/Home";
 
@@ -75,6 +76,7 @@ export default function App() {
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>
+      <GuideButton />
     </Suspense>
   );
 }

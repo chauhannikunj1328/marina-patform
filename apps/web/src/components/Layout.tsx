@@ -570,7 +570,7 @@ export default function Layout() {
           </div>
         </header>
         <main ref={mainRef} className="flex-1 overflow-y-auto">
-          <div className="mx-auto max-w-[1440px] px-4 pt-8 pb-12 md:px-8 lg:pt-10">
+          <div className="mx-auto max-w-[1440px] px-4 pt-8 pb-24 md:px-8 lg:pt-10">
             <Outlet />
           </div>
         </main>

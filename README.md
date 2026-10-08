@@ -187,6 +187,14 @@ OpenStreetMap's tiles are for light use only. For production, set these in `apps
 - `VITE_MAP_TILES_DARK` (optional): a dark style, used in dark mode instead of tinting
 - `VITE_MAP_ATTRIBUTION` (optional): the provider's credit line (HTML)
 
+## Page guides
+
+Every page in all three apps has a **Read** button at the bottom centre. It opens a guide to that page: what it's for, who uses it, and step-by-step how to do each thing, in English, Spanish or Arabic (whichever the app is set to).
+
+- The guides live in `packages/shared/src/guides/` (`en`, `es`, `ar`, one file each for the web app, the website and the phone app). The web app and website download a language's guides the first time someone opens one; the phone app ships them all, so they work offline.
+- A test checks that every page has a guide in every language, and that the Spanish and Arabic match the English section for section.
+- When a page changes, update its guide in all three languages.
+
 ## Languages
 
 Both apps run in **English** (default), **Spanish** and **Arabic**. Switch from the language button in the web app's top bar, or **Me → Language** on the phone; the choice is remembered.

@@ -116,7 +116,7 @@ function Footer() {
           <span className="text-ink-3">{t(SITE.hours)}</span>
         </FooterCol>
       </Container>
-      <Container className="flex flex-wrap justify-between gap-2 border-t border-line py-6 text-xs text-ink-3">
+      <Container className="flex flex-wrap justify-between gap-2 border-t border-line pt-6 pb-20 text-xs text-ink-3">
         <span>© {YEAR} {db.settings.company}</span>
         <span>{t("Sample data. Bookings and payments made here stay in this browser.")}</span>
       </Container>
@@ -138,7 +138,7 @@ function FooterCol({ title, children }: { title: string; children: ReactNode }) 
 function Toasts() {
   const { toasts } = useStore();
   return (
-    <div aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-4 z-[60] flex flex-col items-center gap-2 px-4">
+    <div aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-20 z-[60] flex flex-col items-center gap-2 px-4">
       {toasts.map((x) => (
         <div key={x.id} className="pointer-events-auto flex items-center gap-2 rounded-full bg-tooltip px-4 py-2.5 text-[13px] font-medium text-on-tooltip shadow-e3 animate-in">
           <CircleCheck className="size-4 text-green" aria-hidden /> {x.text}
