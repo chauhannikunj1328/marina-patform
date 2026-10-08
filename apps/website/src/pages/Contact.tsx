@@ -1,21 +1,26 @@
 // Contact: the head office, each marina's dock office, and a message form.
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { CircleCheck, Mail, Phone } from "lucide-react";
 import { t } from "@marina/shared";
 import { useStore } from "@/data/store";
 import { SITE } from "@/components/Layout";
 import { Button, Card, Container, Field, Input, Notice, PageTitle, Select, Textarea, usePageTitle } from "@/components/ui";
 import { openMarinas } from "@/lib/marinas";
+import { contactMeta } from "@/lib/seo";
 
 const TOPICS = ["A booking", "A long-term contract", "An invoice or payment", "Something else"];
 const INQUIRIES_KEY = "marina.site.inquiries";
 
 export function Contact() {
   const { db, ix, owner } = useStore();
-  usePageTitle(t("Contact us"));
+  usePageTitle(t("Contact us"), contactMeta(db, window.location.origin));
   const marinas = openMarinas(db);
-  const [f, setF] = useState({ name: owner?.name ?? "", email: owner?.email ?? "", marinaId: "", topic: TOPICS[0], message: "" });
+  // Links like /contact?topic=contract&marina=m-gg (from Pricing and marina pages) fill the form in.
+  const [params] = useSearchParams();
+  const topic = params.get("topic") === "contract" ? TOPICS[1] : TOPICS[0];
+  const marinaParam = marinas.some((m) => m.id === params.get("marina")) ? params.get("marina")! : "";
+  const [f, setF] = useState({ name: owner?.name ?? "", email: owner?.email ?? "", marinaId: marinaParam, topic, message: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [sent, setSent] = useState<{ name: string; email: string } | null>(null);
   const set = (k: keyof typeof f, v: string) => setF((s) => ({ ...s, [k]: v }));

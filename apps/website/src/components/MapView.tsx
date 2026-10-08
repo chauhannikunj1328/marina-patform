@@ -190,7 +190,7 @@ export function MapView({
   const fitKey = fitOn ?? moved;
   const center: [number, number] = markers.length ? [markers[0].lat, markers[0].lng] : [39.5, -98.35];
   return (
-    <div role="region" aria-label={label} data-tint={theme === "dark" && !DARK ? "night" : "day"} className={`map-shell relative overflow-hidden rounded-[12px] border border-line${onPick ? " picking" : ""}`} style={{ height }}>
+    <div role="region" aria-label={label} data-tint={theme === "dark" && !DARK ? "night" : "day"} className={`map-shell relative isolate overflow-hidden rounded-[12px] border border-line${onPick ? " picking" : ""}`} style={{ height }}>
       <MapContainer center={center} zoom={markers.length ? zoom : 4} zoomControl={false} scrollWheelZoom={false} className="h-full w-full" attributionControl>
         <TileLayer key={theme} url={theme === "dark" && DARK ? DARK : LIGHT} attribution={ATTRIBUTION} maxZoom={19} />
         <ZoomControl position={isRtl() ? "topleft" : "topright"} zoomInTitle={t("Zoom in")} zoomOutTitle={t("Zoom out")} />

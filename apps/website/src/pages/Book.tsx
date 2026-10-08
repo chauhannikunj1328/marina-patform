@@ -11,6 +11,8 @@ import { SearchForm, defaultSearch } from "@/components/SearchForm";
 import { WaitlistDialog } from "@/components/WaitlistDialog";
 import { Badge, Button, ButtonLink, Card, Container, EmptyState, Field, Input, Notice, PageTitle, Select, flip, usePageTitle } from "@/components/ui";
 import { stateOf } from "@/lib/marinas";
+import { bookMeta } from "@/lib/seo";
+import { TrustPoints } from "@/components/Trust";
 
 const BOAT_TYPES: BoatType[] = ["Sailboat", "Motor Yacht", "Catamaran", "Center Console", "Trawler"];
 const SHOWN_PER_MARINA = 4;
@@ -22,13 +24,13 @@ function useSearch() {
   return { marina: params.get("marina") ?? "", start: params.get("start") ?? d.start, end: params.get("end") ?? d.end, length: params.get("length") ?? d.length };
 }
 
-function BerthRow({ berth, start, end, length }: { berth: Berth; start: string; end: string; length: string }) {
+function BerthRow({ berth, start, end, length, best }: { berth: Berth; start: string; end: string; length: string; best?: boolean }) {
   const { db } = useStore();
   const price = quote(db, berth, start, end);
   return (
     <li className="flex flex-wrap items-center justify-between gap-4 border-t border-line px-5 py-4">
       <div>
-        <p className="font-medium">{t("Berth {code}", { code: berth.code })} <span className="text-[13px] font-normal text-ink-3">· {t(berth.type)}</span></p>
+        <p className="flex flex-wrap items-center gap-2 font-medium">{t("Berth {code}", { code: berth.code })} <span className="text-[13px] font-normal text-ink-3">· {t(berth.type)}</span>{best && <Badge tone="success">{t("Lowest price")}</Badge>}</p>
         <p className="mt-1 flex flex-wrap gap-3 text-xs text-ink-3">
           <span className="inline-flex items-center gap-1"><Ruler className="size-3.5" aria-hidden />{t("Up to {ft} ft", { ft: berth.maxLength })}</span>
           {berth.power && <span className="inline-flex items-center gap-1"><Plug className="size-3.5" aria-hidden />{t("Power")}</span>}
@@ -48,7 +50,7 @@ function BerthRow({ berth, start, end, length }: { berth: Berth; start: string; 
 
 export function Book() {
   const { db, ix } = useStore();
-  usePageTitle(t("Book a berth"));
+  usePageTitle(t("Book a berth"), bookMeta(db, window.location.origin));
   const q = useSearch();
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [waitlist, setWaitlist] = useState(false);
@@ -61,13 +63,15 @@ export function Book() {
     return [...map.entries()].sort((a, b) => quote(db, a[1][0], q.start, q.end) - quote(db, b[1][0], q.start, q.end));
   }, [results, db, q.start, q.end]);
   const nights = daysBetween(q.start, q.end);
+  const cheapest = results.length ? results.reduce((a, b) => (quote(db, b, q.start, q.end) < quote(db, a, q.start, q.end) ? b : a)).id : undefined;
 
   return (
     <Container className="py-12">
       <PageTitle title={t("Book a berth")} intro={problem ? t("Choose your dates and boat length to see free berths.") : tn(nights, "{n} night, {from} to {to}, for a {ft} ft boat.", "{n} nights, {from} to {to}, for a {ft} ft boat.", { from: fmtDate(q.start), to: fmtDate(q.end), ft: q.length })} />
-      <Card className="mb-8 p-5 sm:p-6">
+      <Card className="mb-4 p-5 sm:p-6">
         <SearchForm key={`${q.marina}|${q.start}|${q.end}|${q.length}`} initial={q} compact />
       </Card>
+      <TrustPoints className="mb-8" />
       {problem ? (
         <Notice tone="warning">{t(problem)}</Notice>
       ) : byMarina.length === 0 ? (
@@ -87,7 +91,7 @@ export function Book() {
                   </div>
                   <Badge tone="success">{tn(berths.length, "{n} berth free", "{n} berths free")}</Badge>
                 </div>
-                <ul>{(open ? berths : berths.slice(0, SHOWN_PER_MARINA)).map((b) => <BerthRow key={b.id} berth={b} start={q.start} end={q.end} length={q.length} />)}</ul>
+                <ul>{(open ? berths : berths.slice(0, SHOWN_PER_MARINA)).map((b) => <BerthRow key={b.id} berth={b} start={q.start} end={q.end} length={q.length} best={b.id === cheapest} />)}</ul>
                 {berths.length > SHOWN_PER_MARINA && (
                   <button type="button" onClick={() => setExpanded((s) => ({ ...s, [marinaId]: !open }))} className="w-full border-t border-line px-5 py-3 text-[13px] font-semibold text-green-text hover:bg-row-hover cursor-pointer">
                     {open ? t("Show fewer") : tn(berths.length - SHOWN_PER_MARINA, "Show {n} more berth", "Show {n} more berths")}
@@ -223,6 +227,16 @@ export function Checkout() {
               <p className="mt-1 text-xs text-ink-3">{priceNote(start, end, db.settings.monthlyFromNights, db.settings.pricing)}</p>
               <p className="mt-3 text-xs text-ink-3">{t("Power, water and fuel you use are added to the invoice.")}</p>
             </div>
+          </Card>
+          <Card className="mt-4 p-6">
+            <h2 className="text-[15px] font-medium">{t("What happens next")}</h2>
+            <ol className="mt-3 space-y-2 text-[13px] leading-5 text-ink-2">
+              <li className="flex gap-2"><span className="num font-semibold text-ink">1.</span>{t("{marina} checks the berth is right for your boat and confirms, usually within one business day.", { marina: marina.name })}</li>
+              <li className="flex gap-2"><span className="num font-semibold text-ink">2.</span>{t("You get the invoice by email and in your account. Pay online or at the dock office.")}</li>
+              <li className="flex gap-2"><span className="num font-semibold text-ink">3.</span>{t("Check in at the dock office when you arrive.")}</li>
+            </ol>
+            <TrustPoints compact className="mt-4 flex-col" />
+            {marina.phone && <p className="mt-4 text-xs text-ink-3">{t("Questions? Call the dock office on {phone}.", { phone: marina.phone })}</p>}
           </Card>
         </aside>
       </div>

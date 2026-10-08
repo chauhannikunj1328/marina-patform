@@ -1,19 +1,21 @@
 // Home: find a berth, the marinas on a map, how booking works, and the owner portal.
 import { useNavigate } from "react-router-dom";
-import { Anchor, ArrowRight, CalendarCheck, CreditCard, FileSignature, Receipt, Search, Ship } from "lucide-react";
-import { CONTRACT_TERMS, marinaPoint, money, t } from "@marina/shared";
+import { Anchor, ArrowRight, CalendarCheck, ChevronDown, CreditCard, FileSignature, Receipt, Search, Ship } from "lucide-react";
+import { CONTACT, CONTRACT_TERMS, marinaPoint, money, t } from "@marina/shared";
 import { useStore } from "@/data/store";
 import { Map, type MapMarker } from "@/components/Map";
 import { MarinaCard } from "@/components/MarinaCard";
 import { SearchForm } from "@/components/SearchForm";
 import { GetTheApp } from "@/components/GetTheApp";
+import { TrustPoints } from "@/components/Trust";
 import { ButtonLink, Card, Container, Eyebrow, usePageTitle } from "@/components/ui";
 import { marinaFacts, openMarinas, stateOf } from "@/lib/marinas";
+import { faqs, homeMeta } from "@/lib/seo";
 
 export function Home() {
   const { db, ix, owner } = useStore();
   const nav = useNavigate();
-  usePageTitle();
+  usePageTitle(undefined, homeMeta(db, window.location.origin));
   const marinas = openMarinas(db);
   const states = [...new Set(marinas.map((m) => stateOf(db, m)))];
   const berths = db.berths.filter((b) => marinas.some((m) => m.id === b.marinaId)).length;
@@ -34,6 +36,7 @@ export function Home() {
           <Card className="mt-10 p-5 shadow-e2 sm:p-6">
             <SearchForm />
           </Card>
+          <TrustPoints className="mt-5" />
         </Container>
       </section>
 
@@ -127,6 +130,28 @@ export function Home() {
       </section>
 
       <GetTheApp />
+
+      <Container className="pt-16">
+        <section aria-labelledby="faq" className="grid gap-8 lg:grid-cols-[1fr_1.4fr]">
+          <div>
+            <Eyebrow>{t("Before you book")}</Eyebrow>
+            <h2 id="faq" className="text-[28px] leading-9 font-medium">{t("Questions people ask")}</h2>
+            <p className="mt-3 max-w-sm text-[15px] text-ink-2">{t("Still not sure? Call us on {phone} and we'll find you a berth.", { phone: CONTACT.phone })}</p>
+            <ButtonLink to="/book" variant="primary" icon={Search} className="mt-6">{t("Find a berth")}</ButtonLink>
+          </div>
+          <div className="divide-y divide-line rounded-[16px] border border-line">
+            {faqs(db).map((f) => (
+              <details key={f.q} className="group px-5 py-4 [&_summary::-webkit-details-marker]:hidden">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-[15px] font-medium">
+                  {f.q}
+                  <ChevronDown className="size-4 shrink-0 text-ink-3 transition-transform group-open:rotate-180" aria-hidden />
+                </summary>
+                <p className="mt-3 text-[13px] leading-6 text-ink-2">{f.a}</p>
+              </details>
+            ))}
+          </div>
+        </section>
+      </Container>
 
       <Container className="py-16">
         <Card className="flex flex-wrap items-center justify-between gap-6 p-8">

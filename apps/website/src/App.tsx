@@ -41,7 +41,7 @@ function Loading() {
 }
 
 function NotFound() {
-  usePageTitle(t("We couldn't find that page"));
+  usePageTitle(t("We couldn't find that page"), { description: t("It may have moved. Try the marinas list or the home page."), noindex: true });
   return (
     <Container className="py-16">
       <EmptyState title={t("We couldn't find that page")} body={t("It may have moved. Try the marinas list or the home page.")} action={<ButtonLink to="/" variant="primary">{t("Go to the home page")}</ButtonLink>} />

@@ -1,8 +1,9 @@
 // Website components, styled like the admin web app (Marina Brand to Product Handoff Guide v1).
 import { useEffect, useId, useRef, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from "react";
-import { Link, type LinkProps } from "react-router-dom";
+import { Link, useLocation, type LinkProps } from "react-router-dom";
 import { ArrowLeft, ArrowRight, ChevronDown, ChevronLeft, ChevronRight, CircleAlert, Inbox, X, type LucideIcon } from "lucide-react";
 import { cx, t } from "@marina/shared";
+import { applyHead, BRAND, DEFAULT_TITLE, isPrivate, type PageMeta } from "@/lib/seo";
 
 /** Icons that point along the reading direction; they're mirrored in Arabic. */
 const DIRECTIONAL = new Set<unknown>([ChevronLeft, ChevronRight, ArrowLeft, ArrowRight]);
@@ -61,15 +62,25 @@ export function IconButton({ icon: Icon, label, className, ...rest }: ButtonHTML
 
 // ---- Layout pieces -------------------------------------------------------------
 
-/** Sets the browser tab title, e.g. "Rates and fees · Marina". */
-export function usePageTitle(title?: string) {
+/**
+ * Sets the page's title, e.g. "Rates and fees · Marina", and the rest of its search metadata.
+ * Public pages pass their full metadata (description, structured data) from lib/seo; account,
+ * sign-in and checkout pages are kept out of search results.
+ */
+export function usePageTitle(title?: string, meta?: Omit<PageMeta, "path" | "title">) {
+  const { pathname, search } = useLocation();
+  const json = JSON.stringify(meta ?? null);
   useEffect(() => {
-    const previous = document.title;
-    document.title = title ? `${title} · Marina` : t("Marina · Book a berth online");
-    return () => {
-      document.title = previous;
-    };
-  }, [title]);
+    applyHead({
+      title: title ? `${title} · ${BRAND}` : t(DEFAULT_TITLE),
+      description: meta?.description ?? t("Book a berth online at marinas in California, Washington and Florida."),
+      path: pathname,
+      noindex: meta?.noindex || isPrivate(pathname, search),
+      jsonLd: meta?.jsonLd,
+    });
+    // `json` stands in for `meta`, which is a new object on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [title, json, pathname, search]);
 }
 
 export function Container({ className, children }: { className?: string; children: ReactNode }) {

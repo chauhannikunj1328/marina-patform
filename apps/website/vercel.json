@@ -3,5 +3,15 @@
   "framework": null,
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "rewrites": [
+    { "source": "/account", "destination": "/index.html" },
+    { "source": "/account/(.*)", "destination": "/index.html" },
+    { "source": "/book/checkout", "destination": "/index.html" },
+    { "source": "/sign-in", "destination": "/index.html" },
+    { "source": "/register", "destination": "/index.html" },
+    { "source": "/forgot-password", "destination": "/index.html" }
+  ],
+  "headers": [
+    { "source": "/(account|sign-in|register|forgot-password|book/checkout)(.*)", "headers": [{ "key": "X-Robots-Tag", "value": "noindex, follow" }] }
+  ]
 }

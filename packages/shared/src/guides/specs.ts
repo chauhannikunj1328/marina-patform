@@ -143,7 +143,7 @@ export const SHOTS: Partial<Record<GuideKey, (Shot | null)[]>> = {
     null,
   ],
   "s.book": [
-    { path: "/book?start=2027-03-10&end=2027-03-13&length=34", as: "visitor", boxes: [{ css: "form[role=search]" }, { css: "main ul li" }] },
+    { path: "/book?start=2027-03-10&end=2027-03-13&length=34", as: "visitor", boxes: [{ css: "form[role=search]" }, { css: "main ul li:has(a)" }] },
     { path: "/book?start=2027-03-10&end=2027-03-13&length=34", as: "visitor", boxes: [{ role: "link", name: "Book" }] },
     { path: "/book?start=2027-03-10&end=2027-03-13&length=150", as: "visitor", boxes: [{ role: "button", name: "Join the waitlist" }] },
     null,

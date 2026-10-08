@@ -4,8 +4,10 @@ import { Link } from "react-router-dom";
 import { addDays, CONTRACT_TERMS, DEFAULT_UTILITIES, money, money2, quote, RENEWAL_NOTICE_DAYS, SERVICES, t, today, type ContractTerm } from "@marina/shared";
 import { useStore } from "@/data/store";
 import { SearchForm } from "@/components/SearchForm";
-import { Card, Container, Field, Input, PageTitle, Select, usePageTitle } from "@/components/ui";
+import { Search } from "lucide-react";
+import { Badge, ButtonLink, Card, Container, Field, Input, PageTitle, Select, usePageTitle } from "@/components/ui";
 import { marinaFacts, openMarinas, termFee } from "@/lib/marinas";
+import { pricingMeta } from "@/lib/seo";
 
 /** Rough price for a stay: the cheapest berth the boat fits, at the marina's rules (not a booking). */
 function Estimate() {
@@ -41,14 +43,14 @@ function Estimate() {
 
 export function Pricing() {
   const { db } = useStore();
-  usePageTitle(t("Rates and fees"));
+  usePageTitle(t("Rates and fees"), pricingMeta(db, window.location.origin));
   const marinas = openMarinas(db);
   const utilities = db.settings.utilities ?? DEFAULT_UTILITIES;
   const rules = db.settings.pricing;
   const lowestMonthly = Math.min(...marinas.map((m) => marinaFacts(db, m.id).fromMonthly));
   return (
     <Container className="py-12">
-      <PageTitle title={t("Rates and fees")} intro={t("No booking fees. You pay for the nights you stay, plus anything you use at the dock.")} />
+      <PageTitle title={t("Rates and fees")} intro={t("No booking fees. You pay for the nights you stay, plus anything you use at the dock.")} actions={<ButtonLink to="/book" variant="primary" icon={Search}>{t("Check availability")}</ButtonLink>} />
 
       <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
         <section>
@@ -103,10 +105,11 @@ export function Pricing() {
             const term = CONTRACT_TERMS[k];
             return (
               <Card key={k} className={k === "annual" ? "border-accent-strong p-6" : "p-6"}>
-                <p className="text-[15px] font-medium">{t(term.label)}</p>
+                <p className="flex items-center justify-between gap-2 text-[15px] font-medium">{t(term.label)}{k === "annual" && <Badge tone="success">{t("Best value")}</Badge>}</p>
                 <p className="mt-4 text-[13px] text-ink-3">{t("from")} <span className="num text-[28px] font-medium text-ink">{money(termFee(lowestMonthly, k))}</span> {t("/month")}</p>
                 <p className="mt-3 text-[13px] text-ink-2">{term.discount ? t("{pct}% off the monthly rate", { pct: term.discount * 100 }) : t("The standard monthly rate")}</p>
                 <p className="mt-1 text-xs text-ink-3">{t("We'll remind you {n} days before it ends.", { n: RENEWAL_NOTICE_DAYS[k] })}</p>
+                <ButtonLink to="/contact?topic=contract" size="sm" variant={k === "annual" ? "primary" : "secondary"} className="mt-5">{t("Ask about a contract")}</ButtonLink>
               </Card>
             );
           })}

@@ -2,17 +2,20 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Droplets, Mail, MapPin, Navigation, Phone, Plug, Ruler } from "lucide-react";
-import { count, cx, directionsUrl, marinaPoint, money, t } from "@marina/shared";
+import { count, cx, directionsUrl, marinaPoint, money, t, tn } from "@marina/shared";
 import { useStore } from "@/data/store";
 import { Map, type MapMarker } from "@/components/Map";
 import { MarinaCard } from "@/components/MarinaCard";
 import { SearchForm } from "@/components/SearchForm";
 import { ButtonLink, Card, Container, EmptyState, Eyebrow, PageTitle, flip, usePageTitle } from "@/components/ui";
 import { marinaFacts, openMarinas, stateOf } from "@/lib/marinas";
+import { marinaMeta, marinasMeta } from "@/lib/seo";
+import { StickyCta } from "@/components/StickyCta";
+import { freeTonight, TrustPoints } from "@/components/Trust";
 
 export function Marinas() {
   const { db, ix } = useStore();
-  usePageTitle(t("Marinas"));
+  usePageTitle(t("Marinas"), marinasMeta(db, window.location.origin));
   const nav = useNavigate();
   const all = openMarinas(db);
   const states = [...new Set(all.map((m) => stateOf(db, m)))];
@@ -49,7 +52,8 @@ export function MarinaPage() {
   const { id = "" } = useParams();
   const { db, ix } = useStore();
   const marina = ix.marina(id);
-  usePageTitle(marina?.name);
+  const meta = marina && marina.status === "active" ? marinaMeta(db, window.location.origin, marina) : undefined;
+  usePageTitle(meta ? meta.title.replace(/ · Marina$/, "") : marina?.name, meta);
   if (!marina || marina.status !== "active")
     return (
       <Container className="py-16">
@@ -60,6 +64,7 @@ export function MarinaPage() {
   const f = marinaFacts(db, marina.id);
   const point = marinaPoint(marina, city);
   const monthlyFrom = db.settings.monthlyFromNights;
+  const free = freeTonight(db, marina.id);
   return (
     <>
       <section className="hero-bg border-b border-line">
@@ -68,9 +73,13 @@ export function MarinaPage() {
           <Eyebrow><span className="mt-6 block">{city?.name}, {t(stateOf(db, marina))}</span></Eyebrow>
           <h1 className="text-[36px] leading-[44px] font-medium tracking-[-0.01em] sm:text-[48px] sm:leading-[56px]">{marina.name}</h1>
           <p className="mt-3 text-[15px] text-ink-2">{t("{n} berths · boats up to {ft} ft · from {price} a night", { n: f.berths, ft: f.maxLength, price: money(f.fromDaily) })}</p>
+          {free > 0 && <p className="mt-3 inline-flex rounded-full bg-success-bg px-3 py-1 text-[13px] font-medium text-success-fg">{tn(free, "{n} berth free tonight", "{n} berths free tonight")}</p>}
           <Card className="mt-8 p-5 shadow-e2 sm:p-6">
-            <p className="mb-4 text-[15px] font-medium">{t("Check availability")}</p>
+            <div id="availability" className="scroll-mt-28 mb-4 flex flex-wrap items-baseline justify-between gap-2">
+              <p className="text-[15px] font-medium">{t("Check availability")}</p>
+            </div>
             <SearchForm initial={{ marina: marina.id }} lockMarina />
+            <TrustPoints compact className="mt-4" />
           </Card>
         </Container>
       </section>
@@ -141,11 +150,15 @@ export function MarinaPage() {
           <Card className="bg-promo p-6">
             <h2 className="text-[17px] font-medium text-ink">{t("Staying a season or longer?")}</h2>
             <p className="mt-2 text-[13px] leading-5 text-ink-2">{t("Monthly berths here start at {price}. Contracts of 6 or 12 months cost less per month.", { price: money(f.fromMonthly) })}</p>
-            <ButtonLink to="/pricing" size="sm" className="mt-4">{t("Rates and contracts")}</ButtonLink>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <ButtonLink to={`/contact?topic=contract&marina=${marina.id}`} variant="primary" size="sm">{t("Ask about a contract")}</ButtonLink>
+              <ButtonLink to="/pricing" size="sm">{t("Rates and contracts")}</ButtonLink>
+            </div>
           </Card>
           <p className="px-1 text-xs text-ink-3">{count(f.berths)} {t("berths in total")}</p>
         </aside>
       </Container>
+      <StickyCta price={money(f.fromDaily)} />
     </>
   );
 }

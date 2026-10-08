@@ -176,7 +176,7 @@ export function GuideButton() {
         type="button"
         onClick={() => setOpen(guideKey)}
         aria-label={t("Read the guide for this page")}
-        className="fixed bottom-4 left-1/2 z-40 inline-flex h-11 -translate-x-1/2 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-on-primary shadow-e3 transition-colors hover:bg-primary-hover cursor-pointer print:hidden"
+        className="fixed bottom-[calc(1rem+var(--cta-offset,0px))] left-1/2 z-40 inline-flex h-11 lg:bottom-4 -translate-x-1/2 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-on-primary shadow-e3 transition-colors hover:bg-primary-hover cursor-pointer print:hidden"
       >
         <BookOpen className="size-4" aria-hidden /> {t("Read")}
       </button>

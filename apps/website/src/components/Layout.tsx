@@ -68,6 +68,9 @@ function Header() {
           {NAV.map((n) => <NavLink key={n.to} to={n.to} className={link}>{t(n.label)}</NavLink>)}
         </nav>
         <div className="ms-auto flex items-center gap-1">
+          <a href={`tel:${SITE.phone.replace(/[^\d+]/g, "")}`} className="me-2 hidden items-center gap-2 text-sm font-medium text-ink-2 hover:text-ink lg:inline-flex">
+            <Phone className="size-4" aria-hidden /><bdi className="num">{SITE.phone}</bdi>
+          </a>
           <LanguageMenu />
           <IconButton icon={theme === "dark" ? Sun : Moon} label={theme === "dark" ? t("Light mode") : t("Dark mode")} onClick={toggleTheme} />
           <Link to={owner ? "/account" : "/sign-in"} className="hidden items-center gap-2 rounded-full px-3 py-2 text-sm font-medium text-ink-2 hover:text-ink sm:inline-flex">

@@ -120,6 +120,28 @@ A public site for visitors and an account area for boat owners, in English, Span
 - **Card payments** and **contract signatures** follow the same rules as the admin apps (`packages/shared/src/portal.ts`); the web app's Contracts page shows whether the owner has signed.
 - **Until there's a backend,** the website keeps its own copy of the sample data in the browser, so a booking made here doesn't reach the web or staff app. Payments are simulated (no card is charged) and contact messages are kept in the browser.
 
+### Search engines and link previews
+
+- **One HTML file per public page.** The site is a single-page app, so at build time `vite.config.ts` writes a static HTML file for Home, Marinas, every marina, Rates and fees, Contact and Book a berth, each with its own title, description, canonical URL, Open Graph and Twitter tags, and schema.org data (Organization, WebSite, FAQ, breadcrumbs, and a LocalBusiness for each marina with address, phone, map position, price range and amenities). Crawlers and link previews see these without running JavaScript; in the browser `usePageTitle` keeps the tags in step as people move around. The definitions are in `apps/website/src/lib/seo.ts`.
+- **`robots.txt` and `sitemap.xml`** are generated too. Account, sign-in, checkout and search-result pages are `noindex`. Unknown addresses return a real 404.
+- **The site's address** comes from `SITE_URL`, or from the production domain Vercel sets while building. Set `SITE_URL` in the Vercel project if you add a custom domain.
+- **Link preview image:** `apps/website/public/og-image.png` (1200 × 630).
+- The admin web app and the staff and customer app web previews send `X-Robots-Tag: noindex` so they stay out of search results (link previews still work).
+- Not done yet: Spanish and Arabic pages have no addresses of their own (the language is a setting), so search engines only see English. Adding `/es/` and `/ar/` paths with `hreflang` tags would let them rank in those languages.
+
+### Conversion
+
+The booking path keeps the next step visible and answers the usual worries before they stop a booking. Every claim is true to the booking rules, and availability is worked out from the bookings, never made up.
+
+- No booking fees, nothing to pay until the marina confirms, free to cancel before it's confirmed, usually confirmed within one business day: shown under the Home search, on each marina's availability search, on the results and at checkout.
+- "N free tonight" on marina cards and marina pages; "Lowest price" on the cheapest berth in the results.
+- Questions people ask (Home), with a call-us line and a search button; the booking office's number in the header on wide screens.
+- On phones, a bar pinned to the bottom of each marina page with the lowest price and Check availability.
+- Checkout explains what happens next and gives the dock office's number.
+- Rates and fees: Check availability at the top, Best value on the annual contract, and Ask about a contract buttons that open the contact form with the topic (and marina) filled in.
+
+Real customer reviews would be the next biggest lift; the site doesn't show any rather than invent them.
+
 ## Customer app (Marina Berths)
 
 A separate phone app for boat owners, in English, Spanish and Arabic (right to left), light and dark. It uses the same booking, payment and contract rules as the website's owner portal (`packages/shared/src/portal.ts`) and the same owner accounts. Visitors can look around and search without an account; they sign in (or sign up) when they book, and then go straight on to checkout.
