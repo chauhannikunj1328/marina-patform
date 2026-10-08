@@ -5,7 +5,7 @@ import { View } from "react-native";
 import { Redirect, router } from "expo-router";
 import { CircleCheck, Flag, ScanLine, ShieldCheck, TriangleAlert } from "lucide-react-native";
 import { PatrolSummary, useActivePatrol } from "@/components/patrol";
-import { fmtTime, nextId, patrolCheckpoints, type Patrol, type PatrolCheck } from "@marina/shared";
+import { fmtTime, nextId, patrolCheckpoints, type Patrol, type PatrolCheck, zoneOf } from "@marina/shared";
 import { ReportProblem } from "@/components/sheets";
 import { Badge, Button, Field, Input, Screen, Section, Sheet, StackHeader, Txt } from "@/components/ui";
 import { useMe, useStore } from "@/store";
@@ -63,7 +63,7 @@ export default function PatrolScreen() {
   const done = active.checks.length;
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
-      <StackHeader title={tr("Dock patrol")} subtitle={tr("Started {startedAt} · {done} of {n} checked", { startedAt: fmtTime(active.startedAt), done: done, n: points.length })} />
+      <StackHeader title={tr("Dock patrol")} subtitle={tr("Started {startedAt} · {done} of {n} checked", { startedAt: fmtTime(active.startedAt, zoneOf(active.marinaId)), done: done, n: points.length })} />
       <Screen>
         <View style={{ height: 8, borderRadius: 4, backgroundColor: t.surface3, overflow: "hidden", marginBottom: 16 }}>
           <View style={{ width: `${Math.round((done / points.length) * 100)}%`, height: "100%", backgroundColor: t.tealStrong }} />
@@ -77,7 +77,7 @@ export default function PatrolScreen() {
                 <View key={p.id} style={{ borderWidth: 1, borderColor: c && !c.ok ? t.status.maintenance.fg : t.border, borderRadius: 14, padding: 12, gap: 8, backgroundColor: t.surface }}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                     <Txt weight="medium" style={{ flex: 1 }}>{tr(p.label)}</Txt>
-                    {c ? (c.ok ? <Badge tone="success" icon={CircleCheck} label={c.scanned ? tr("Scanned {at}", { at: fmtTime(c.at) }) : tr("OK {at}", { at: fmtTime(c.at) })} /> : <Badge tone="maintenance" icon={TriangleAlert} label={tr("Issue")} />) : null}
+                    {c ? (c.ok ? <Badge tone="success" icon={CircleCheck} label={c.scanned ? tr("Scanned {at}", { at: fmtTime(c.at, zoneOf(active.marinaId)) }) : tr("OK {at}", { at: fmtTime(c.at, zoneOf(active.marinaId)) })} /> : <Badge tone="maintenance" icon={TriangleAlert} label={tr("Issue")} />) : null}
                   </View>
                   {c?.note ? <Txt v="bodySm" color={t.text2}>{c.note}</Txt> : null}
                   {!c && (

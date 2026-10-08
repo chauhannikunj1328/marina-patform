@@ -10,7 +10,7 @@
 // US marinas' bookings, invoices and staff exactly as they were.
 import type { Berth, BerthType, Boat, BoatOwner, BoatType, Booking, BookingStatus, City, Contract, County, InventoryItem, Invoice, MaintenancePlan, MaintenanceTask, Marina, MeterReading, Staff, SystemUser, TimeEntry } from "./types";
 import type { Db } from "./seed";
-import { addDays, daysBetween, fromISO, today } from "./date";
+import { addDays, daysBetween, fromISO, today, zonedTime } from "./date";
 import { bookingAmount } from "./pricing";
 import { SERVICES } from "./actions";
 import { SHIFT_START_HOUR } from "./shifts";
@@ -88,6 +88,8 @@ export function withGulf(db: Db): Db {
   const between = (a: number, b: number) => a + Math.floor(r() * (b - a + 1));
   const now = today();
   const currencyOf = (m: (typeof DEFS)[number]) => COUNTRIES[m.country].currency;
+  // Times at a marina are set in its local time: a 9 am shift starts at 9 am there.
+  const atMarina = (marinaId: string, day: string, minutes: number) => zonedTime(day, minutes, COUNTRIES[DEFS.find((m) => m.id === marinaId)!.country].timeZone).toISOString();
 
   const AMENITIES = ["Wi-Fi", "Shore power", "Fresh water", "Fuel dock", "Pump-out", "Showers", "Laundry", "Security", "Parking"];
   const marinas: Marina[] = DEFS.map((m) => ({
@@ -208,7 +210,7 @@ export function withGulf(db: Db): Db {
       const svc = pick([SERVICES[0], SERVICES[1], SERVICES[1], SERVICES[2], SERVICES[3]]);
       const qty = svc.unit === "gal" ? between(6, 30) * 5 : between(1, 3);
       const unitPrice = localPrice(svc.price, cur);
-      const at = new Date(fromISO(addDays(bk.start, between(0, Math.max(0, Math.min(daysBetween(bk.start, bk.end), daysBetween(bk.start, now)) - 1)))).getTime() + 10 * 3_600_000).toISOString();
+      const at = atMarina(berthById.get(bk.berthId)!.marinaId, addDays(bk.start, between(0, Math.max(0, Math.min(daysBetween(bk.start, bk.end), daysBetween(bk.start, now)) - 1))), 10 * 60);
       const amount = Math.round(qty * unitPrice * 1000) / 1000;
       invoice.lines = [{ label: svc.label, qty, unit: svc.unit, unitPrice, amount, at, by: "Fuel dock" }];
       invoice.amount = Math.round((invoice.amount + amount) * 1000) / 1000;
@@ -258,8 +260,7 @@ export function withGulf(db: Db): Db {
       if (st.daysOff.includes(fromISO(d).getDay())) continue;
       const startMin = SHIFT_START_HOUR[st.shift] * 60 - 10 + between(0, 15);
       const length = 8 * 60 + between(-20, st.position === "Marina Manager" ? 90 : 35);
-      const base = fromISO(d).getTime();
-      timeEntries.push({ id: `te-g${timeEntries.length + 1}`, staffId: st.id, marinaId: st.marinaId, start: new Date(base + startMin * 60_000).toISOString(), end: new Date(base + (startMin + length) * 60_000).toISOString() });
+      timeEntries.push({ id: `te-g${timeEntries.length + 1}`, staffId: st.id, marinaId: st.marinaId, start: atMarina(st.marinaId, d, startMin), end: atMarina(st.marinaId, d, startMin + length) });
     }
   }
 
@@ -289,7 +290,7 @@ export function withGulf(db: Db): Db {
   });
   const meterReadings: MeterReading[] = [];
   for (const b of berths) {
-    const at = new Date(fromISO(addDays(now, -between(20, 30))).getTime() + 9 * 3_600_000).toISOString();
+    const at = atMarina(b.marinaId, addDays(now, -between(20, 30)), 9 * 60);
     if (b.power) meterReadings.push({ id: `mr-g${meterReadings.length + 1}`, berthId: b.id, kind: "power", value: between(2000, 14000), at, by: "Dock team" });
     if (b.water) meterReadings.push({ id: `mr-g${meterReadings.length + 1}`, berthId: b.id, kind: "water", value: between(4000, 40000), at, by: "Dock team" });
   }

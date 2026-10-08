@@ -4,7 +4,7 @@ import { useState } from "react";
 import { ScrollView, View } from "react-native";
 import { Redirect } from "expo-router";
 import { History } from "lucide-react-native";
-import { fmtDate, fmtTime, localDay, today, addDays, type Activity } from "@marina/shared";
+import { fmtDate, fmtTime, localDay, today, addDays, type Activity, zoneOf } from "@marina/shared";
 import { Chip, EmptyState, Screen, SearchBox, StackHeader, Txt } from "@/components/ui";
 import { useRole } from "@/lib/role";
 import { useStore } from "@/store";
@@ -44,7 +44,7 @@ export default function ActivityLog() {
   const rows = inScope
     .filter((a) => (kind === "All" || kindOf(a) === kind) && (!who || a.by === who) && (!s || a.text.toLowerCase().includes(s)))
     .slice(0, 150);
-  const days = [...new Set(rows.map((a) => localDay(a.at)))];
+  const days = [...new Set(rows.map((a) => localDay(a.at, zoneOf(a.marinaId))))];
   const label = (d: string) => (d === today() ? tr("Today") : d === addDays(today(), -1) ? tr("Yesterday") : fmtDate(d));
 
   return (
@@ -66,9 +66,9 @@ export default function ActivityLog() {
             <View key={d} style={{ marginBottom: 16 }}>
               <Txt v="label" style={{ marginBottom: 8 }}>{label(d)}</Txt>
               <View style={{ borderWidth: 1, borderColor: t.border, borderRadius: 16, backgroundColor: t.surface, overflow: "hidden" }}>
-                {rows.filter((a) => localDay(a.at) === d).map((a, i) => (
+                {rows.filter((a) => localDay(a.at, zoneOf(a.marinaId)) === d).map((a, i) => (
                   <View key={a.id} style={{ flexDirection: "row", gap: 12, padding: 12, paddingHorizontal: 14, borderTopWidth: i ? 1 : 0, borderColor: t.border }}>
-                    <Txt v="caption" num color={t.text3} style={{ width: 58, marginTop: 2 }}>{fmtTime(a.at)}</Txt>
+                    <Txt v="caption" num color={t.text3} style={{ width: 58, marginTop: 2 }}>{fmtTime(a.at, zoneOf(a.marinaId))}</Txt>
                     <View style={{ flex: 1 }}>
                       <Txt v="bodySm">{tx(a.text)}</Txt>
                       <Txt v="caption" color={t.text3}>{tr(a.by)}{kindOf(a) !== "All" ? ` · ${tr(kindOf(a))}` : ""}</Txt>

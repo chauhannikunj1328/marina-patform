@@ -1,7 +1,7 @@
 // Shifts, time off, swaps and hours worked. Used by the staff app and the web Staff page.
 import type { Db } from "./seed";
 import type { Berth, Shift, Staff, StaffRequest, TimeEntry } from "./types";
-import { fromISO, toISO } from "./date";
+import { dayIn, fromISO, toISO, zoneOf } from "./date";
 import { getLang, locale } from "./i18n";
 
 export type DayPlan =
@@ -24,10 +24,10 @@ export function planFor(s: Staff, day: string, requests: StaffRequest[]): DayPla
 /** The open clock-in for someone, if they're on the clock. */
 export const openEntry = (db: Db, staffId: string): TimeEntry | undefined => db.timeEntries.find((e) => e.staffId === staffId && !e.end);
 
-/** Minutes worked in entries that started on or after `from` (ISO date) and before `to` (exclusive). */
+/** Minutes worked in entries that started on or after `from` (ISO date) and before `to` (exclusive), by the marina's calendar. */
 export function minutesWorked(entries: TimeEntry[], staffId: string, from: string, to: string, now = Date.now()): number {
   return entries
-    .filter((e) => e.staffId === staffId && localDay(e.start) >= from && localDay(e.start) < to)
+    .filter((e) => e.staffId === staffId && localDay(e.start, zoneOf(e.marinaId)) >= from && localDay(e.start, zoneOf(e.marinaId)) < to)
     .reduce((t, e) => t + Math.max(0, ((e.end ? Date.parse(e.end) : now) - Date.parse(e.start)) / 60_000), 0);
 }
 
@@ -39,13 +39,13 @@ export function fmtDuration(minutes: number): string {
   return h ? `${h} ${H}${m % 60 ? ` ${m % 60} ${M}` : ""}` : `${m} ${M}`;
 }
 
-/** "9:02 am" (or "09:02" in Spanish, "9:02 ص" in Arabic) in the device's clock. */
-export function fmtTime(iso: string): string {
-  return new Intl.DateTimeFormat(locale(), { hour: "numeric", minute: "2-digit", hourCycle: getLang() === "es" ? "h23" : "h12" }).format(new Date(iso)).replace(/AM|PM/, (m) => m.toLowerCase()).replace(/[\u202f\u00a0]/g, " ");
+/** "9:02 am" (or "09:02" in Spanish, "9:02 ص" in Arabic) in a time zone (e.g. zoneOf(marinaId)), or the device's clock. */
+export function fmtTime(iso: string, tz?: string): string {
+  return new Intl.DateTimeFormat(locale(), { hour: "numeric", minute: "2-digit", hourCycle: getLang() === "es" ? "h23" : "h12", timeZone: tz }).format(new Date(iso)).replace(/AM|PM/, (m) => m.toLowerCase()).replace(/[\u202f\u00a0]/g, " ");
 }
 
-/** Local calendar day of a date-time, as ISO date. */
-export const localDay = (iso: string) => toISO(new Date(iso));
+/** Calendar day of a date-time, as ISO date: in a time zone when given, otherwise the device's. */
+export const localDay = (iso: string, tz?: string) => (tz ? dayIn(iso, tz) : toISO(new Date(iso)));
 
 /** The shift someone works on a day: their own, or the colleague's they're covering. Undefined when not working. */
 export function shiftOn(s: Staff, day: string, requests: StaffRequest[], staff: Staff[]): Shift | undefined {

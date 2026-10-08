@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Linking, Pressable, Switch, View } from "react-native";
 import { router } from "expo-router";
 import { ChevronRight, CloudOff, ExternalLink, KeyRound, LogOut, Plus, UserRoundPen } from "lucide-react-native";
-import { addDays, weekday, LANGS, fmtDuration, fmtShort, fmtTime, fromISO, localDay, minutesWorked, planFor, SHIFT_HOURS, today, type StaffRequest } from "@marina/shared";
+import { addDays, weekday, LANGS, fmtDuration, fmtShort, fmtTime, fromISO, localDay, minutesWorked, planFor, SHIFT_HOURS, today, type StaffRequest, zoneOf } from "@marina/shared";
 import { Avatar, Badge, Button, Screen, Section, Txt, type Icon } from "@/components/ui";
 import { PasswordSheet, ProfileSheet, RequestSheet } from "@/components/me-sheets";
 import { useNow } from "@/lib/clock";
@@ -106,8 +106,8 @@ export default function Me() {
           <View style={{ borderWidth: 1, borderColor: t.border, borderRadius: 16, backgroundColor: t.surface }}>
             {entries.map((e, i) => (
               <View key={e.id} style={{ flexDirection: "row", alignItems: "center", padding: 12, paddingHorizontal: 16, borderTopWidth: i ? 1 : 0, borderColor: t.border }}>
-                <Txt v="bodySm" style={{ width: 92 }}>{localDay(e.start) === today() ? tr("Today") : `${weekday(new Date(e.start).getDay())} ${fmtShort(localDay(e.start))}`}</Txt>
-                <Txt v="bodySm" num color={t.text2} style={{ flex: 1 }}>{fmtTime(e.start)} – {e.end ? fmtTime(e.end) : "now"}</Txt>
+                <Txt v="bodySm" style={{ width: 92 }}>{localDay(e.start, zoneOf(e.marinaId)) === today() ? tr("Today") : `${weekday(fromISO(localDay(e.start, zoneOf(e.marinaId))).getDay())} ${fmtShort(localDay(e.start, zoneOf(e.marinaId)))}`}</Txt>
+                <Txt v="bodySm" num color={t.text2} style={{ flex: 1 }}>{fmtTime(e.start, zoneOf(e.marinaId))} – {e.end ? fmtTime(e.end, zoneOf(e.marinaId)) : "now"}</Txt>
                 <Txt v="bodySm" num weight="medium">{fmtDuration(((e.end ? Date.parse(e.end) : now) - Date.parse(e.start)) / 60_000)}</Txt>
               </View>
             ))}

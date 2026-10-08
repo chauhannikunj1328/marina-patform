@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { ArrowRight, ArrowUpRight, CircleCheck, Languages, Mail, Menu, Moon, Phone, Sun, UserRound, X } from "lucide-react";
-import { CONTACT, cx, LANGS, t } from "@marina/shared";
+import { cx, LANGS, mainOffice, officesFor, t, telLink } from "@marina/shared";
 import { useStore } from "@/data/store";
 import { useLang } from "@/lib/lang";
 import { useTheme } from "@/lib/theme";
@@ -12,9 +12,7 @@ import { withLang } from "@/lib/seo";
 import { Logo } from "./Logo";
 import { ButtonLink, Container, IconButton, flip } from "./ui";
 
-/** The company's own contact details (sample values until the real ones are set). */
-export const SITE = CONTACT;
-export const tel = (phone: string) => `tel:${phone.replace(/[^\d+]/g, "")}`;
+export const tel = telLink;
 
 const NAV = [
   { to: "/marinas", label: "Marinas" },
@@ -61,7 +59,7 @@ function Announcement() {
       <Container className="flex h-9 items-center justify-center gap-6 text-xs sm:justify-between">
         <p className="truncate"><span className="me-2 inline-block size-1.5 rounded-full bg-green align-middle" aria-hidden />{t("No booking fees. Nothing to pay until the marina confirms.")}</p>
         <div className="hidden items-center gap-5 sm:flex">
-          <a href={tel(SITE.phone)} className="inline-flex items-center gap-1.5 opacity-80 hover:opacity-100"><Phone className="size-3.5" aria-hidden /><bdi className="num">{SITE.phone}</bdi></a>
+          <a href={tel(mainOffice().phone)} className="inline-flex items-center gap-1.5 opacity-80 hover:opacity-100"><Phone className="size-3.5" aria-hidden /><bdi className="num">{mainOffice().phone}</bdi></a>
           <Link to="/#app" className="inline-flex items-center gap-1 font-medium underline-offset-4 hover:underline">{t("Get the app")}<ArrowUpRight className={cx("size-3.5", flip(ArrowUpRight))} aria-hidden /></Link>
         </div>
       </Container>
@@ -102,7 +100,7 @@ function Header() {
           <Container className="flex flex-col gap-1 py-3">
             {NAV.map((n) => <NavLink key={n.to} to={n.to} className={link(n.to)}>{t(n.label)}</NavLink>)}
             <NavLink to={owner ? "/account" : "/sign-in"} className={link(owner ? "/account" : "/sign-in")}>{owner ? t("My account") : t("Sign in")}</NavLink>
-            <a href={tel(SITE.phone)} className="flex items-center gap-2 rounded-full px-3.5 py-2 text-sm font-medium text-ink-2"><Phone className="size-4" aria-hidden /><bdi className="num">{SITE.phone}</bdi></a>
+            {officesFor().map((o) => <a key={o.id} href={tel(o.phone)} className="flex items-center gap-2 rounded-full px-3.5 py-2 text-sm font-medium text-ink-2"><Phone className="size-4" aria-hidden /><bdi className="num">{o.phone}</bdi><span className="text-xs font-normal text-ink-3">{t(o.region)}</span></a>)}
             <ButtonLink to="/book" variant="primary" className="mt-2">{t("Book a berth")}</ButtonLink>
           </Container>
         </nav>
@@ -126,7 +124,7 @@ function Footer() {
             <h2 className="mt-8 max-w-md text-[36px] leading-[44px] font-medium tracking-[-0.02em] sm:text-[44px] sm:leading-[52px]">{t("Questions about a berth? Talk to us.")}</h2>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link to="/contact" className="inline-flex h-11 items-center gap-2 rounded-full bg-on-footer px-5 text-sm font-semibold text-footer hover:opacity-90">{t("Contact us")}<ArrowRight className={cx("size-4", flip(ArrowRight))} aria-hidden /></Link>
-              <a href={tel(SITE.phone)} className="inline-flex h-11 items-center gap-2 rounded-full border border-footer-line px-5 text-sm font-semibold hover:bg-white/5"><Phone className="size-4" aria-hidden /><bdi className="num">{SITE.phone}</bdi></a>
+              <a href={tel(mainOffice().phone)} className="inline-flex h-11 items-center gap-2 rounded-full border border-footer-line px-5 text-sm font-semibold hover:bg-white/5"><Phone className="size-4" aria-hidden /><bdi className="num">{mainOffice().phone}</bdi></a>
             </div>
             <p className="text-label mt-12 text-on-footer-2">{t("Marinas in")}</p>
             <ul className="mt-3 flex flex-wrap gap-2">
@@ -136,11 +134,16 @@ function Footer() {
             </ul>
           </div>
           <div className="grid gap-10 sm:grid-cols-2">
-            <FooterCol title={t("Head office")}>
+            <FooterCol title={t("Booking offices")}>
               <span className="text-on-footer">{db.settings.company}</span>
-              <a href={tel(SITE.phone)} className="inline-flex items-center gap-2"><Phone className="size-4" aria-hidden /><bdi>{SITE.phone}</bdi></a>
-              <a href={`mailto:${SITE.email}`} className="inline-flex items-center gap-2 break-all"><Mail className="size-4 shrink-0" aria-hidden /><bdi>{SITE.email}</bdi></a>
-              <span>{t(SITE.hours)}</span>
+              {officesFor().map((o) => (
+                <span key={o.id} className="flex flex-col gap-1.5">
+                  <span className="text-xs text-on-footer-2">{t(o.region)}</span>
+                  <a href={tel(o.phone)} className="inline-flex items-center gap-2"><Phone className="size-4" aria-hidden /><bdi className="num">{o.phone}</bdi></a>
+                  <a href={`mailto:${o.email}`} className="inline-flex items-center gap-2 break-all"><Mail className="size-4 shrink-0" aria-hidden /><bdi>{o.email}</bdi></a>
+                  <span>{t(o.hours)}</span>
+                </span>
+              ))}
             </FooterCol>
             <FooterCol title={t("Book")}>
               <Link to="/book">{t("Book a berth")}</Link>

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Anchor, ArrowRight, BadgeCheck, CalendarCheck, ChevronDown, CircleCheck, FileSignature, Receipt, Search, Wallet } from "lucide-react";
-import { CONTACT, CONTRACT_TERMS, cx, ftM, lowestRate, marinaPoint, money, t, tn } from "@marina/shared";
+import { CONTRACT_TERMS, mainOffice, cx, ftM, lowestRate, marinaPoint, money, t, tn } from "@marina/shared";
 import { useStore } from "@/data/store";
 import { useReviews } from "@/data/reviews";
 import { Map, type MapMarker } from "@/components/Map";
@@ -327,7 +327,7 @@ function Faq() {
         <div>
           <Eyebrow>{t("Before you book")}</Eyebrow>
           <h2 id="faq" className="scroll-mt-24 text-[32px] leading-10 font-medium tracking-[-0.01em] sm:text-[40px] sm:leading-[48px]">{t("Questions people ask")}</h2>
-          <p className="mt-4 max-w-sm text-[15px] text-ink-2">{t("Still not sure? Call us on {phone} and we'll find you a berth.", { phone: CONTACT.phone })}</p>
+          <p className="mt-4 max-w-sm text-[15px] text-ink-2">{t("Still not sure? Call us on {phone} and we'll find you a berth.", { phone: mainOffice().phone })}</p>
           <ButtonLink to="/book" variant="primary" icon={Search} className="mt-6">{t("Find a berth")}</ButtonLink>
         </div>
         <div className="divide-y divide-line rounded-[20px] border border-line bg-surface">

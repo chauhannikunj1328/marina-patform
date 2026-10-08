@@ -4,7 +4,7 @@ import { useState } from "react";
 import { CircleCheck, Search as SearchIcon, ShieldAlert, Siren, TriangleAlert } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { useStore } from "@/data/store";
-import { tn, t, fmtDateTime, INCIDENT_LABEL, today, type Incident } from "@marina/shared";
+import { tn, t, fmtDateTime, INCIDENT_LABEL, today, type Incident, zoneOf } from "@marina/shared";
 import { Badge, Button, Card, EmptyState, Field, Modal, PageHeader, SearchInput, Select, StatCard, Table, Textarea, Toolbar } from "@/components/ui";
 
 const STATUS: Record<Incident["status"], { tone: "pending" | "info" | "success"; label: string }> = {
@@ -61,7 +61,7 @@ export function Incidents() {
                 <td className="whitespace-nowrap font-medium">{i.code}<span className="block text-xs font-normal text-ink-3">{t(INCIDENT_LABEL[i.kind])}</span>{i.serious && <Badge tone="cancelled" icon={TriangleAlert}>{t("Serious")}</Badge>}</td>
                 <td className="max-w-md">{i.description.length > 120 ? `${i.description.slice(0, 120)}…` : i.description}{(i.photos?.length ?? 0) > 0 && <span className="block text-xs text-ink-3">{tn(i.photos!.length, "{n} photo", "{n} photos")}</span>}</td>
                 <td>{ix.marina(i.marinaId)?.name}<span className="block text-xs text-ink-3">{i.berthId ? t("Berth {code}", { code: ix.berth(i.berthId)?.code }) : t("Not at a berth")}</span></td>
-                <td className="whitespace-nowrap">{fmtDateTime(i.reportedAt)}<span className="block text-xs text-ink-3">{t("by")} {i.reportedBy}</span></td>
+                <td className="whitespace-nowrap">{fmtDateTime(i.reportedAt, zoneOf(i.marinaId))}<span className="block text-xs text-ink-3">{t("by")} {i.reportedBy}</span></td>
                 <td><Badge tone={STATUS[i.status].tone}>{t(STATUS[i.status].label)}</Badge></td>
               </tr>
             ))}
@@ -106,13 +106,13 @@ function IncidentDetail({ incident, canEdit, onClose }: { incident: Incident; ca
       </div>
       <p className="mb-3 text-[13px] whitespace-pre-line">{i.description}</p>
       {i.people && <p className="mb-3 text-[13px]"><span className="text-ink-3">{t("People involved:")} </span>{i.people}</p>}
-      <p className="mb-4 text-xs text-ink-3">{t("Reported by")} {i.reportedBy}, {fmtDateTime(i.reportedAt)}</p>
+      <p className="mb-4 text-xs text-ink-3">{t("Reported by")} {i.reportedBy}, {fmtDateTime(i.reportedAt, zoneOf(i.marinaId))}</p>
       {(i.photos?.length ?? 0) > 0 && <div className="mb-4 flex flex-wrap gap-2">{i.photos!.map((p, k) => <a key={k} href={p} target="_blank" rel="noreferrer"><img src={p} alt={t("Photo {v}", { v: k + 1 })} className="h-24 w-24 rounded-md object-cover" /></a>)}</div>}
       {i.outcome && <div className="mb-4 rounded-md bg-surface-2 p-3 text-[13px]"><p className="text-xs text-ink-3">{t("Outcome")}</p><p>{i.outcome}</p></div>}
       <h3 className="mb-2 text-[13px] font-semibold">{t("Follow-up")}</h3>
       {i.notes.length === 0 ? <p className="mb-3 text-[13px] text-ink-3">{t("No notes yet.")}</p> : (
         <ol className="mb-3 space-y-3 border-s-2 border-line ps-4">
-          {i.notes.map((n, k) => <li key={k} className="text-[13px]"><p>{n.text}</p><p className="text-xs text-ink-3">{n.by} · {fmtDateTime(n.at)}</p></li>)}
+          {i.notes.map((n, k) => <li key={k} className="text-[13px]"><p>{n.text}</p><p className="text-xs text-ink-3">{n.by} · {fmtDateTime(n.at, zoneOf(i.marinaId))}</p></li>)}
         </ol>
       )}
       {canEdit && i.status !== "closed" && (

@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Pressable, View } from "react-native";
 import { router } from "expo-router";
 import { ChevronRight, Clock, LogIn, LogOut, Sailboat, ShieldAlert, Wrench } from "lucide-react-native";
-import { fmtDate, fmtDuration, fmtTime, planFor, prepChecklist, relative, SHIFT_HOURS, today, type Booking } from "@marina/shared";
+import { fmtDate, fmtDuration, fmtTime, planFor, prepChecklist, relative, SHIFT_HOURS, today, type Booking, zoneOf } from "@marina/shared";
 import { Badge, Button, Card, EmptyState, Screen, Section, Txt } from "@/components/ui";
 import { BookingSheet, CheckInSheet, useBookingStatus } from "@/components/sheets";
 import { HandoverList, HandoverSheet } from "@/components/handover";
@@ -86,7 +86,7 @@ export function StaffToday() {
           <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderColor: working ? "rgba(23,25,30,0.08)" : t.border }}>
             <Clock size={18} color={t.text2} />
             <Txt v="bodySm" color={t.text2} style={{ flex: 1 }}>
-              {entry ? <>{tr("On the clock since {time}", { time: fmtTime(entry.start) })} · <Txt v="bodySm" num weight="semibold">{fmtDuration((nowMs - Date.parse(entry.start)) / 60_000)}</Txt></> : tr("Not clocked in")}
+              {entry ? <>{tr("On the clock since {time}", { time: fmtTime(entry.start, zoneOf(entry.marinaId)) })} · <Txt v="bodySm" num weight="semibold">{fmtDuration((nowMs - Date.parse(entry.start)) / 60_000)}</Txt></> : tr("Not clocked in")}
             </Txt>
             {entry ? <Button size="sm" label={tr("Clock out")} onPress={() => { clockOut(); setHandover("clockout"); }} /> : <Button size="sm" variant="primary" label={tr("Clock in")} onPress={clockIn} />}
           </View>

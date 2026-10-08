@@ -4,7 +4,8 @@ import type {
   Berth, BerthType, Boat, BoatOwner, BoatType, Booking, BookingStatus, City, County,
   Activity, ChatMessage, Contract, Handover, Incident, InventoryItem, Invoice, MaintenancePlan, MeterReading, TimesheetApproval, Patrol, WaitlistEntry, MaintenanceTask, Marina, Message, Settings, Shift, Staff, StaffRequest, SystemUser, TimeEntry,
 } from "./types";
-import { addDays, daysBetween, fromISO, today } from "./date";
+import { addDays, daysBetween, fromISO, today, zonedTime } from "./date";
+import { marinaTimeZones } from "./selectors";
 import { bookingAmount } from "./pricing";
 import { DEFAULT_PERMISSIONS } from "./permissions";
 import { SHIFT_START_HOUR } from "./shifts";
@@ -234,6 +235,9 @@ export function createSeed(): Db {
   }
 
   const berthById = new Map(berths.map((b) => [b.id, b]));
+  // Times at a marina are set in its local time: a 9 am shift starts at 9 am there.
+  const zones = marinaTimeZones({ marinas, cities, counties });
+  const atMarina = (marinaId: string, day: string, minutes: number) => zonedTime(day, minutes, zones[marinaId]).toISOString();
   const invoices: Invoice[] = [];
   let inv = 1;
   for (const bk of bookings) {
@@ -263,7 +267,7 @@ export function createSeed(): Db {
     if (bk.start <= now && bk.start >= addDays(now, -100) && daysBetween(bk.start, bk.end) < 28 && r() < 0.35) {
       const svc = pick([SERVICES[0], SERVICES[0], SERVICES[1], SERVICES[2], SERVICES[3]]);
       const qty = svc.unit === "gal" ? between(4, 16) * 5 : between(1, 3);
-      const at = new Date(fromISO(addDays(bk.start, between(0, Math.max(0, Math.min(daysBetween(bk.start, bk.end), daysBetween(bk.start, now)) - 1)))).getTime() + 11 * 3_600_000).toISOString();
+      const at = atMarina(berthById.get(bk.berthId)!.marinaId, addDays(bk.start, between(0, Math.max(0, Math.min(daysBetween(bk.start, bk.end), daysBetween(bk.start, now)) - 1))), 11 * 60);
       const amount = Math.round(qty * svc.price * 100) / 100;
       last.lines = [{ label: svc.label, qty, unit: svc.unit, unitPrice: svc.price, amount, at, by: "Fuel dock" }];
       last.amount = Math.round((last.amount + amount) * 100) / 100;
@@ -376,7 +380,7 @@ export function createSeed(): Db {
     .map((b, i) => ({
       id: `a-${i + 1}`,
       // Entries from today are spaced back from the current time so none are in the future.
-      at: b.createdAt === now ? new Date(Date.now() - (i + 1) * 23 * 60_000).toISOString() : new Date(`${b.createdAt}T${String(18 - (i % 10)).padStart(2, "0")}:${String((i * 17) % 60).padStart(2, "0")}:00`).toISOString(),
+      at: b.createdAt === now ? new Date(Date.now() - (i + 1) * 23 * 60_000).toISOString() : new Date(Math.min(Date.parse(atMarina(berthById.get(b.berthId)!.marinaId, b.createdAt, (18 - (i % 10)) * 60 + ((i * 17) % 60))), Date.now() - (i + 1) * 23 * 60_000)).toISOString(),
       by: i % 3 === 0 ? "Online booking" : "Front desk",
       text: `New booking ${b.code} for ${boatName.get(b.boatId)} at ${marinaName.get(berthById.get(b.berthId)!.marinaId)}`,
       to: `/bookings?q=${b.code}`,
@@ -393,13 +397,12 @@ export function createSeed(): Db {
       if (st.daysOff.includes(fromISO(d).getDay())) continue;
       const startMin = SHIFT_START_HOUR[st.shift] * 60 - 10 + between(0, 15);
       const length = 8 * 60 + between(-20, st.position === "Marina Manager" ? 90 : 35);
-      const base = fromISO(d).getTime();
-      clockIns.push({ id: `te-x${clockIns.length + 1}`, staffId: st.id, marinaId: st.marinaId, start: new Date(base + startMin * 60_000).toISOString(), end: new Date(base + (startMin + length) * 60_000).toISOString() });
+      clockIns.push({ id: `te-x${clockIns.length + 1}`, staffId: st.id, marinaId: st.marinaId, start: atMarina(st.marinaId, d, startMin), end: atMarina(st.marinaId, d, startMin + length) });
     }
   }
 
   // Priya's clock-ins for the days she has already worked this week.
-  const at = (day: string, h: number, m: number) => new Date(fromISO(day).getTime() + (h * 60 + m) * 60_000).toISOString();
+  const at = (day: string, h: number, m: number) => atMarina(priya.marinaId, day, h * 60 + m);
   const timeEntries: TimeEntry[] = [];
   const weekStart = addDays(now, -fromISO(now).getDay());
   for (let d = weekStart; d < now; d = addDays(d, 1)) {
@@ -453,8 +456,8 @@ export function createSeed(): Db {
   // Last month's meter readings on serviced berths, as the starting point for this month's bills.
   const meterReadings: MeterReading[] = [];
   for (const b of berths) {
-    if (b.power) meterReadings.push({ id: `mr-${meterReadings.length + 1}`, berthId: b.id, kind: "power", value: between(1200, 9000), at: new Date(fromISO(addDays(now, -between(20, 30))).getTime() + 9 * 3_600_000).toISOString(), by: "Dock team" });
-    if (b.water) meterReadings.push({ id: `mr-${meterReadings.length + 1}`, berthId: b.id, kind: "water", value: between(4000, 40000), at: new Date(fromISO(addDays(now, -between(20, 30))).getTime() + 9 * 3_600_000).toISOString(), by: "Dock team" });
+    if (b.power) meterReadings.push({ id: `mr-${meterReadings.length + 1}`, berthId: b.id, kind: "power", value: between(1200, 9000), at: atMarina(b.marinaId, addDays(now, -between(20, 30)), 9 * 60), by: "Dock team" });
+    if (b.water) meterReadings.push({ id: `mr-${meterReadings.length + 1}`, berthId: b.id, kind: "water", value: between(4000, 40000), at: atMarina(b.marinaId, addDays(now, -between(20, 30)), 9 * 60), by: "Dock team" });
   }
 
   timeEntries.push(...clockIns);

@@ -3,7 +3,7 @@ import { useState } from "react";
 import { CalendarClock, Check, Clock, Download, MessagesSquare, Send, X } from "lucide-react";
 import { downloadCsv, downloadWorkbook } from "@/lib/csv";
 import { useStore } from "@/data/store";
-import { t, addDays, cx, weekday, fmtDateTime, fmtDuration, fmtShort, fmtTime, fromISO, hourlyRateOf, localDay, minutesWorked, money2, nextId, today, weeklyPay, type Staff, type StaffRequest } from "@marina/shared";
+import { t, addDays, cx, weekday, fmtDateTime, fmtDuration, fmtShort, fmtTime, fromISO, hourlyRateOf, localDay, minutesWorked, money2, nextId, today, weeklyPay, type Staff, type StaffRequest, zoneOf } from "@marina/shared";
 import { Avatar, Badge, Button, EmptyState, Select, Table, Tabs, Textarea } from "@/components/ui";
 
 function RequestStatus({ r }: { r: StaffRequest }) {
@@ -48,7 +48,7 @@ export function RequestsPanel({ staff, canEdit }: { staff: Staff[]; canEdit: boo
                     : <>{t("Shift swap")}<span className="block text-xs text-ink-3">{fmtShort(r.start)}, {t(s?.shift)} {t("shift ·")} {cover?.name} {t("covers")}</span></>}
                 </td>
                 <td className="max-w-64">{r.reason}</td>
-                <td className="whitespace-nowrap">{fmtDateTime(r.createdAt)}</td>
+                <td className="whitespace-nowrap">{fmtDateTime(r.createdAt, zoneOf(s?.marinaId))}</td>
                 <td><RequestStatus r={r} />{r.decidedBy && <span className="block text-xs text-ink-3">{t("by")} {r.decidedBy}</span>}</td>
                 <td className="whitespace-nowrap">
                   {canEdit && r.status === "pending" && (
@@ -74,7 +74,7 @@ export function HoursPanel({ staff, canEdit }: { staff: Staff[]; canEdit: boolea
   const weekEnd = addDays(start, 7);
   const over = weekEnd <= today();
   const days = Array.from({ length: 7 }, (_, i) => addDays(start, i));
-  const rows = staff.filter((s) => db.timeEntries.some((e) => e.staffId === s.id && localDay(e.start) >= start && localDay(e.start) < weekEnd));
+  const rows = staff.filter((s) => db.timeEntries.some((e) => e.staffId === s.id && localDay(e.start, zoneOf(e.marinaId)) >= start && localDay(e.start, zoneOf(e.marinaId)) < weekEnd));
   const minutes = (s: Staff) => minutesWorked(db.timeEntries, s.id, start, weekEnd);
   const approval = (s: Staff) => (db.timesheetApprovals ?? []).find((a) => a.staffId === s.id && a.weekStart === start);
   const total = rows.reduce((t, s) => t + minutes(s), 0);
@@ -133,9 +133,9 @@ export function HoursPanel({ staff, canEdit }: { staff: Staff[]; canEdit: boolea
                 <td><p className="font-medium">{s.name}</p><p className="text-xs text-ink-3">{t(s.position)} · {ix.marina(s.marinaId)?.name}</p>{live && <span className="mt-1 inline-block"><Badge tone="success">{t("On the clock since")} {fmtTime(live.start)}</Badge></span>}</td>
                 {days.map((d) => {
                   const m = minutesWorked(db.timeEntries, s.id, d, addDays(d, 1));
-                  const first = db.timeEntries.filter((e) => e.staffId === s.id && localDay(e.start) === d).sort((x, y) => x.start.localeCompare(y.start));
+                  const first = db.timeEntries.filter((e) => e.staffId === s.id && localDay(e.start, zoneOf(e.marinaId)) === d).sort((x, y) => x.start.localeCompare(y.start));
                   return (
-                    <td key={d} className={cx("num whitespace-nowrap", !m && "text-ink-3")} title={first.map((e) => `${fmtTime(e.start)} – ${e.end ? fmtTime(e.end) : "now"}`).join(", ")}>
+                    <td key={d} className={cx("num whitespace-nowrap", !m && "text-ink-3")} title={first.map((e) => `${fmtTime(e.start, zoneOf(e.marinaId))} – ${e.end ? fmtTime(e.end, zoneOf(e.marinaId)) : "now"}`).join(", ")}>
                       {m ? fmtDuration(m) : "–"}
                     </td>
                   );
@@ -214,7 +214,7 @@ export function MessagesPanel({ staff }: { staff: Staff[] }) {
             {msgs.map((m) => (
               <div key={m.id} className={cx("max-w-[75%]", m.fromStaff ? "self-start" : "self-end text-end")}>
                 <p className={cx("inline-block rounded-2xl px-3.5 py-2 text-start text-[13px]", m.fromStaff ? "border border-line bg-surface" : "bg-primary text-on-primary")}>{m.broadcast && <span className="block text-[11px] font-semibold opacity-80">{t("Announcement to everyone")}</span>}{m.text}</p>
-                <p className="mt-0.5 text-[11px] text-ink-3">{m.fromStaff ? "" : `${m.by} · `}{localDay(m.at) === today() ? fmtTime(m.at) : `${fmtShort(localDay(m.at))}, ${fmtTime(m.at)}`}{!m.fromStaff && m.read && t(" · Seen")}</p>
+                <p className="mt-0.5 text-[11px] text-ink-3">{m.fromStaff ? "" : `${m.by} · `}{localDay(m.at, zoneOf(current.marinaId)) === today() ? fmtTime(m.at, zoneOf(current.marinaId)) : `${fmtShort(localDay(m.at, zoneOf(current.marinaId)))}, ${fmtTime(m.at, zoneOf(current.marinaId))}`}{!m.fromStaff && m.read && t(" · Seen")}</p>
               </div>
             ))}
           </div>

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Gauge } from "lucide-react";
 import { useStore } from "@/data/store";
-import { t, DEFAULT_UTILITIES, fmtDateTime, lastReading, METER_UNIT, money2, roundMoney, utilityRates, withMeterReading, type Berth, type MeterKind } from "@marina/shared";
+import { t, DEFAULT_UTILITIES, fmtDateTime, lastReading, METER_UNIT, money2, roundMoney, utilityRates, withMeterReading, type Berth, type MeterKind, zoneOf } from "@marina/shared";
 import { Button, EmptyState, Field, Input, Modal, Table } from "@/components/ui";
 
 export function MetersPanel({ berths, canEdit }: { berths: Berth[]; canEdit: boolean }) {
@@ -16,7 +16,7 @@ export function MetersPanel({ berths, canEdit }: { berths: Berth[]; canEdit: boo
   const cell = (b: Berth, kind: MeterKind) => {
     if (!(kind === "power" ? b.power : b.water)) return <span className="text-ink-3">—</span>;
     const r = lastReading(db, b.id, kind);
-    return r ? <span className="num">{r.value.toLocaleString()} {METER_UNIT[kind]}<span className="block text-xs text-ink-3">{fmtDateTime(r.at)}</span></span> : <span className="text-xs text-ink-3">{t("No reading yet")}</span>;
+    return r ? <span className="num">{r.value.toLocaleString()} {METER_UNIT[kind]}<span className="block text-xs text-ink-3">{fmtDateTime(r.at, zoneOf(b.marinaId))}</span></span> : <span className="text-xs text-ink-3">{t("No reading yet")}</span>;
   };
   return (
     <div>
@@ -91,7 +91,7 @@ function ReadingForm({ berth, onClose }: { berth: Berth; onClose: () => void }) 
           const prev = lastReading(db, berth.id, k);
           const p = preview(k);
           return (
-            <Field key={k} label={t("{v} meter ({v2})", { v: k === "power" ? t("Power") : t("Water"), v2: METER_UNIT[k] })} hint={p ? t("{toLocaleString} {v} used · {amount}", { toLocaleString: p.usage.toLocaleString(), v: METER_UNIT[k], amount: money2(p.charge, rates.currency) }) : prev ? t("Last: {toLocaleString} on {at}", { toLocaleString: prev.value.toLocaleString(), at: fmtDateTime(prev.at) }) : t("First reading")} error={errors[k]}>
+            <Field key={k} label={t("{v} meter ({v2})", { v: k === "power" ? t("Power") : t("Water"), v2: METER_UNIT[k] })} hint={p ? t("{toLocaleString} {v} used · {amount}", { toLocaleString: p.usage.toLocaleString(), v: METER_UNIT[k], amount: money2(p.charge, rates.currency) }) : prev ? t("Last: {toLocaleString} on {at}", { toLocaleString: prev.value.toLocaleString(), at: fmtDateTime(prev.at, zoneOf(berth.marinaId)) }) : t("First reading")} error={errors[k]}>
               {(id) => <Input id={id} type="number" min={0} inputMode="numeric" value={values[k]} onChange={(e) => { setValues({ ...values, [k]: e.target.value }); setErrors({}); }} />}
             </Field>
           );

@@ -6,6 +6,10 @@ import { money, money2, moneyTotal, setCurrency } from "../src/format";
 import { delocalizeDb, localizeDb } from "../src/localize";
 import { lowestRate, marinaFacts } from "../src/marinas";
 import { utilityRates, withMeterReading } from "../src/actions";
+import { dayIn, setMarinaTimeZones, zonedTime } from "../src/date";
+import { marinaTimeZone, marinaTimeZones } from "../src/selectors";
+import { fmtTime, minutesWorked } from "../src/workforce";
+import { mainOffice, officesFor } from "../src/marinas";
 
 beforeAll(() => {
   vi.useFakeTimers();
@@ -103,5 +107,46 @@ describe("lengths", () => {
   it("show feet with metres", () => {
     expect(ftM(40)).toBe("40 ft (12.2 m)");
     expect(ftM(undefined)).toBe("");
+  });
+});
+
+describe("time zones", () => {
+  it("give each marina its local zone", () => {
+    const db = createSeed();
+    expect(marinaTimeZone(db, "m-dxm")).toBe("Asia/Dubai");
+    expect(marinaTimeZone(db, "m-jed")).toBe("Asia/Riyadh");
+    expect(marinaTimeZone(db, "m-mct")).toBe("Asia/Muscat");
+    expect(marinaTimeZone(db, "m-gg")).toBe("America/Los_Angeles");
+    const florida = db.marinas.find((m) => db.counties.find((c) => c.id === db.cities.find((x) => x.id === m.cityId)?.countyId)?.state === "Florida")!;
+    expect(marinaTimeZone(db, florida.id)).toBe("America/New_York");
+    expect(new Index(db).tz("m-dxm")).toBe("Asia/Dubai");
+  });
+
+  it("turn a wall-clock time at a marina into the right moment", () => {
+    expect(zonedTime("2026-10-08", 9 * 60, "Asia/Dubai").toISOString()).toBe("2026-10-08T05:00:00.000Z");
+    expect(zonedTime("2026-10-08", 9 * 60, "America/Los_Angeles").toISOString()).toBe("2026-10-08T16:00:00.000Z");
+    expect(zonedTime("2026-12-08", 9 * 60, "America/Los_Angeles").toISOString()).toBe("2026-12-08T17:00:00.000Z");
+    expect(dayIn("2026-10-08T22:30:00.000Z", "Asia/Dubai")).toBe("2026-10-09");
+    expect(fmtTime("2026-10-08T05:00:00.000Z", "Asia/Dubai")).toBe("9:00 am");
+  });
+
+  it("start the sample shifts at their local times, and count hours by the marina's day", () => {
+    const db = createSeed();
+    setMarinaTimeZones(marinaTimeZones(db));
+    const dubai = db.timeEntries.filter((e) => e.marinaId === "m-dxm");
+    // Day shifts start between 8:50 and 9:05 am Dubai time.
+    const starts = dubai.map((e) => fmtTime(e.start, "Asia/Dubai"));
+    expect(starts.some((s) => /^(8:5\d|9:0\d) am$/.test(s))).toBe(true);
+    const e = dubai[0];
+    const day = dayIn(e.start, "Asia/Dubai");
+    expect(minutesWorked(db.timeEntries, e.staffId, day, "9999-12-31")).toBeGreaterThan(0);
+  });
+});
+
+describe("booking offices", () => {
+  it("put the Gulf office first in Arabic", () => {
+    expect(officesFor("en")[0].id).toBe("us");
+    expect(officesFor("ar")[0].id).toBe("gulf");
+    expect(mainOffice("ar").phone).toBe("+971 4 555 0100");
   });
 });

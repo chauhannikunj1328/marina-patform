@@ -82,6 +82,8 @@ The sample data has **26 marinas**: 14 in the United States (California, Washing
 - **Lengths** are stored in feet and shown with metres ("40 ft (12.2 m)"). The boat length boxes show the metres as you type.
 - **Arabic names:** Gulf marinas, cities and emirates have Arabic names and addresses (`nameAr`, `addressAr`). The website and customer app show them in Arabic; the web and staff apps keep the English names that staff edit.
 - In Locations, a county's **Country** decides its marinas' currency; outside the US the country takes the place of the state.
+- **Time zones:** each marina keeps its local time: Pacific for California and Washington, Eastern for Florida, and Gulf time (UAE, Oman) or Arabia time (Saudi Arabia, Qatar, Bahrain, Kuwait) in the Gulf. Clock-ins, timesheets, patrols, meter readings, incidents, handovers, chat and activity at a marina show in its local time wherever the reader is, and each marina page shows its local time. Settings → **Head office time zone** is only for times not tied to a marina.
+- **Booking offices** (`OFFICES` in `marinas.ts`): San Francisco, +1 (415) 555-0100, for the US, and Dubai, +971 4 555 0100, for the Gulf, each with its own email and hours. The website and customer app list both, with the Gulf office first in Arabic.
 
 ## Deploying
 

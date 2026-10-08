@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Check, Minus, Plus, Trash } from "lucide-react";
 import { useStore } from "@/data/store";
 import type { Role } from "@marina/shared";
-import { tn, t, tx, ADMIN_ONLY, AREAS, DEFAULT_PERMISSIONS, LEVEL_LABEL, type Area, type Level } from "@marina/shared";
+import { tn, t, tx, ADMIN_ONLY, AREAS, DEFAULT_PERMISSIONS, LEVEL_LABEL, type Area, type Level, zoneOf } from "@marina/shared";
 import { Button, Card, CardHeader, ConfirmDialog, Field, IconButton, Input, Modal, PageHeader, Pagination, paginate, SearchInput, Select, Table, Textarea, Toolbar, useDirty } from "@/components/ui";
 import { Logomark } from "@/components/Logo";
 import { addDays, fmtDate, fmtDateTime, fmtShort, fromISO, nowInZone, today } from "@marina/shared";
@@ -115,7 +115,7 @@ function AuditLog() {
       <Table head={["When", "Who", "What", ""]} empty={rows.length === 0}>
         {pg.rows.map((a) => (
           <tr key={a.id}>
-            <td className="whitespace-nowrap align-top text-ink-2">{fmtDateTime(a.at)}</td>
+            <td className="whitespace-nowrap align-top text-ink-2">{fmtDateTime(a.at, zoneOf(a.marinaId))}</td>
             <td className="whitespace-nowrap align-top font-medium">{t(a.by)}</td>
             <td>
               {tx(a.text)}
@@ -478,7 +478,7 @@ export function Settings() {
             <div className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3">
               <Field label={t("Company name")} hint={t("Shown on invoices")} error={orgErrors.company}>{(id) => <Input id={id} value={org.company} onChange={(e) => setOrg({ ...org, company: e.target.value })} />}</Field>
               <Field label={t("Reporting currency")} hint={t("Totals across marinas are converted to it. Each marina charges in its own currency.")}>{(id) => <Select id={id} value={org.currency} onChange={(e) => setOrg({ ...org, currency: e.target.value as typeof org.currency })}>{CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}</Select>}</Field>
-              <Field label={t("Time zone")} hint={t("Times in the app show in this zone. Now: {nowInZone}", { nowInZone: nowInZone(org.timezone) })}>{(id) => <Select id={id} value={org.timezone} onChange={(e) => setOrg({ ...org, timezone: e.target.value })}><option value="America/Los_Angeles">{t("Pacific Time")}</option><option value="America/Denver">{t("Mountain Time")}</option><option value="America/Chicago">{t("Central Time")}</option><option value="America/New_York">{t("Eastern Time")}</option><option value="Asia/Dubai">{t("Gulf Time (UAE, Oman)")}</option><option value="Asia/Riyadh">{t("Arabia Time (Saudi Arabia, Qatar, Bahrain, Kuwait)")}</option></Select>}</Field>
+              <Field label={t("Head office time zone")} hint={t("Each marina's clock-ins and other times show in its own local time. This zone is for everything else. Now: {nowInZone}", { nowInZone: nowInZone(org.timezone) })}>{(id) => <Select id={id} value={org.timezone} onChange={(e) => setOrg({ ...org, timezone: e.target.value })}><option value="America/Los_Angeles">{t("Pacific Time")}</option><option value="America/Denver">{t("Mountain Time")}</option><option value="America/Chicago">{t("Central Time")}</option><option value="America/New_York">{t("Eastern Time")}</option><option value="Asia/Dubai">{t("Gulf Time (UAE, Oman)")}</option><option value="Asia/Riyadh">{t("Arabia Time (Saudi Arabia, Qatar, Bahrain, Kuwait)")}</option></Select>}</Field>
               <Field label={t("Invoice due after (days)")} hint={t("For invoices created from now on")} error={orgErrors.dueDays}>{(id) => <Input id={id} type="number" min={1} value={org.dueDays} onChange={(e) => setOrg({ ...org, dueDays: e.target.value })} />}</Field>
               <Field label={t("Monthly rate applies from (nights)")} hint={t("Shorter stays use the daily rate. Changes booking prices.")} error={orgErrors.monthlyFrom}>{(id) => <Input id={id} type="number" min={7} value={org.monthlyFrom} onChange={(e) => setOrg({ ...org, monthlyFrom: e.target.value })} />}</Field>
             </div>

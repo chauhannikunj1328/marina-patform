@@ -2,7 +2,7 @@
 import { Pressable, View } from "react-native";
 import { router } from "expo-router";
 import { ShieldCheck } from "lucide-react-native";
-import { fmtDateTime, type Patrol } from "@marina/shared";
+import { fmtDateTime, type Patrol, zoneOf } from "@marina/shared";
 import { useMe, useStore } from "../store";
 import { useTheme } from "../theme";
 import { Badge, Txt } from "./ui";
@@ -27,7 +27,7 @@ export function PatrolSummary({ patrol: p, total }: { patrol: Patrol; total: num
         <Txt v="bodySm" weight="semibold" style={{ flex: 1 }}>{p.by}</Txt>
         {issues.length ? <Badge tone="maintenance" label={tn(issues.length, "{n} issue", "{n} issues")} /> : <Badge tone="success" label={tr("All clear")} />}
       </View>
-      <Txt v="caption" color={t.text3}>{fmtDateTime(p.startedAt)} · {tr("{minutes} min · {done} of {total} checked", { minutes, done: p.checks.length, total })}</Txt>
+      <Txt v="caption" color={t.text3}>{fmtDateTime(p.startedAt, zoneOf(p.marinaId))} · {tr("{minutes} min · {done} of {total} checked", { minutes, done: p.checks.length, total })}</Txt>
       {issues.map((c) => c.note ? <Txt key={c.id} v="caption" color={t.text2}>• {c.note}</Txt> : null)}
     </View>
   );

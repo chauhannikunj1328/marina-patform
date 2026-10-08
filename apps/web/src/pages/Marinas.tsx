@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { Anchor, ArrowLeft, CalendarDays, CalendarPlus, DollarSign, Eye, Gauge, List, Mail, Map as MapIcon, MapPin, Navigation, Pencil, Phone, Plus, Trash, Warehouse } from "lucide-react";
+import { Anchor, ArrowLeft, CalendarDays, CalendarPlus, Clock, DollarSign, Eye, Gauge, List, Mail, Map as MapIcon, MapPin, Navigation, Pencil, Phone, Plus, Trash, Warehouse } from "lucide-react";
 import { nextId, useStore } from "@/data/store";
 import type { Berth, Marina } from "@marina/shared";
 import { BerthDetail } from "@/components/BerthDetail";
-import { t, count, directionsUrl, marinaPoint, money, pct, validPoint, ftM } from "@marina/shared";
+import { t, count, directionsUrl, marinaPoint, money, pct, validPoint, ftM, nowInZone } from "@marina/shared";
 import { MapView, type MapMarker } from "@/components/MapView";
 import { lastMonths, fmtShort } from "@marina/shared";
 import { Badge, Button, Card, CardHeader, ConfirmDialog, EmptyState, Field, IconButton, Input, Meter, Modal, PageHeader, SearchInput, Select, StatCard, Table, Toolbar, useDirty, useSort } from "@/components/ui";
@@ -344,6 +344,7 @@ export function MarinaDetail() {
             <dl className="space-y-3 p-5 text-[13px]">
               <div className="flex gap-3"><MapPin className="size-4 shrink-0 text-ink-3" aria-hidden /><span>{marina.address}, {city?.name}, {t(ix.county(city?.countyId ?? "")?.state)}</span></div>
               <div className="flex gap-3"><Phone className="size-4 shrink-0 text-ink-3" aria-hidden /><span>{marina.phone || t("No phone")}</span></div>
+              <div className="flex gap-3"><Clock className="size-4 shrink-0 text-ink-3" aria-hidden /><span>{t("Local time {time}", { time: nowInZone(ix.tz(marina.id)) })}</span></div>
               <div className="flex gap-3"><Mail className="size-4 shrink-0 text-ink-3" aria-hidden /><span className="break-all">{marina.email || t("No email")}</span></div>
               <div className="flex flex-wrap gap-1.5 pt-1">{marina.amenities.map((a) => <Badge key={a} tone="outline">{t(a)}</Badge>)}</div>
               <div className="pt-1"><ActiveBadge status={marina.status} /></div>

@@ -13,6 +13,21 @@ export function marinaCurrency(db: Pick<Db, "marinas" | "cities" | "counties">, 
   return COUNTRIES[county?.country ?? "US"].currency;
 }
 
+/** US states with marinas outside Pacific Time. Other states use Pacific Time. */
+const US_STATE_ZONES: Record<string, string> = { Florida: "America/New_York" };
+
+/** A marina's time zone: its state's in the US (Pacific, or Eastern for Florida), its country's elsewhere. */
+export function marinaTimeZone(db: Pick<Db, "marinas" | "cities" | "counties">, marinaId: string): string {
+  const m = db.marinas.find((x) => x.id === marinaId);
+  const city = db.cities.find((c) => c.id === m?.cityId);
+  const county = db.counties.find((c) => c.id === city?.countyId);
+  if (county?.country && county.country !== "US") return COUNTRIES[county.country].timeZone;
+  return US_STATE_ZONES[county?.state ?? ""] ?? COUNTRIES.US.timeZone;
+}
+
+/** Every marina's time zone, for setMarinaTimeZones. */
+export const marinaTimeZones = (db: Pick<Db, "marinas" | "cities" | "counties">) => Object.fromEntries(db.marinas.map((m) => [m.id, marinaTimeZone(db, m.id)]));
+
 export type BerthStatus = "available" | "occupied" | "reserved" | "maintenance";
 
 export const BLOCKING: Booking["status"][] = ["pending", "confirmed", "checked-in"];
@@ -22,9 +37,11 @@ export class Index {
   berthById: Map<string, Berth>;
   bookingsByBerth: Map<string, Booking[]>;
   currencyByMarina: Map<string, string>;
+  zoneByMarina: Map<string, string>;
   constructor(public db: Db) {
     this.berthById = new Map(db.berths.map((b) => [b.id, b]));
     this.currencyByMarina = new Map(db.marinas.map((m) => [m.id, marinaCurrency(db, m.id)]));
+    this.zoneByMarina = new Map(db.marinas.map((m) => [m.id, marinaTimeZone(db, m.id)]));
     this.bookingsByBerth = new Map();
     for (const bk of db.bookings) {
       const list = this.bookingsByBerth.get(bk.berthId) ?? [];
@@ -67,6 +84,8 @@ export class Index {
   get reporting(): string {
     return this.db.settings.currency;
   }
+  /** A marina's time zone. */
+  tz = (marinaId?: string) => this.zoneByMarina.get(marinaId ?? "") ?? this.db.settings.timezone;
   /** The currency a marina charges in. */
   cur = (marinaId?: string) => this.currencyByMarina.get(marinaId ?? "") ?? this.reporting;
   curOfBerth = (berthId: string) => this.cur(this.berth(berthId)?.marinaId);

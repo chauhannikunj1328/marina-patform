@@ -5,6 +5,7 @@ import type { Marina } from "./types";
 import { CONTRACT_TERMS } from "./actions";
 import { marinaCurrency } from "./selectors";
 import { convert } from "./countries";
+import { getLang, type Lang } from "./i18n";
 
 export interface MarinaFacts {
   berths: number;
@@ -56,8 +57,28 @@ export const stateOf = (d: Db, m: Marina) => d.counties.find((c) => c.id === d.c
 /** Monthly fee for a contract term after its discount. */
 export const termFee = (monthly: number, term: keyof typeof CONTRACT_TERMS) => Math.round(monthly * (1 - CONTRACT_TERMS[term].discount));
 
-/** The booking office customers contact (website footer, contact page and the customer app). */
-export const CONTACT = { email: "hello@marina.com", phone: "(415) 555-0100", hours: "Mon–Sat, 8 am – 6 pm" };
+/**
+ * The booking offices customers contact (website header, footer and contact page, and the
+ * customer app): San Francisco for the US marinas, Dubai for the Gulf. Hours are in each office's
+ * own time zone.
+ */
+export const OFFICES = [
+  { id: "us", region: "United States", phone: "+1 (415) 555-0100", email: "hello@marina.com", hours: "Mon–Sat, 8 am – 6 pm", timeZone: "America/Los_Angeles" },
+  { id: "gulf", region: "UAE and the Gulf", phone: "+971 4 555 0100", email: "gulf@marina.com", hours: "Sun–Thu, 8 am – 6 pm", timeZone: "Asia/Dubai" },
+] as const;
+export type Office = (typeof OFFICES)[number];
+
+/** The offices, the one most visitors in this language want first (the Gulf office in Arabic). */
+export const officesFor = (lang: Lang = getLang()): Office[] => (lang === "ar" ? [OFFICES[1], OFFICES[0]] : [OFFICES[0], OFFICES[1]]);
+
+/** The main booking office for the current language: where the header's phone number goes. */
+export const mainOffice = (lang: Lang = getLang()) => officesFor(lang)[0];
+
+/** A phone number as a tel: link. */
+export const telLink = (phone: string) => `tel:${phone.replace(/[^\d+]/g, "")}`;
+
+/** The company's general contact (the US office), for search engines' company details. */
+export const CONTACT = { email: OFFICES[0].email, phone: OFFICES[0].phone, hours: OFFICES[0].hours };
 
 /**
  * Where to download the Marina Berths customer app. Empty until the store listings are live: the

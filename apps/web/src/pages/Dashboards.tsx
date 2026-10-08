@@ -2,7 +2,7 @@
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Anchor, ArrowUpRight, CalendarDays, CalendarPlus, CircleAlert, DollarSign, Download, FileText, Gauge, LogIn, LogOut, Plus, Wrench } from "lucide-react";
 import { useStore } from "@/data/store";
-import { tn, t, tx, fmtDateTime, lastMonths } from "@marina/shared";
+import { tn, t, tx, fmtDateTime, lastMonths, zoneOf } from "@marina/shared";
 import { count, money, pct } from "@marina/shared";
 import { Button, Card, CardHeader, HighlightPill, Meter, PageHeader, Select, StatCard, Table } from "@/components/ui";
 import { MAX_SERIES, OccupancyChart, RevenueChart, RingChart } from "@/components/charts";
@@ -145,7 +145,7 @@ function RecentActivity() {
             const body = (
               <>
                 <p className="text-[13px]">{tx(a.text)}</p>
-                <p className="text-xs text-ink-3">{t(a.by)} · {fmtDateTime(a.at)}</p>
+                <p className="text-xs text-ink-3">{t(a.by)} · {fmtDateTime(a.at, zoneOf(a.marinaId))}</p>
               </>
             );
             return (

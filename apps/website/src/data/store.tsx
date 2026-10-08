@@ -2,7 +2,7 @@
 // backend), the signed-in boat owner, and short confirmation messages.
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
-  createSeed, DEMO_OWNER_EMAIL, delocalizeDb, Index, localizeDb, OWNER_PASSWORD_HASHES, setCurrency, setTimeZone, today, withDemoOwner, withMarinaPoints, withOwner,
+  createSeed, DEMO_OWNER_EMAIL, delocalizeDb, Index, localizeDb, OWNER_PASSWORD_HASHES, setCurrency, marinaTimeZones, setMarinaTimeZones, setTimeZone, today, withDemoOwner, withMarinaPoints, withOwner,
   type Boat, type BoatOwner, type Db,
 } from "@marina/shared";
 import { useLang } from "@/lib/lang";
@@ -88,6 +88,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   // Synchronous so the very first render already uses the right currency and time zone.
   setCurrency(db.settings.currency);
   setTimeZone(db.settings.timezone);
+  // Each marina's own time zone, for times at that marina.
+  setMarinaTimeZones(useMemo(() => marinaTimeZones(db), [db]));
 
   useEffect(() => {
     write(DATA_KEY, { day: today(), db });

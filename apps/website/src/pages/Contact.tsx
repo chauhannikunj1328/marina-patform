@@ -2,9 +2,8 @@
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { CircleCheck, Mail, Phone } from "lucide-react";
-import { t } from "@marina/shared";
+import { officesFor, t, telLink } from "@marina/shared";
 import { useStore } from "@/data/store";
-import { SITE } from "@/components/Layout";
 import { Button, Card, Container, Field, Input, Notice, PageHero, Select, Textarea, usePageTitle } from "@/components/ui";
 import { openMarinas } from "@/lib/marinas";
 import { contactMeta } from "@/lib/seo";
@@ -76,9 +75,14 @@ export function Contact() {
             <Card className="p-6">
               <h2 className="text-[17px] font-medium">{db.settings.company}</h2>
               <div className="mt-4 space-y-3 text-[13px]">
-                <a href={`tel:${SITE.phone.replace(/[^\d+]/g, "")}`} className="flex items-center gap-3 hover:underline"><Phone className="size-4 text-ink-3" aria-hidden /><bdi>{SITE.phone}</bdi></a>
-                <a href={`mailto:${SITE.email}`} className="flex items-center gap-3 hover:underline"><Mail className="size-4 text-ink-3" aria-hidden /><bdi>{SITE.email}</bdi></a>
-                <p className="text-ink-3">{t(SITE.hours)}</p>
+                {officesFor().map((o) => (
+                  <div key={o.id} className="space-y-2 border-t border-line pt-3 first:border-0 first:pt-0">
+                    <p className="font-medium">{t(o.region)}</p>
+                    <a href={telLink(o.phone)} className="flex items-center gap-3 hover:underline"><Phone className="size-4 text-ink-3" aria-hidden /><bdi className="num">{o.phone}</bdi></a>
+                    <a href={`mailto:${o.email}`} className="flex items-center gap-3 hover:underline"><Mail className="size-4 text-ink-3" aria-hidden /><bdi>{o.email}</bdi></a>
+                    <p className="text-ink-3">{t(o.hours)}</p>
+                  </div>
+                ))}
               </div>
             </Card>
             <Card className="p-6">

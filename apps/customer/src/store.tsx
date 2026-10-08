@@ -6,7 +6,7 @@ import { Platform } from "react-native";
 import * as Crypto from "expo-crypto";
 import NetInfo from "@react-native-community/netinfo";
 import {
-  createSeed, delocalizeDb, DEMO_OWNER_EMAIL, Index, localizeDb, OWNER_PASSWORD_HASHES, sendOwnerEmail, setCurrency, setTimeZone, today, withDemoOwner, withMarinaPoints, withOwner,
+  createSeed, delocalizeDb, DEMO_OWNER_EMAIL, Index, localizeDb, OWNER_PASSWORD_HASHES, sendOwnerEmail, setCurrency, marinaTimeZones, setMarinaTimeZones, setTimeZone, today, withDemoOwner, withMarinaPoints, withOwner,
   type Boat, type BoatOwner, type Db,
 } from "@marina/shared";
 import { load, remove, save } from "./lib/storage";
@@ -101,6 +101,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => NetInfo.addEventListener((s) => setOnline(s.isConnected !== false && s.isInternetReachable !== false)), []);
 
   setTimeZone(db.settings.timezone);
+  // Each marina's own time zone, for times at that marina.
+  setMarinaTimeZones(useMemo(() => marinaTimeZones(db), [db]));
   setCurrency(db.settings.currency);
   const { lang } = useLang();
   // Screens read the data with place names in the current language; changes go to the stored data.

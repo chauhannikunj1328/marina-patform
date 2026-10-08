@@ -2504,4 +2504,11 @@ export const ar: Record<string, Entry> = {
   "Oman": "عُمان",
   "Kuwait": "الكويت",
   "{n} marinas in {c} countries": "{n} مارينا في {c} دول",
+  "Call us · {region}": "اتصل بنا · {region}",
+  "Each marina's clock-ins and other times show in its own local time. This zone is for everything else. Now: {nowInZone}": "تظهر أوقات الحضور وغيرها في كل مارينا بتوقيتها المحلي. هذه المنطقة لكل ما عدا ذلك. الآن: {nowInZone}",
+  "Head office time zone": "المنطقة الزمنية للمكتب الرئيسي",
+  "Local time {time}": "التوقيت المحلي {time}",
+  "UAE and the Gulf": "الإمارات ودول الخليج",
+  "Sun–Thu, 8 am – 6 pm": "الأحد–الخميس، 8 ص – 6 م",
+  "Booking offices": "مكاتب الحجز",
 };

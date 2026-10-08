@@ -1,6 +1,6 @@
 import { useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { StoreContext } from "./context";
-import { withMarinaPoints, withRecurringTasks, diffDb, setTimeZone, today } from "@marina/shared";
+import { withMarinaPoints, withRecurringTasks, diffDb, marinaTimeZones, setMarinaTimeZones, setTimeZone, today } from "@marina/shared";
 import { setCurrency } from "@marina/shared";
 import { notifyOwner } from "@/lib/notify";
 import { DEFAULT_PERMISSIONS, levelFor, type Area, type Level } from "@marina/shared";
@@ -187,6 +187,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   // Synchronous so the very first render already uses the right currency.
   setCurrency(db.settings.currency);
   setTimeZone(db.settings.timezone);
+  // Each marina's own time zone, for times at that marina.
+  setMarinaTimeZones(useMemo(() => marinaTimeZones(db), [db]));
 
   const dismiss = useCallback((id: number) => setToasts((t) => t.filter((x) => x.id !== id)), []);
 

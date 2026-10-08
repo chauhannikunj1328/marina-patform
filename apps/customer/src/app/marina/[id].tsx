@@ -1,8 +1,8 @@
 // One marina: what it costs, its berth sizes, amenities and dock office, and checking availability.
 import { Linking, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { Droplets, Mail, MapPin, Phone, Plug, Ruler, Search } from "lucide-react-native";
-import { ftM, marinaFacts, money, stateOf } from "@marina/shared";
+import { Clock, Droplets, Mail, MapPin, Phone, Plug, Ruler, Search } from "lucide-react-native";
+import { ftM, marinaFacts, money, stateOf, nowInZone } from "@marina/shared";
 import { Button, Card, EmptyState, Section, StackHeader, Txt } from "@/components/ui";
 import { Body, MarinaActions } from "@/components/parts";
 import { useStore } from "@/store";
@@ -76,6 +76,7 @@ export default function MarinaScreen() {
             <View style={{ flexDirection: "row", gap: 8 }}><MapPin size={16} color={t.text3} /><Txt v="bodySm" style={{ flex: 1 }}>{marina.address}</Txt></View>
             <View style={{ flexDirection: "row", gap: 8 }}><Phone size={16} color={t.text3} /><Txt v="bodySm">{marina.phone}</Txt></View>
             <View style={{ flexDirection: "row", gap: 8 }}><Mail size={16} color={t.text3} /><Txt v="bodySm" style={{ flex: 1 }} >{marina.email}</Txt></View>
+            <View style={{ flexDirection: "row", gap: 8 }}><Clock size={16} color={t.text3} /><Txt v="bodySm">{tr("Local time {time}", { time: nowInZone(ix.tz(marina.id)) })}</Txt></View>
             <MarinaActions marina={marina} />
             <Button size="sm" variant="ghost" icon={Mail} label={tr("Email the dock office")} onPress={() => void Linking.openURL(`mailto:${marina.email}`)} />
           </Card>

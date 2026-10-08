@@ -5,7 +5,7 @@
 // don't run JavaScript) see the right title, description and image.
 //
 // Imports use a relative path so vite.config.ts can load this file too.
-import { CONTACT, CONTRACT_TERMS, getLang, LANGS, lowestRate, marinaFacts, marinaPoint, money, openMarinas, stateOf, t, type Db, type Lang, type Marina } from "../../../../packages/shared/src/index";
+import { CONTACT, CONTRACT_TERMS, getLang, LANGS, lowestRate, mainOffice, OFFICES, marinaFacts, marinaPoint, money, openMarinas, stateOf, t, type Db, type Lang, type Marina } from "../../../../packages/shared/src/index";
 
 export const BRAND = "Marina";
 export const DEFAULT_TITLE = "Book a berth online in the US, the UAE and the Gulf · Marina";
@@ -60,7 +60,7 @@ function organization(base: string) {
     logo: abs(base, "/icon-512.png"),
     email: CONTACT.email,
     telephone: CONTACT.phone,
-    contactPoint: [{ "@type": "ContactPoint", contactType: "reservations", telephone: CONTACT.phone, email: CONTACT.email, availableLanguage: ["English", "Spanish", "Arabic"] }],
+    contactPoint: OFFICES.map((o) => ({ "@type": "ContactPoint", contactType: "reservations", telephone: o.phone, email: o.email, areaServed: o.id === "us" ? "US" : ["AE", "SA", "QA", "BH", "OM", "KW"], availableLanguage: ["English", "Spanish", "Arabic"] })),
   };
 }
 
@@ -168,7 +168,7 @@ export function pricingMeta(db: Db, base: string): PageMeta {
 export function contactMeta(_db: Db, base: string): PageMeta {
   return {
     title: title(t("Contact us")),
-    description: t("Questions about a berth, a booking or an invoice? Call {phone}, email {email} or reach any dock office directly.", { phone: CONTACT.phone, email: CONTACT.email }),
+    description: t("Questions about a berth, a booking or an invoice? Call {phone}, email {email} or reach any dock office directly.", { phone: mainOffice().phone, email: mainOffice().email }),
     path: "/contact",
     jsonLd: [breadcrumbs(base, [[BRAND, "/"], [t("Contact us"), "/contact"]]), organization(base)],
   };

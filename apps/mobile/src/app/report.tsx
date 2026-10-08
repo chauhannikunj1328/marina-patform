@@ -3,7 +3,7 @@
 import { Share, View } from "react-native";
 import { Redirect } from "expo-router";
 import { Share2 } from "lucide-react-native";
-import { addDays, weekday, fmtDate, fmtDuration, fromISO, localDay, minutesWorked, money2, planFor, pct, today, type PaymentMethod } from "@marina/shared";
+import { addDays, weekday, fmtDate, fmtDuration, fromISO, localDay, minutesWorked, money2, planFor, pct, today, type PaymentMethod, zoneOf } from "@marina/shared";
 import { gapsOn } from "@/components/schedule";
 import { Button, Row, Screen, Section, Segmented, StackHeader, Txt } from "@/components/ui";
 import { useRole } from "@/lib/role";
@@ -36,15 +36,15 @@ export default function DayReport() {
   const payments = invoices.flatMap((i) => i.payments.filter((p) => p.date === day).map((p) => ({ ...p, amount: ix.invoiceToReporting(i, p.amount) })));
   const taken = payments.reduce((s, p) => s + p.amount, 0);
   const byMethod = (["Card", "Cash", "Check", "Bank transfer"] as PaymentMethod[]).map((m) => ({ m, n: payments.filter((p) => p.method === m).reduce((s, p) => s + p.amount, 0) })).filter((x) => x.n > 0);
-  const services = invoices.flatMap((i) => (i.lines ?? []).filter((l) => localDay(l.at) === day));
-  const servicesTotal = invoices.reduce((sum, i) => sum + (i.lines ?? []).filter((l) => localDay(l.at) === day).reduce((s, l) => s + ix.invoiceToReporting(i, l.amount), 0), 0);
+  const services = invoices.flatMap((i) => (i.lines ?? []).filter((l) => localDay(l.at, zoneOf(ix.marinaOfInvoice(i))) === day));
+  const servicesTotal = invoices.reduce((sum, i) => sum + (i.lines ?? []).filter((l) => localDay(l.at, zoneOf(ix.marinaOfInvoice(i))) === day).reduce((s, l) => s + ix.invoiceToReporting(i, l.amount), 0), 0);
   const tasks = db.tasks.filter((x) => inIds.has(x.marinaId));
   const done = tasks.filter((x) => x.doneAt === day);
   const reported = tasks.filter((x) => x.created === day);
   const urgentOpen = tasks.filter((x) => x.priority === "high" && x.status !== "done");
   const staff = db.staff.filter((s) => inIds.has(s.marinaId));
   const minutes = staff.reduce((sum, s) => sum + minutesWorked(db.timeEntries, s.id, day, next), 0);
-  const clockedIn = staff.filter((s) => db.timeEntries.some((e) => e.staffId === s.id && localDay(e.start) === day)).length;
+  const clockedIn = staff.filter((s) => db.timeEntries.some((e) => e.staffId === s.id && localDay(e.start, zoneOf(e.marinaId)) === day)).length;
   // Everything due on the next day, including boats that have already arrived or left by now.
   const arriving = bookings.filter((b) => b.start === next && b.status !== "cancelled");
   const leaving = bookings.filter((b) => b.end === next && b.status !== "cancelled");

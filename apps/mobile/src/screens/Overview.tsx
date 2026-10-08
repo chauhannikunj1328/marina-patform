@@ -2,7 +2,7 @@
 import { Pressable, View } from "react-native";
 import { router } from "expo-router";
 import { CalendarCheck, CircleAlert, Clock, FileText, Receipt, ScanLine, TriangleAlert, UsersRound, Warehouse, Wrench } from "lucide-react-native";
-import { fmtDate, fmtDateTime, lastMonths, money, moneyShort, openEntry, pct, today , tx , tn } from "@marina/shared";
+import { fmtDate, fmtDateTime, lastMonths, money, moneyShort, openEntry, pct, today , tx , tn, zoneOf } from "@marina/shared";
 import { AlertRow, Kpi, List, MarinaRow, MiniBars } from "@/components/office";
 import { Button, Screen, Section, Txt } from "@/components/ui";
 import { useRole } from "@/lib/role";
@@ -94,7 +94,7 @@ export function Overview() {
               <Clock size={16} color={t.text3} style={{ marginTop: 3 }} />
               <View style={{ flex: 1 }}>
                 <Txt v="bodySm">{tx(a.text)}</Txt>
-                <Txt v="caption" color={t.text3}>{tr(a.by)} · {fmtDateTime(a.at)}</Txt>
+                <Txt v="caption" color={t.text3}>{tr(a.by)} · {fmtDateTime(a.at, zoneOf(a.marinaId))}</Txt>
               </View>
             </View>
           ))}

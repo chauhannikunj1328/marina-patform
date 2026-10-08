@@ -5,7 +5,7 @@ import { Linking, Pressable, ScrollView, View } from "react-native";
 import { router } from "expo-router";
 import { CalendarCog, ChevronRight, Mail, MessageSquare, Phone, TrendingDown, TrendingUp } from "lucide-react-native";
 import {
-  addDays, DAYS, fmtDuration, fmtMonth, fmtTime, fromISO, minutesWorked, moneyShort, openEntry, pct, planFor, SHIFT_HOURS, today, type Staff,
+  addDays, DAYS, fmtDuration, fmtMonth, fmtTime, fromISO, minutesWorked, moneyShort, openEntry, pct, planFor, SHIFT_HOURS, today, type Staff, zoneOf,
 } from "@marina/shared";
 import { useStore } from "../store";
 import { flipRtl, useTheme } from "../theme";
@@ -133,7 +133,7 @@ export function StaffSheet({ staff, onClose }: { staff: Staff; onClose: () => vo
       footer={<Button variant="primary" size="lg" icon={MessageSquare} label={tr("Message {v}", { v: s.name.split(" ")[0] })} onPress={() => { onClose(); router.push({ pathname: "/chat", params: { staff: s.id } }); }} />}
     >
       <View style={{ flexDirection: "row", gap: 8, marginBottom: 16 }}>
-        {entry ? <Badge tone="success" label={tr("On the clock since {start}", { start: fmtTime(entry.start) })} /> : s.status === "on-leave" ? <Badge tone="neutral" label={tr("On leave")} /> : planFor(s, today(), db.requests).working ? <Badge tone="pending" label={tr("Not clocked in")} /> : <Badge tone="outline" label={tr("Off today")} />}
+        {entry ? <Badge tone="success" label={tr("On the clock since {start}", { start: fmtTime(entry.start, zoneOf(entry.marinaId)) })} /> : s.status === "on-leave" ? <Badge tone="neutral" label={tr("On leave")} /> : planFor(s, today(), db.requests).working ? <Badge tone="pending" label={tr("Not clocked in")} /> : <Badge tone="outline" label={tr("Off today")} />}
       </View>
       <Row label={tr("Shift")} value={`${tr(s.shift)} · ${tr(SHIFT_HOURS[s.shift])}`} sub={s.department} />
       <Row label={tr("This week")} value={tr("{time} worked", { time: fmtDuration(minutesWorked(db.timeEntries, s.id, start, addDays(start, 7))) })} sub={week.map((d, i) => (planFor(s, d, db.requests).working ? DAYS[i] : null)).filter(Boolean).join(", ") || tr("Not working")} />

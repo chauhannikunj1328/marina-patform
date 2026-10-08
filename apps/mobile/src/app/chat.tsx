@@ -5,7 +5,7 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View 
 import { Redirect, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MessagesSquare, SendHorizontal } from "lucide-react-native";
-import { fmtShort, fmtTime, localDay, nextId, today } from "@marina/shared";
+import { fmtShort, fmtTime, localDay, nextId, today, zoneOf } from "@marina/shared";
 import { EmptyState, StackHeader, Txt } from "@/components/ui";
 import { useMe, useStore } from "@/store";
 import { fonts, useTheme } from "@/theme";
@@ -64,8 +64,8 @@ export default function Chat() {
           {thread.length === 0 && <EmptyState icon={MessagesSquare} title={tr("No messages yet")} body={office ? tr("Your message shows up in {v}'s app.", { v: me.name.split(" ")[0] }) : tr("Questions about shifts, boats or repairs go straight to your manager.")} />}
           {thread.map((m, i) => {
             const mine = !theirs(m);
-            const day = localDay(m.at);
-            const newDay = i === 0 || localDay(thread[i - 1].at) !== day;
+            const day = localDay(m.at, zoneOf(me?.marinaId));
+            const newDay = i === 0 || localDay(thread[i - 1].at, zoneOf(me?.marinaId)) !== day;
             return (
               <View key={m.id}>
                 {newDay && <Txt v="caption" color={t.text3} style={{ textAlign: "center", marginVertical: 8 }}>{day === today() ? tr("Today") : fmtShort(day)}</Txt>}
@@ -75,7 +75,7 @@ export default function Chat() {
                     <Txt color={mine ? t.onPrimary : t.text}>{m.text}</Txt>
                   </View>
                   <Txt v="caption" color={t.text3} style={{ marginTop: 2, textAlign: mine ? "right" : "left" }}>
-                    {mine && !office ? "" : `${m.by.split(" ")[0]} · `}{fmtTime(m.at)}{mine && m.read ? tr(" · Seen") : ""}
+                    {mine && !office ? "" : `${m.by.split(" ")[0]} · `}{fmtTime(m.at, zoneOf(me?.marinaId))}{mine && m.read ? tr(" · Seen") : ""}
                   </Txt>
                 </View>
               </View>

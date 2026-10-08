@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { View } from "react-native";
 import { NotebookPen } from "lucide-react-native";
-import { fmtDateTime, nextId } from "@marina/shared";
+import { fmtDateTime, nextId, zoneOf } from "@marina/shared";
 import { useNow } from "../lib/clock";
 import { useMe, useStore } from "../store";
 import { useTheme } from "../theme";
@@ -27,7 +27,7 @@ export function HandoverList({ marinaIds, empty }: { marinaIds: string[]; empty?
       {notes.map((h) => (
         <View key={h.id} style={{ borderRadius: 16, padding: 14, backgroundColor: t.accentSoft, gap: 4 }}>
           <Txt>{h.text}</Txt>
-          <Txt v="caption" color={t.text2}>{h.by}{h.shift ? `, ${tr("{shift} shift", { shift: tr(h.shift) })}` : ""} · {fmtDateTime(h.at)}{marinaIds.length > 1 ? ` · ${ix.marina(h.marinaId)?.name}` : ""}</Txt>
+          <Txt v="caption" color={t.text2}>{h.by}{h.shift ? `, ${tr("{shift} shift", { shift: tr(h.shift) })}` : ""} · {fmtDateTime(h.at, zoneOf(h.marinaId))}{marinaIds.length > 1 ? ` · ${ix.marina(h.marinaId)?.name}` : ""}</Txt>
         </View>
       ))}
     </View>

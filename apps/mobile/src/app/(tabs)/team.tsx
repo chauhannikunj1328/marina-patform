@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Pressable, View } from "react-native";
 import { router } from "expo-router";
 import { Clock, Megaphone, MessagesSquare, Users } from "lucide-react-native";
-import { addDays, fmtDateTime, fmtDuration, fmtShort, fmtTime, localDay, patrolCheckpoints, fromISO, minutesWorked, openEntry, planFor, today, type Staff } from "@marina/shared";
+import { addDays, fmtDateTime, fmtDuration, fmtShort, fmtTime, localDay, patrolCheckpoints, fromISO, minutesWorked, openEntry, planFor, today, type Staff, zoneOf } from "@marina/shared";
 import { List, StaffSheet } from "@/components/office";
 import { BroadcastSheet, WeekSchedule } from "@/components/schedule";
 import { HandoverList } from "@/components/handover";
@@ -44,7 +44,7 @@ export default function Team() {
   const clocked = staff.filter((s) => openEntry(db, s.id));
   const working = staff.filter((s) => !openEntry(db, s.id) && planFor(s, day, db.requests).working);
   const off = staff.filter((s) => !openEntry(db, s.id) && !planFor(s, day, db.requests).working);
-  const patrolsToday = (db.patrols ?? []).filter((p) => ids.includes(p.marinaId) && localDay(p.startedAt) === day).sort((a, b) => b.startedAt.localeCompare(a.startedAt));
+  const patrolsToday = (db.patrols ?? []).filter((p) => ids.includes(p.marinaId) && localDay(p.startedAt, zoneOf(p.marinaId)) === day).sort((a, b) => b.startedAt.localeCompare(a.startedAt));
   const covering = (s: Staff) => {
     const p = planFor(s, day, db.requests);
     return p.working && !!p.covering;
@@ -79,7 +79,7 @@ export default function Team() {
           )}
           <Section title={tr("On the clock")} count={clocked.length}>
             {clocked.length === 0 ? <Txt v="bodySm" color={t.text3}>{tr("Nobody has clocked in yet.")}</Txt> : (
-              <List>{clocked.map((s, i) => <PersonRow key={s.id} s={s} first={i === 0} onPress={() => setOpen(s)} right={<Badge tone="success" label={tr("Since {start}", { start: fmtTime(openEntry(db, s.id)!.start) })} />} />)}</List>
+              <List>{clocked.map((s, i) => <PersonRow key={s.id} s={s} first={i === 0} onPress={() => setOpen(s)} right={<Badge tone="success" label={tr("Since {start}", { start: fmtTime(openEntry(db, s.id)!.start, zoneOf(s.marinaId)) })} />} />)}</List>
             )}
           </Section>
           <Section title={tr("Scheduled, not clocked in")} count={working.length}>
@@ -116,7 +116,7 @@ export default function Team() {
                   <View style={{ flex: 1 }}>
                     <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 8 }}>
                       <Txt weight={n ? "semibold" : "medium"} numberOfLines={1} style={{ flex: 1 }}>{s.name}</Txt>
-                      <Txt v="caption" color={t.text3}>{fmtDateTime(last.at)}</Txt>
+                      <Txt v="caption" color={t.text3}>{fmtDateTime(last.at, zoneOf(s.marinaId))}</Txt>
                     </View>
                     <Txt v="bodySm" color={n ? t.text : t.text3} numberOfLines={1}>{last.fromStaff ? "" : tr("You: ")}{last.text}</Txt>
                   </View>

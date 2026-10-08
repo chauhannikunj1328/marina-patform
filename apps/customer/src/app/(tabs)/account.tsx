@@ -4,7 +4,7 @@ import { Linking, Pressable, View } from "react-native";
 import { router } from "expo-router";
 import Constants from "expo-constants";
 import { FileSignature, LogIn, LogOut, Mail, MapPin, Phone, Ship, UserRoundPen } from "lucide-react-native";
-import { CONTACT, LANGS, today } from "@marina/shared";
+import { LANGS, officesFor, telLink, today } from "@marina/shared";
 import { Avatar, Badge, Button, Card, Section, Txt } from "@/components/ui";
 import { ListRow, Page } from "@/components/parts";
 import { useStore } from "@/store";
@@ -33,6 +33,7 @@ export default function Account() {
   const { t, mode, setMode } = useTheme();
   const tr = useTr();
   const { lang, setLang } = useLang();
+  const offices = officesFor(lang);
   const { db, owner, signOut, toast } = useStore();
   const now = today();
   const toSign = owner ? db.contracts.filter((c) => c.ownerId === owner.id && c.status === "active" && c.end > now && !c.signed).length : 0;
@@ -83,10 +84,12 @@ export default function Account() {
 
       <Section title={tr("Help")}>
         <Group>
-          <ListRow icon={Phone} label={tr("Call us")} value={CONTACT.phone} onPress={() => void Linking.openURL(`tel:${CONTACT.phone.replace(/[^\d+]/g, "")}`)} />
-          <ListRow icon={Mail} label={tr("Email us")} onPress={() => void Linking.openURL(`mailto:${CONTACT.email}`)} last />
+          {offices.map((o) => (
+            <ListRow key={o.id} icon={Phone} label={tr("Call us · {region}", { region: tr(o.region) })} value={o.phone} onPress={() => void Linking.openURL(telLink(o.phone))} />
+          ))}
+          <ListRow icon={Mail} label={tr("Email us")} value={offices[0].email} onPress={() => void Linking.openURL(`mailto:${offices[0].email}`)} last />
         </Group>
-        <Txt v="caption" color={t.text3}>{tr(CONTACT.hours)}</Txt>
+        {offices.map((o) => <Txt key={o.id} v="caption" color={t.text3}>{tr(o.region)}: {tr(o.hours)}</Txt>)}
       </Section>
 
       {owner && <Button size="lg" icon={LogOut} label={tr("Sign out")} onPress={() => { signOut(); toast(tr("You're signed out")); }} />}

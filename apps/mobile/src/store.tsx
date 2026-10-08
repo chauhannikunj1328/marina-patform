@@ -5,7 +5,7 @@ import { AppState, Platform } from "react-native";
 import * as Crypto from "expo-crypto";
 import NetInfo from "@react-native-community/netinfo";
 import { withMarinaPoints, withRecurringTasks, t, tn,
-  BUILT_IN_USERS, createSeed, DEFAULT_PERMISSIONS, diffDb, Index, levelFor, nextId, PASSWORD_HASHES, sendOwnerEmail, SIGN_IN_ERROR, setCurrency, setTimeZone, today,
+  BUILT_IN_USERS, createSeed, DEFAULT_PERMISSIONS, diffDb, Index, levelFor, nextId, PASSWORD_HASHES, sendOwnerEmail, SIGN_IN_ERROR, setCurrency, marinaTimeZones, setMarinaTimeZones, setTimeZone, today,
   type Area, type Db, type Level, type SystemUser,
 } from "@marina/shared";
 import { load, remove, save } from "./lib/storage";
@@ -145,6 +145,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [outbox]);
 
   setTimeZone(db.settings.timezone);
+  // Each marina's own time zone, for times at that marina.
+  setMarinaTimeZones(useMemo(() => marinaTimeZones(db), [db]));
   setCurrency(db.settings.currency);
   const ix = useMemo(() => new Index(db), [db]);
   const user = db.users.find((u) => u.id === userId) ?? null;

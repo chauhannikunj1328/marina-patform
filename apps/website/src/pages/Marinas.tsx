@@ -1,7 +1,7 @@
 // All marinas (by state, with a map) and one marina's page: berths, rates, amenities and contact.
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Droplets, Mail, MapPin, Navigation, Phone, Plug, Ruler } from "lucide-react";
-import { count, cx, directionsUrl, marinaPoint, money, t, tn, ftM } from "@marina/shared";
+import { ArrowLeft, Clock, Droplets, Mail, MapPin, Navigation, Phone, Plug, Ruler } from "lucide-react";
+import { count, cx, directionsUrl, marinaPoint, money, t, tn, ftM, nowInZone } from "@marina/shared";
 import { useStore } from "@/data/store";
 import { Map, type MapMarker } from "@/components/Map";
 import { MarinaCard } from "@/components/MarinaCard";
@@ -160,6 +160,7 @@ export function MarinaPage() {
             <dl className="mt-4 space-y-3 text-[13px]">
               <div className="flex gap-3"><MapPin className="size-4 shrink-0 text-ink-3" aria-hidden /><span>{marina.address}, {city?.name}, {t(stateOf(db, marina))}</span></div>
               {marina.phone && <div className="flex gap-3"><Phone className="size-4 shrink-0 text-ink-3" aria-hidden /><a href={`tel:${marina.phone.replace(/[^\d+]/g, "")}`} className="hover:underline"><bdi>{marina.phone}</bdi></a></div>}
+              <div className="flex gap-3"><Clock className="size-4 shrink-0 text-ink-3" aria-hidden /><span>{t("Local time {time}", { time: nowInZone(ix.tz(marina.id)) })}</span></div>
               {marina.email && <div className="flex gap-3"><Mail className="size-4 shrink-0 text-ink-3" aria-hidden /><a href={`mailto:${marina.email}`} className="break-all hover:underline"><bdi>{marina.email}</bdi></a></div>}
             </dl>
             {point && (
