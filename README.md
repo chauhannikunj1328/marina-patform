@@ -11,7 +11,8 @@ This is a **front-end prototype**. Each app runs on its own with generated sampl
 | `apps/web` | Admin and manager web app | Admins, marina managers | React, Vite, Tailwind | Vercel project `marina-patform` (this repo's root `vercel.json`) |
 | `apps/mobile` | Marina app: splash → sign in → tabs for the person's role | Staff, marina managers, admins | React Native (Expo SDK 57, expo-router) | App Store and Google Play (EAS Build); optional web preview on its own Vercel project |
 | `apps/website` | Public website and boat-owner portal | Visitors, boat owners | React, Vite, Tailwind | Its own Vercel project (Root Directory `apps/website`) |
-| `packages/shared` | Data types, sample data, calculations, permissions, booking rules, brand tokens and styles, demo accounts | All three apps | Plain TypeScript, no dependencies | Bundled into each app |
+| `apps/customer` | **Marina Berths**, the customer app: find and book berths, bookings, invoices, contracts, boats | Boat owners, visitors | React Native (Expo SDK 57, expo-router) | App Store and Google Play (EAS Build); optional web preview on its own Vercel project |
+| `packages/shared` | Data types, sample data, calculations, permissions, booking rules, brand tokens and styles, demo accounts | All the apps | Plain TypeScript, no dependencies | Bundled into each app |
 | `brand/` | Logo SVGs and the brand handoff guide | Design | | |
 
 Each app has its own `package.json` and `node_modules`, so they install, build and deploy separately. They import `@marina/shared` straight from source (a Vite alias on the web, Metro `watchFolders` on mobile), so every number is calculated the same way everywhere.
@@ -45,6 +46,15 @@ npm run dev:website
 
 Opens on http://localhost:5174 if 5173 is taken by the web app.
 
+**Customer app (Marina Berths)**
+
+```bash
+npm --prefix apps/customer install
+npm run dev:customer
+```
+
+Same as the staff app: Expo Go, a simulator, or `npm run web:customer` for a browser on http://localhost:8082.
+
 ### Demo accounts
 
 | Role | App | Email | Password |
@@ -52,7 +62,7 @@ Opens on http://localhost:5174 if 5173 is taken by the web app.
 | Admin (all marinas) | Web and mobile | admin@marina.com | admin123 |
 | Marina manager (4 San Francisco Bay marinas) | Web and mobile | manager@marina.com | manager123 |
 | Staff, dock hand (Golden Gate and Bay Harbor) | Mobile | staff@marina.com | staff123 |
-| Boat owner (with a contract, invoices and stays) | Website owner portal | owner@marina.com | owner123 |
+| Boat owner (with a contract, invoices and stays) | Website owner portal and customer app | owner@marina.com | owner123 |
 
 Staff who sign in to the web app are asked to use the mobile app instead. The mobile sign-in screen has Admin, Manager and Staff demo buttons (prototype only).
 
@@ -65,7 +75,8 @@ Changes you make are saved on that device until midnight; then fresh sample data
 - **Web app:** pushes to `main` deploy automatically to https://marina-patform.vercel.app. The root `vercel.json` installs and builds `apps/web`.
 - **Mobile app in the stores:** from `apps/mobile`, run `npx eas-cli build --profile production --platform all`, then `npx eas-cli submit`. This needs an Expo account, an Apple Developer account and a Google Play developer account. `--profile preview` builds an Android APK you can install directly for testing.
 - **Public website:** create a Vercel project from this repo with **Root Directory** set to `apps/website`. Its `vercel.json` builds the site and serves `dist`.
-- **Mobile app web preview (optional):** create a second Vercel project from this repo with **Root Directory** set to `apps/mobile`. Its `vercel.json` runs `expo export` and serves `dist`.
+- **Customer app in the stores:** the same EAS steps, run from `apps/customer` (its own name, bundle id `com.marina.berths` and store listings). Once the listings are live, paste their links into `CUSTOMER_APP` in `packages/shared/src/marinas.ts`: the website's "Get the app" buttons switch from "Coming soon" to real links.
+- **Mobile app web preview (optional):** create a second Vercel project from this repo with **Root Directory** set to `apps/mobile`. Its `vercel.json` runs `expo export` and serves `dist`. The customer app works the same way with **Root Directory** `apps/customer`.
 
 ## Web app
 
@@ -97,7 +108,7 @@ A public site for visitors and an account area for boat owners, in English, Span
 
 | Page | Route | What works |
 |---|---|---|
-| Home | `/` | Berth search, marinas on a map, how booking works, owner portal |
+| Home | `/` | Berth search, marinas on a map, how booking works, owner portal, **Get the app** (App Store and Google Play buttons, shown as "Coming soon" until the store links are set) |
 | Marinas | `/marinas`, `/marinas/:id` | Filter by state, map; each marina's berth sizes and rates, amenities, dock office contact, directions, availability search |
 | Rates and fees | `/pricing` | Rates by marina, a price estimator, how prices are worked out (monthly rate from 28 nights, any weekend, season and long-stay rules from Settings › Pricing), contract terms and discounts, dock extras, how to pay |
 | Contact | `/contact` | Head office and every dock office; a message form |
@@ -108,6 +119,20 @@ A public site for visitors and an account area for boat owners, in English, Span
 - **Bookings made online** are requests (`pending`), exactly like the front desk's: the berth is held, and the web app's Bookings page approves and invoices them. They're logged as "Online booking".
 - **Card payments** and **contract signatures** follow the same rules as the admin apps (`packages/shared/src/portal.ts`); the web app's Contracts page shows whether the owner has signed.
 - **Until there's a backend,** the website keeps its own copy of the sample data in the browser, so a booking made here doesn't reach the web or staff app. Payments are simulated (no card is charged) and contact messages are kept in the browser.
+
+## Customer app (Marina Berths)
+
+A separate phone app for boat owners, in English, Spanish and Arabic (right to left), light and dark. It uses the same booking, payment and contract rules as the website's owner portal (`packages/shared/src/portal.ts`) and the same owner accounts. Visitors can look around and search without an account; they sign in (or sign up) when they book, and then go straight on to checkout.
+
+| Tab or screen | What works |
+|---|---|
+| Home | Visitors: what the app does, the marinas, how booking works. Owners: the stay now or next (call the dock office, directions), what's owed, contracts to sign, waitlist requests, recent bookings |
+| Book, results, checkout | Any marina or one, arrival day, nights and boat; free berths that fit, cheapest marina first, with the exact price; checkout with the owner's boat (or a new one), people on board and the berth rules; join a full marina's waitlist |
+| Bookings | Upcoming, past and cancelled; details, call, directions, the invoice, cancel a request the marina hasn't confirmed |
+| Invoices | What's owed; each invoice or receipt with its lines and payments; pay in full or in part (simulated, no card is charged) |
+| Account | Profile and password, boats (add and edit), contracts (read and sign), all marinas with rates and amenities, language, appearance, call or email the office, sign out |
+
+Like the other apps it keeps its own copy of the sample data until there's a backend, so a booking made in the app doesn't reach the website or the web app yet.
 
 ## Mobile app
 
@@ -204,7 +229,7 @@ How it's put together:
 
 ## Languages
 
-Both apps run in **English** (default), **Spanish** and **Arabic**. Switch from the language button in the web app's top bar, or **Me → Language** on the phone; the choice is remembered.
+Every app runs in **English** (default), **Spanish** and **Arabic**. Switch from the language button in the web app's and website's top bar, **Me → Language** in the staff app, or **Account → Language** in the customer app; the choice is remembered.
 
 - **Arabic reads right to left:** the layout is mirrored (sidebar and tab order on the right, arrows and chevrons flipped, chart axes reversed) and text uses **IBM Plex Sans Arabic**. Numbers stay in Western digits (0–9), and codes, emails, phone numbers and amounts keep reading left to right.
 - Dates, times, currency and plurals follow the language (Arabic has its own forms for 1, 2, 3–10 and 11+).
@@ -248,6 +273,7 @@ apps/
   web/          Vite app: src/pages (one file per area), src/components, src/data/store.tsx
   mobile/       Expo app: src/app (screens and routes), src/components, src/store.tsx, assets/
   website/      Vite app: public site and boat-owner portal (src/pages, src/pages/account)
+  customer/     Expo app for boat owners (Marina Berths): src/app (tabs and screens), src/components, src/store.tsx
 tools/
   guide-shots/  takes the page guides' screenshots in every language
 packages/
@@ -262,4 +288,4 @@ brand/          logo SVGs and the brand guide
 - Scheduled report emails are saved but not sent
 - Card payments in the app (Stripe Terminal / Tap to Pay); staff record payments taken on the marina's card reader
 - Payments (Stripe) and real email/SMS delivery: reminders, invites and booking emails are recorded in the system and the audit log, but not actually sent
-- Owner portal against a real backend: today bookings, payments and signatures made on the website stay in that browser
+- Owner portal and customer app against a real backend: today bookings, payments and signatures made on the website stay in that browser, and those made in the customer app stay on that phone

@@ -19,4 +19,5 @@ export * from "./audit";
 export * from "./i18n";
 export * from "./geo";
 export * from "./portal";
+export * from "./marinas";
 export * from "./guides";

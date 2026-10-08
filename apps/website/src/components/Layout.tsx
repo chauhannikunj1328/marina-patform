@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { CircleCheck, Languages, Mail, Menu, Moon, Phone, Sun, UserRound, X } from "lucide-react";
-import { cx, LANGS, t } from "@marina/shared";
+import { CONTACT, cx, LANGS, t } from "@marina/shared";
 import { useStore } from "@/data/store";
 import { useLang } from "@/lib/lang";
 import { useTheme } from "@/lib/theme";
@@ -10,7 +10,7 @@ import { Logo } from "./Logo";
 import { ButtonLink, Container, IconButton } from "./ui";
 
 /** The company's own contact details (sample values until the real ones are set). */
-export const SITE = { email: "hello@marina.com", phone: "(415) 555-0100", hours: "Mon–Sat, 8 am – 6 pm" };
+export const SITE = CONTACT;
 
 const NAV = [
   { to: "/marinas", label: "Marinas" },
@@ -109,6 +109,7 @@ function Footer() {
           <Link to="/account">{t("My account")}</Link>
           <Link to="/account/invoices">{t("Pay an invoice")}</Link>
           <Link to="/account/contracts">{t("Sign a contract")}</Link>
+          <a href="/#app">{t("Get the app")}</a>
         </FooterCol>
         <FooterCol title={t("Contact")}>
           <a href={`tel:${SITE.phone.replace(/[^\d+]/g, "")}`} className="inline-flex items-center gap-2"><Phone className="size-4" aria-hidden /><bdi>{SITE.phone}</bdi></a>

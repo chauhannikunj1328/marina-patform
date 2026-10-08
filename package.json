@@ -1,7 +1,7 @@
 {
   "name": "marina",
   "private": true,
-  "description": "Marina Management System: admin web app, public website and owner portal, staff mobile app and shared code",
+  "description": "Marina Management System: admin web app, public website and owner portal, staff mobile app, customer app and shared code",
   "scripts": {
     "dev:web": "npm --prefix apps/web run dev",
     "build:web": "npm --prefix apps/web run build",
@@ -10,8 +10,11 @@
     "dev:mobile": "npm --prefix apps/mobile run start",
     "web:mobile": "npm --prefix apps/mobile run web",
     "build:mobile-web": "npm --prefix apps/mobile run export:web",
+    "dev:customer": "npm --prefix apps/customer run start",
+    "web:customer": "npm --prefix apps/customer run web -- --port 8082",
+    "build:customer-web": "npm --prefix apps/customer run export:web",
     "test": "npm --prefix packages/shared test",
-    "lint": "npm --prefix apps/web run lint && npm --prefix apps/website run lint && npm --prefix apps/mobile run lint",
+    "lint": "npm --prefix apps/web run lint && npm --prefix apps/website run lint && npm --prefix apps/mobile run lint && npm --prefix apps/customer run lint",
     "shots": "npm --prefix tools/guide-shots run shots --"
   }
 }

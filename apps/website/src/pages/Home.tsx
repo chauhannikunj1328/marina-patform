@@ -6,6 +6,7 @@ import { useStore } from "@/data/store";
 import { Map, type MapMarker } from "@/components/Map";
 import { MarinaCard } from "@/components/MarinaCard";
 import { SearchForm } from "@/components/SearchForm";
+import { GetTheApp } from "@/components/GetTheApp";
 import { ButtonLink, Card, Container, Eyebrow, usePageTitle } from "@/components/ui";
 import { marinaFacts, openMarinas, stateOf } from "@/lib/marinas";
 
@@ -124,6 +125,8 @@ export function Home() {
           </ul>
         </Container>
       </section>
+
+      <GetTheApp />
 
       <Container className="py-16">
         <Card className="flex flex-wrap items-center justify-between gap-6 p-8">
