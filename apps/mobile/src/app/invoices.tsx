@@ -30,7 +30,7 @@ export default function Invoices() {
     paid: mine.filter((i) => i.status === "paid" && (i.paidAt ?? "") >= addDays(now, -30)).sort((a, b) => (b.paidAt ?? "").localeCompare(a.paidAt ?? "")),
   };
   const rows = lists[view].slice(0, 60);
-  const total = (l: Invoice[]) => l.reduce((s, i) => s + (view === "paid" ? i.amount : ix.balance(i)), 0);
+  const total = (l: Invoice[]) => l.reduce((s, i) => s + ix.invoiceToReporting(i, view === "paid" ? i.amount : ix.balance(i)), 0);
   const remindedToday = (i: Invoice) => i.reminders.includes(now);
 
   // Reminders are recorded on the invoice and in Messages, as in the web app. Emails go out once there's a server.
@@ -52,7 +52,7 @@ export default function Invoices() {
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
-      <StackHeader title={tr("Invoices")} subtitle={tr("{amount} overdue · {amount2} due", { amount: money2(total(lists.overdue)), amount2: money2(lists.due.reduce((s, i) => s + ix.balance(i), 0)) })} />
+      <StackHeader title={tr("Invoices")} subtitle={tr("{amount} overdue · {amount2} due", { amount: money2(total(lists.overdue)), amount2: money2(total(lists.due)) })} />
       <Screen>
         <Segmented value={view} onChange={setView} items={[{ value: "overdue", label: tr("Overdue"), count: lists.overdue.length }, { value: "due", label: tr("Due"), count: lists.due.length }, { value: "paid", label: tr("Paid") }]} />
         {view === "overdue" && canEdit && lists.overdue.some((i) => !remindedToday(i)) && (
@@ -74,8 +74,8 @@ export default function Invoices() {
                       <Txt v="caption" color={t.text3} numberOfLines={1}>{i.number} · {bk && ix.boat(bk.boatId)?.name}{ids.length > 1 && bk ? ` · ${ix.marinaOfBerth(bk.berthId)?.name}` : ""}</Txt>
                     </View>
                     <View style={{ alignItems: "flex-end" }}>
-                      <Txt num weight="semibold">{money2(view === "paid" ? i.amount : owed)}</Txt>
-                      {view !== "paid" && ix.paidSoFar(i) > 0 && <Txt v="caption" num color={t.text3}>{tr("of")} {money2(i.amount)}</Txt>}
+                      <Txt num weight="semibold">{money2(view === "paid" ? i.amount : owed, ix.curOfInvoice(i))}</Txt>
+                      {view !== "paid" && ix.paidSoFar(i) > 0 && <Txt v="caption" num color={t.text3}>{tr("of")} {money2(i.amount, ix.curOfInvoice(i))}</Txt>}
                     </View>
                   </View>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" }}>

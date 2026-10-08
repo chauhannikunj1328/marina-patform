@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, CalendarDays, Droplets, Plug, Ruler, Ship } from "lucide-react";
 import {
-  availableBerths, berthIsFree, daysBetween, fmtDate, money, priceNote, quote, searchProblem, t, tn, today, withBoat, withOnlineBooking,
+  availableBerths, berthIsFree, daysBetween, fmtDate, ftM, money, priceNote, quote, searchProblem, t, tn, today, withBoat, withOnlineBooking,
   type Berth, type BoatType,
 } from "@marina/shared";
 import { useStore } from "@/data/store";
@@ -25,21 +25,21 @@ function useSearch() {
 }
 
 function BerthRow({ berth, start, end, length, best }: { berth: Berth; start: string; end: string; length: string; best?: boolean }) {
-  const { db } = useStore();
+  const { db, ix } = useStore();
   const price = quote(db, berth, start, end);
   return (
     <li className="flex flex-wrap items-center justify-between gap-4 border-t border-line px-5 py-4">
       <div>
         <p className="flex flex-wrap items-center gap-2 font-medium">{t("Berth {code}", { code: berth.code })} <span className="text-[13px] font-normal text-ink-3">· {t(berth.type)}</span>{best && <Badge tone="success">{t("Lowest price")}</Badge>}</p>
         <p className="mt-1 flex flex-wrap gap-3 text-xs text-ink-3">
-          <span className="inline-flex items-center gap-1"><Ruler className="size-3.5" aria-hidden />{t("Up to {ft} ft", { ft: berth.maxLength })}</span>
+          <span className="inline-flex items-center gap-1"><Ruler className="size-3.5" aria-hidden />{t("Up to {length}", { length: ftM(berth.maxLength) })}</span>
           {berth.power && <span className="inline-flex items-center gap-1"><Plug className="size-3.5" aria-hidden />{t("Power")}</span>}
           {berth.water && <span className="inline-flex items-center gap-1"><Droplets className="size-3.5" aria-hidden />{t("Water")}</span>}
         </p>
       </div>
       <div className="flex items-center gap-4">
         <div className="text-end">
-          <p className="num text-[17px] font-semibold">{money(price)}</p>
+          <p className="num text-[17px] font-semibold">{money(price, ix.curOfBerth(berth.id))}</p>
           <p className="text-xs text-ink-3">{priceNote(start, end, db.settings.monthlyFromNights, db.settings.pricing)}</p>
         </div>
         <ButtonLink to={`/book/checkout?${new URLSearchParams({ berth: berth.id, start, end, length })}`} variant="primary" size="sm">{t("Book")}</ButtonLink>
@@ -178,7 +178,7 @@ export function Checkout() {
                 <label key={b.id} className="flex cursor-pointer items-center gap-3 rounded-[12px] border border-line px-4 py-3 has-[:checked]:border-primary has-[:checked]:bg-sidebar">
                   <input type="radio" name="boat" checked={boatId === b.id} onChange={() => setBoatId(b.id)} className="accent-[var(--primary)]" />
                   <Ship className="size-4 text-ink-3" aria-hidden />
-                  <span className="flex-1"><span className="font-medium">{b.name}</span> <span className="text-[13px] text-ink-3">· {t(b.type)} · <span className="num">{b.length}</span> {t("ft")}</span></span>
+                  <span className="flex-1"><span className="font-medium">{b.name}</span> <span className="text-[13px] text-ink-3">· {t(b.type)} · <span className="num">{ftM(b.length)}</span></span></span>
                 </label>
               ))}
               {boats.length > fitting.length && <p className="px-1 text-xs text-ink-3">{tn(boats.length - fitting.length, "{n} of your boats is too long for this berth.", "{n} of your boats are too long for this berth.")}</p>}
@@ -223,7 +223,7 @@ export function Checkout() {
               <div className="flex justify-between gap-4"><dt className="text-ink-3">{t("Nights")}</dt><dd className="num">{nights}</dd></div>
             </dl>
             <div className="mt-5 border-t border-line pt-5">
-              <div className="flex items-baseline justify-between"><span className="text-[15px] font-medium">{t("Total")}</span><span className="num text-[22px] font-semibold">{money(price)}</span></div>
+              <div className="flex items-baseline justify-between"><span className="text-[15px] font-medium">{t("Total")}</span><span className="num text-[22px] font-semibold">{money(price, ix.curOfBerth(berth.id))}</span></div>
               <p className="mt-1 text-xs text-ink-3">{priceNote(start, end, db.settings.monthlyFromNights, db.settings.pricing)}</p>
               <p className="mt-3 text-xs text-ink-3">{t("Power, water and fuel you use are added to the invoice.")}</p>
             </div>

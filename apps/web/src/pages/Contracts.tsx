@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { FilePlus2, FileSignature, RefreshCw, Repeat, TriangleAlert, Wallet } from "lucide-react";
 import { nextId, useStore } from "@/data/store";
-import { tn, t, addMonths, CONTRACT_TERMS, daysBetween, fmtDate, fmtShort, localDay, money, RENEWAL_NOTICE_DAYS, renewalsDue, today, withInvoice, type Booking, type Contract, type ContractTerm } from "@marina/shared";
+import { tn, t, addMonths, CONTRACT_TERMS, daysBetween, fmtDate, fmtShort, localDay, money, RENEWAL_NOTICE_DAYS, renewalsDue, today, withInvoice, type Booking, type Contract, type ContractTerm, ftM } from "@marina/shared";
 import { Badge, Button, Card, ConfirmDialog, EmptyState, Field, Input, Modal, PageHeader, SearchInput, Select, StatCard, Table, Toolbar, useDirty } from "@/components/ui";
 
 const TERMS = CONTRACT_TERMS;
@@ -62,7 +62,7 @@ export function Contracts() {
       <PageHeader title={t("Contracts")} description={t("Long-term berth agreements and renewals")} actions={canEdit && <Button variant="primary" icon={FilePlus2} onClick={() => setCreating(true)}>{t("New contract")}</Button>} />
       <div className="mb-4 grid grid-cols-2 gap-4 min-[1400px]:grid-cols-4">
         <StatCard label={t("Active contracts")} icon={FileSignature} value={active.length} active={show === "active"} onClick={() => setShow("active")} />
-        <StatCard label={t("Contract income a month")} icon={Wallet} value={money(active.reduce((s, c) => s + c.monthlyFee, 0))} sub={t("Monthly fees of active contracts")} />
+        <StatCard label={t("Contract income a month")} icon={Wallet} value={money(active.reduce((s, c) => s + ix.toReporting(c.monthlyFee, c.marinaId), 0))} sub={t("Monthly fees of active contracts")} />
         <StatCard label={t("Up for renewal")} icon={RefreshCw} value={all.filter(dueSoon).length} sub={t("A week before monthly, a month before seasonal, 2 months before annual")} active={show === "renewal"} onClick={() => setShow(show === "renewal" ? "active" : "renewal")} />
         <StatCard label={t("Won't renew")} icon={TriangleAlert} value={active.filter((c) => !c.autoRenew && !renewedIds.has(c.id)).length} sub={t("Berths coming back on sale")} />
       </div>
@@ -89,10 +89,10 @@ export function Contracts() {
               return (
                 <tr key={c.id}>
                   <td className="font-medium">{c.code}<span className="block text-xs font-normal text-ink-3">{t("since")} {fmtDate(c.start)}</span></td>
-                  <td>{ix.owner(c.ownerId)?.name}<span className="block text-xs text-ink-3">{ix.boat(c.boatId)?.name} · {ix.boat(c.boatId)?.length} {t("ft")}</span></td>
+                  <td>{ix.owner(c.ownerId)?.name}<span className="block text-xs text-ink-3">{ix.boat(c.boatId)?.name} · {ftM(ix.boat(c.boatId)?.length)}</span></td>
                   <td>{ix.berth(c.berthId)?.code}<span className="block text-xs text-ink-3">{ix.marina(c.marinaId)?.name}</span></td>
                   <td className="whitespace-nowrap">{t(TERMS[c.term].label)}<span className="block text-xs text-ink-3">{fmtShort(c.start)} – {fmtShort(c.end)}</span></td>
-                  <td className="num">{money(c.monthlyFee)}</td>
+                  <td className="num">{money(c.monthlyFee, ix.cur(c.marinaId))}</td>
                   <td>
                     {c.status !== "active" || c.end <= now ? <Badge tone="muted">{t("Ended")}</Badge>
                       : renewed ? <Badge tone="success" icon={Repeat}>{t("Renewed")}</Badge>
@@ -137,6 +137,7 @@ function ContractForm({ ids, onClose }: { ids: string[]; onClose: () => void }) 
   const end = addMonths(f.start, TERMS[f.term].months);
   const berths = db.berths.filter((b) => b.marinaId === f.marinaId && !b.underMaintenance && b.maxLength >= (boat?.length ?? 0) && ix.isFree(b.id, f.start, end)).sort((a, b) => a.maxLength - b.maxLength);
   const berth = ix.berth(f.berthId);
+  const cur = ix.cur(f.marinaId);
   const suggested = berth ? Math.round(berth.monthlyRate * (1 - TERMS[f.term].discount)) : 0;
   const fee = Number(f.fee) || suggested;
   const owners = useMemo(() => [...db.owners].sort((a, b) => a.name.localeCompare(b.name)), [db.owners]);
@@ -150,22 +151,22 @@ function ContractForm({ ids, onClose }: { ids: string[]; onClose: () => void }) 
     setErrors(e);
     if (Object.keys(e).length || !berth) return;
     update((d) => withContract(d, { ownerId: f.ownerId, boatId: f.boatId, berthId: berth.id, marinaId: f.marinaId, term: f.term, start: f.start, end, monthlyFee: fee, autoRenew: f.autoRenew }), { text: `New ${TERMS[f.term].label.toLowerCase()} contract for ${boat?.name} at berth ${berth.code}`, to: "/contracts", marinaId: f.marinaId });
-    toast(t("Contract created, berth {code} held to {date} and invoiced {amount}", { code: berth.code, date: fmtDate(end), amount: money(fee * TERMS[f.term].months) }));
+    toast(t("Contract created, berth {code} held to {date} and invoiced {amount}", { code: berth.code, date: fmtDate(end), amount: money(fee * TERMS[f.term].months, cur) }));
     onClose();
   };
   return (
     <Modal open wide dirty={dirty} onClose={onClose} title={t("New contract")} description={t("Holds the berth for the whole term. The term is invoiced up front.")} footer={<><Button onClick={onClose}>{t("Cancel")}</Button><Button variant="primary" onClick={save}>{t("Create contract")}</Button></>}>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Field label={t("Boat owner")} error={errors.owner}>{(id) => <Select id={id} value={f.ownerId} onChange={(e) => set({ ownerId: e.target.value, boatId: "", berthId: "" })}><option value="">{t("Choose…")}</option>{owners.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}</Select>}</Field>
-        <Field label={t("Boat")} error={errors.boat}>{(id) => <Select id={id} value={f.boatId} disabled={!f.ownerId} onChange={(e) => set({ boatId: e.target.value, berthId: "" })}><option value="">{t("Choose…")}</option>{boats.map((b) => <option key={b.id} value={b.id}>{b.name} · {b.length} {t("ft")}</option>)}</Select>}</Field>
+        <Field label={t("Boat")} error={errors.boat}>{(id) => <Select id={id} value={f.boatId} disabled={!f.ownerId} onChange={(e) => set({ boatId: e.target.value, berthId: "" })}><option value="">{t("Choose…")}</option>{boats.map((b) => <option key={b.id} value={b.id}>{b.name} · {ftM(b.length)}</option>)}</Select>}</Field>
         <Field label={t("Marina")}>{(id) => <Select id={id} value={f.marinaId} onChange={(e) => set({ marinaId: e.target.value, berthId: "" })}>{db.marinas.filter((m) => ids.includes(m.id) && m.status === "active").map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}</Select>}</Field>
         <Field label={t("Term")}>{(id) => <Select id={id} value={f.term} onChange={(e) => set({ term: e.target.value as ContractTerm, berthId: "", fee: "" })}>{(Object.keys(TERMS) as ContractTerm[]).map((item) => <option key={item} value={item}>{t(TERMS[item].label)}{TERMS[item].discount ? t(", {v}% off", { v: TERMS[item].discount * 100 }) : ""}</option>)}</Select>}</Field>
         <Field label={t("Starts")} hint={t("Ends {date}", { date: fmtDate(end) })}>{(id) => <Input id={id} type="date" min={today()} value={f.start} onChange={(e) => set({ start: e.target.value, berthId: "" })} />}</Field>
-        <Field label={t("Berth")} hint={boat ? t("{n} free for the whole term and fit {n2} ft", { n: berths.length, n2: boat.length }) : t("Choose the boat first")} error={errors.berth}>{(id) => <Select id={id} value={f.berthId} disabled={!boat} onChange={(e) => set({ berthId: e.target.value, fee: "" })}><option value="">{t("Choose…")}</option>{berths.map((b) => <option key={b.id} value={b.id}>{b.code} · {b.maxLength} {t("ft ·")} {money(b.monthlyRate)}{t("/month")}</option>)}</Select>}</Field>
-        <Field label={t("Monthly fee")} hint={berth ? t("Suggested {amount}{v}", { amount: money(suggested), v: TERMS[f.term].discount ? t(" ({x}% off the monthly rate)", { x: TERMS[f.term].discount * 100 }) : "" }) : undefined} error={errors.fee}>{(id) => <Input id={id} type="number" min={1} placeholder={suggested ? String(suggested) : ""} value={f.fee} onChange={(e) => set({ fee: e.target.value })} />}</Field>
+        <Field label={t("Berth")} hint={boat ? t("{n} free for the whole term and fit {n2} ft", { n: berths.length, n2: boat.length }) : t("Choose the boat first")} error={errors.berth}>{(id) => <Select id={id} value={f.berthId} disabled={!boat} onChange={(e) => set({ berthId: e.target.value, fee: "" })}><option value="">{t("Choose…")}</option>{berths.map((b) => <option key={b.id} value={b.id}>{b.code} · {ftM(b.maxLength)} · {money(b.monthlyRate, cur)}{t("/month")}</option>)}</Select>}</Field>
+        <Field label={t("Monthly fee")} hint={berth ? t("Suggested {amount}{v}", { amount: money(suggested, cur), v: TERMS[f.term].discount ? t(" ({x}% off the monthly rate)", { x: TERMS[f.term].discount * 100 }) : "" }) : undefined} error={errors.fee}>{(id) => <Input id={id} type="number" min={1} placeholder={suggested ? String(suggested) : ""} value={f.fee} onChange={(e) => set({ fee: e.target.value })} />}</Field>
         <label className="flex items-center gap-2 self-end pb-2 text-[13px]"><input type="checkbox" checked={f.autoRenew} onChange={(e) => set({ autoRenew: e.target.checked })} /> {t("Renews (flagged {n} days before the end)", { n: RENEWAL_NOTICE_DAYS[f.term] })}</label>
       </div>
-      {berth && <p className="mt-4 rounded-md bg-surface-2 px-4 py-3 text-[13px]">{t("Invoice for the term:")} <span className="num font-semibold">{money(fee * TERMS[f.term].months)}</span> ({TERMS[f.term].months} × {money(fee)})</p>}
+      {berth && <p className="mt-4 rounded-md bg-surface-2 px-4 py-3 text-[13px]">{t("Invoice for the term:")} <span className="num font-semibold">{money(fee * TERMS[f.term].months, cur)}</span> ({TERMS[f.term].months} × {money(fee, cur)})</p>}
     </Modal>
   );
 }

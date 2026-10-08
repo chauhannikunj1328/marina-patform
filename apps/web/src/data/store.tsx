@@ -81,7 +81,7 @@ async function sha256(text: string): Promise<string> {
 }
 
 const SESSION_KEY = "mms.session";
-const DATA_KEY = "mms.data.v6";
+const DATA_KEY = "mms.data.v7";
 
 // Changes are kept in the browser for the current day. Sample data is regenerated
 // each day so booking statuses (checked in, upcoming…) stay correct relative to today.

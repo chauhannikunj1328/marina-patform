@@ -2,11 +2,12 @@
 // backend), the signed-in boat owner, and short confirmation messages.
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
-  createSeed, DEMO_OWNER_EMAIL, Index, OWNER_PASSWORD_HASHES, setCurrency, setTimeZone, today, withDemoOwner, withMarinaPoints, withOwner,
+  createSeed, DEMO_OWNER_EMAIL, delocalizeDb, Index, localizeDb, OWNER_PASSWORD_HASHES, setCurrency, setTimeZone, today, withDemoOwner, withMarinaPoints, withOwner,
   type Boat, type BoatOwner, type Db,
 } from "@marina/shared";
+import { useLang } from "@/lib/lang";
 
-const DATA_KEY = "marina.site.data.v2";
+const DATA_KEY = "marina.site.data.v3";
 const ACCOUNTS_KEY = "marina.site.accounts";
 const SESSION_KEY = "marina.site.session";
 
@@ -16,6 +17,7 @@ interface Account { email: string; hash: string; owner: BoatOwner; boats: Boat[]
 interface Toast { id: number; text: string }
 
 interface Store {
+  /** The data as shown: in Arabic, Gulf marinas, cities and regions carry their Arabic names. */
   db: Db;
   ix: Index;
   owner?: BoatOwner;
@@ -68,7 +70,7 @@ const normalize = (d: Db) => withAccounts(withDemoOwner(withMarinaPoints(d, (sam
 // The sample data is rebuilt each day so stays stay current; changes made today are kept.
 function loadDb(): Db {
   // Data saved by earlier versions of the site is dropped.
-  try { localStorage.removeItem("marina.site.data.v1"); } catch { /* storage unavailable */ }
+  try { localStorage.removeItem("marina.site.data.v1"); localStorage.removeItem("marina.site.data.v2"); } catch { /* storage unavailable */ }
   const saved = read<{ day: string; db: Db } | null>(DATA_KEY, null);
   return normalize(saved?.day === today() ? saved.db : createSeed());
 }
@@ -77,7 +79,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [db, setDb] = useState<Db>(loadDb);
   const [ownerId, setOwnerId] = useState<string | undefined>(() => read<string | undefined>(SESSION_KEY, undefined));
   const [toasts, setToasts] = useState<Toast[]>([]);
-  const ix = useMemo(() => new Index(db), [db]);
+  const { lang } = useLang();
+  // Pages read the data with place names in the current language; changes go to the stored data.
+  const view = useMemo(() => localizeDb(db, lang), [db, lang]);
+  const ix = useMemo(() => new Index(view), [view]);
   const owner = ownerId ? db.owners.find((o) => o.id === ownerId) : undefined;
 
   // Synchronous so the very first render already uses the right currency and time zone.
@@ -91,7 +96,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (accounts.length) write(ACCOUNTS_KEY, accounts.map((a) => ({ ...a, owner: db.owners.find((o) => o.id === a.owner.id) ?? a.owner, boats: db.boats.filter((b) => b.ownerId === a.owner.id) })));
   }, [db]);
 
-  const update = useCallback((fn: (d: Db) => Db) => setDb((d) => fn(d)), []);
+  const update = useCallback((fn: (d: Db) => Db) => setDb((d) => delocalizeDb(fn(d), d)), []);
 
   const toast = useCallback((text: string) => {
     const id = Date.now() + Math.random();
@@ -142,7 +147,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setOwnerId(undefined);
   };
 
-  return <Ctx.Provider value={{ db, ix, owner, update, signIn, register, signOut, canChangePassword, changePassword, toast, toasts }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ db: view, ix, owner, update, signIn, register, signOut, canChangePassword, changePassword, toast, toasts }}>{children}</Ctx.Provider>;
 }
 
 export function useStore() {

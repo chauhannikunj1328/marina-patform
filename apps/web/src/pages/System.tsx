@@ -9,6 +9,7 @@ import { Logomark } from "@/components/Logo";
 import { addDays, fmtDate, fmtDateTime, fmtShort, fromISO, nowInZone, today } from "@marina/shared";
 import { bookingAmount, DEFAULT_PRICING, DEFAULT_UTILITIES, priceNote, type PricingRules } from "@marina/shared";
 import { money, money2, pct } from "@marina/shared";
+import { CURRENCIES, DEFAULT_FX, type CurrencyCode } from "@marina/shared";
 import { ROLE_LABEL } from "./People";
 
 function LevelCell({ level }: { level: Level }) {
@@ -182,7 +183,7 @@ function DailySummary({ onClose }: { onClose: () => void }) {
     ["Departures today", String(m.departuresToday)],
     ["Berths occupied", `${m.occupied} of ${m.berths} (${pct(m.occupancy)})`],
     ["Bookings awaiting approval", String(m.pending)],
-    ["Overdue invoices", `${overdue.length} · ${money(overdue.reduce((t, i) => t + ix.balance(i), 0))}`],
+    ["Overdue invoices", `${overdue.length} · ${money(overdue.reduce((t, i) => t + ix.invoiceToReporting(i, ix.balance(i)), 0))}`],
     ["High priority work orders", String(urgent)],
   ];
   return (
@@ -213,14 +214,14 @@ function DailySummary({ onClose }: { onClose: () => void }) {
 
 /** Admin pricing rules: weekend surcharge, long-stay discount and seasons. They apply to bookings made from now on. */
 function PricingCard() {
-  const { db, update, toast } = useStore();
+  const { db, ix, update, toast } = useStore();
   const saved = db.settings.pricing ?? DEFAULT_PRICING;
   const util = db.settings.utilities ?? DEFAULT_UTILITIES;
   const [f, setF] = useState(() => ({ weekend: String(saved.weekendPct), longPct: String(saved.longStayPct), longNights: String(saved.longStayNights), seasons: saved.seasons, power: String(util.powerPerKwh), water: String(util.waterPerGallon) }));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const dirty = useDirty(f);
   const rules: PricingRules = { weekendPct: Number(f.weekend) || 0, longStayPct: Number(f.longPct) || 0, longStayNights: Number(f.longNights) || 7, seasons: f.seasons };
-  const sample = db.berths.find((b) => b.dailyRate >= 50) ?? db.berths[0];
+  const sample = db.berths.find((b) => b.dailyRate >= 50 && ix.cur(b.marinaId) === "USD") ?? db.berths[0];
   const previews = [
     { label: t("2 weeknights"), start: nextWeekday(1), nights: 2 },
     { label: t("Weekend (Fri–Sun)"), start: nextWeekday(5), nights: 2 },
@@ -257,8 +258,8 @@ function PricingCard() {
             <Field label={t("Long stay from (nights)")} error={errors.longNights}>{(id) => <Input id={id} type="number" min={2} value={f.longNights} onChange={(e) => setF({ ...f, longNights: e.target.value })} />}</Field>
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <Field label={t("Electricity ($ per kWh)")} hint={t("Billed from meter readings")} error={errors.power}>{(id) => <Input id={id} type="number" step="0.01" min={0} value={f.power} onChange={(e) => setF({ ...f, power: e.target.value })} />}</Field>
-            <Field label={t("Water ($ per gallon)")} hint={t("Billed from meter readings")} error={errors.water}>{(id) => <Input id={id} type="number" step="0.001" min={0} value={f.water} onChange={(e) => setF({ ...f, water: e.target.value })} />}</Field>
+            <Field label={t("Electricity (US$ per kWh)")} hint={t("Billed from meter readings, in each marina's currency")} error={errors.power}>{(id) => <Input id={id} type="number" step="0.01" min={0} value={f.power} onChange={(e) => setF({ ...f, power: e.target.value })} />}</Field>
+            <Field label={t("Water (US$ per gallon)")} hint={t("Billed from meter readings, in each marina's currency")} error={errors.water}>{(id) => <Input id={id} type="number" step="0.001" min={0} value={f.water} onChange={(e) => setF({ ...f, water: e.target.value })} />}</Field>
           </div>
           <div>
             <div className="mb-2 flex items-center justify-between">
@@ -281,7 +282,7 @@ function PricingCard() {
         </div>
         <div className="rounded-md bg-surface-2 p-4 text-[13px]">
           <p className="mb-1 font-semibold">{t("Preview")}</p>
-          <p className="mb-3 text-xs text-ink-3">{t("Berth")} {sample?.code} {t("at")} {money2(sample?.dailyRate ?? 0)} {t("a night")}</p>
+          <p className="mb-3 text-xs text-ink-3">{t("Berth")} {sample?.code} {t("at")} {money2(sample?.dailyRate ?? 0, ix.cur(sample?.marinaId))} {t("a night")}</p>
           {sample && previews.map((p) => {
             const end = addDays(p.start, p.nights);
             const now = bookingAmount(p.start, end, sample, db.settings.monthlyFromNights, rules);
@@ -289,7 +290,7 @@ function PricingCard() {
             return (
               <div key={p.label} className="flex items-baseline justify-between border-b border-line py-2 last:border-0">
                 <span>{t(p.label)}<span className="block text-xs text-ink-3">{fmtShort(p.start)} · {priceNote(p.start, end, db.settings.monthlyFromNights, rules)}</span></span>
-                <span className="num text-end font-semibold">{money2(now)}{now !== base && <span className="block text-xs font-normal text-ink-3 line-through">{money2(base)}</span>}</span>
+                <span className="num text-end font-semibold">{money2(now, ix.cur(sample.marinaId))}{now !== base && <span className="block text-xs font-normal text-ink-3 line-through">{money2(base, ix.cur(sample.marinaId))}</span>}</span>
               </div>
             );
           })}
@@ -371,6 +372,37 @@ function BrandingCard() {
   );
 }
 
+/** US dollars per unit of each currency the marinas charge in, for converting totals across marinas. */
+function ExchangeRatesCard() {
+  const { db, ix, update, toast } = useStore();
+  const used = [...new Set(db.marinas.map((m) => ix.cur(m.id)))].filter((c) => c !== "USD") as CurrencyCode[];
+  const [f, setF] = useState(() => Object.fromEntries(used.map((c) => [c, String(db.settings.fx?.[c] ?? DEFAULT_FX[c])])) as Record<string, string>);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  if (!used.length) return null;
+  const save = () => {
+    const e: Record<string, string> = {};
+    for (const c of used) if (!(Number(f[c]) > 0)) e[c] = t("Enter a rate above 0.");
+    setErrors(e);
+    if (Object.keys(e).length) return;
+    update((d) => ({ ...d, settings: { ...d.settings, fx: { ...d.settings.fx, ...Object.fromEntries(used.map((c) => [c, Number(f[c])])) } } }), "Updated exchange rates");
+    toast(t("Exchange rates saved"));
+  };
+  return (
+    <Card className="xl:col-span-2">
+      <CardHeader title={t("Exchange rates")} description={t("Used to add up money from marinas in different countries. Prices and invoices stay in each marina's currency.")} />
+      <div className="grid grid-cols-2 gap-4 p-5 sm:grid-cols-3 lg:grid-cols-6">
+        {used.map((c) => (
+          <Field key={c} label={t("1 {code} in US dollars", { code: c })} hint={t("Default {rate}", { rate: DEFAULT_FX[c] })} error={errors[c]}>{(id) => <Input id={id} type="number" step="0.0001" min={0} value={f[c]} onChange={(e) => setF({ ...f, [c]: e.target.value })} />}</Field>
+        ))}
+      </div>
+      <div className="flex justify-between gap-3 border-t border-line px-5 py-3">
+        <Button onClick={() => setF(Object.fromEntries(used.map((c) => [c, String(DEFAULT_FX[c])])))}>{t("Use default rates")}</Button>
+        <Button variant="primary" onClick={save}>{t("Save rates")}</Button>
+      </div>
+    </Card>
+  );
+}
+
 export function Settings() {
   const { db, user, update, toast, resetData } = useStore();
   const [confirmReset, setConfirmReset] = useState(false);
@@ -445,8 +477,8 @@ export function Settings() {
             <CardHeader title={t("Company defaults")} description={t("Apply to every marina")} />
             <div className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3">
               <Field label={t("Company name")} hint={t("Shown on invoices")} error={orgErrors.company}>{(id) => <Input id={id} value={org.company} onChange={(e) => setOrg({ ...org, company: e.target.value })} />}</Field>
-              <Field label={t("Currency")}>{(id) => <Select id={id} value={org.currency} onChange={(e) => setOrg({ ...org, currency: e.target.value as typeof org.currency })}><option>{t("USD")}</option><option>{t("CAD")}</option><option>{t("EUR")}</option><option>{t("GBP")}</option></Select>}</Field>
-              <Field label={t("Time zone")} hint={t("Times in the app show in this zone. Now: {nowInZone}", { nowInZone: nowInZone(org.timezone) })}>{(id) => <Select id={id} value={org.timezone} onChange={(e) => setOrg({ ...org, timezone: e.target.value })}><option value="America/Los_Angeles">{t("Pacific Time")}</option><option value="America/Denver">{t("Mountain Time")}</option><option value="America/Chicago">{t("Central Time")}</option><option value="America/New_York">{t("Eastern Time")}</option></Select>}</Field>
+              <Field label={t("Reporting currency")} hint={t("Totals across marinas are converted to it. Each marina charges in its own currency.")}>{(id) => <Select id={id} value={org.currency} onChange={(e) => setOrg({ ...org, currency: e.target.value as typeof org.currency })}>{CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}</Select>}</Field>
+              <Field label={t("Time zone")} hint={t("Times in the app show in this zone. Now: {nowInZone}", { nowInZone: nowInZone(org.timezone) })}>{(id) => <Select id={id} value={org.timezone} onChange={(e) => setOrg({ ...org, timezone: e.target.value })}><option value="America/Los_Angeles">{t("Pacific Time")}</option><option value="America/Denver">{t("Mountain Time")}</option><option value="America/Chicago">{t("Central Time")}</option><option value="America/New_York">{t("Eastern Time")}</option><option value="Asia/Dubai">{t("Gulf Time (UAE, Oman)")}</option><option value="Asia/Riyadh">{t("Arabia Time (Saudi Arabia, Qatar, Bahrain, Kuwait)")}</option></Select>}</Field>
               <Field label={t("Invoice due after (days)")} hint={t("For invoices created from now on")} error={orgErrors.dueDays}>{(id) => <Input id={id} type="number" min={1} value={org.dueDays} onChange={(e) => setOrg({ ...org, dueDays: e.target.value })} />}</Field>
               <Field label={t("Monthly rate applies from (nights)")} hint={t("Shorter stays use the daily rate. Changes booking prices.")} error={orgErrors.monthlyFrom}>{(id) => <Input id={id} type="number" min={7} value={org.monthlyFrom} onChange={(e) => setOrg({ ...org, monthlyFrom: e.target.value })} />}</Field>
             </div>
@@ -457,6 +489,7 @@ export function Settings() {
         )}
 
         {isAdmin && <PricingCard />}
+        {isAdmin && <ExchangeRatesCard />}
         {isAdmin && <BrandingCard />}
 
         <Card className="xl:col-span-2">

@@ -3,6 +3,15 @@ import type { Berth, Booking, Invoice } from "./types";
 import type { Db } from "./seed";
 import { bookingAmount } from "./pricing";
 import { addDays, daysBetween, daysInMonth, lastMonths, monthKey, nightsInMonth, today } from "./date";
+import { convert, COUNTRIES } from "./countries";
+
+/** The currency a marina charges in: its country's (US dollars when the country isn't set). */
+export function marinaCurrency(db: Pick<Db, "marinas" | "cities" | "counties">, marinaId: string): string {
+  const m = db.marinas.find((x) => x.id === marinaId);
+  const city = db.cities.find((c) => c.id === m?.cityId);
+  const county = db.counties.find((c) => c.id === city?.countyId);
+  return COUNTRIES[county?.country ?? "US"].currency;
+}
 
 export type BerthStatus = "available" | "occupied" | "reserved" | "maintenance";
 
@@ -12,8 +21,10 @@ export const REVENUE: Booking["status"][] = ["confirmed", "checked-in", "complet
 export class Index {
   berthById: Map<string, Berth>;
   bookingsByBerth: Map<string, Booking[]>;
+  currencyByMarina: Map<string, string>;
   constructor(public db: Db) {
     this.berthById = new Map(db.berths.map((b) => [b.id, b]));
+    this.currencyByMarina = new Map(db.marinas.map((m) => [m.id, marinaCurrency(db, m.id)]));
     this.bookingsByBerth = new Map();
     for (const bk of db.bookings) {
       const list = this.bookingsByBerth.get(bk.berthId) ?? [];
@@ -47,6 +58,26 @@ export class Index {
   paidSoFar = (inv: Invoice) => (inv.payments ?? []).reduce((t, p) => t + p.amount, 0);
 
   marinaOfInvoice = (inv: { bookingId: string }) => this.berth(this.booking(inv.bookingId)?.berthId ?? "")?.marinaId;
+
+  // ---- currencies --------------------------------------------------------
+  // Amounts on berths, bookings, invoices and contracts are in their marina's currency. Totals
+  // across marinas convert each amount to the reporting currency (Settings → Currency) first.
+
+  /** The reporting currency. */
+  get reporting(): string {
+    return this.db.settings.currency;
+  }
+  /** The currency a marina charges in. */
+  cur = (marinaId?: string) => this.currencyByMarina.get(marinaId ?? "") ?? this.reporting;
+  curOfBerth = (berthId: string) => this.cur(this.berth(berthId)?.marinaId);
+  curOfBooking = (bk: { berthId: string }) => this.curOfBerth(bk.berthId);
+  curOfInvoice = (inv: { bookingId: string }) => this.cur(this.marinaOfInvoice(inv));
+  /** An amount in a marina's currency, in the reporting currency (unrounded). */
+  toReporting = (amount: number, marinaId?: string) => convert(amount, this.cur(marinaId), this.reporting, this.db.settings.fx);
+  /** An invoice amount (its balance, a payment…) in the reporting currency. */
+  invoiceToReporting = (inv: { bookingId: string }, amount: number) => this.toReporting(amount, this.marinaOfInvoice(inv));
+  /** Whether these marinas charge in more than one currency (totals are then converted). */
+  mixedCurrencies = (marinaIds: string[]) => new Set(marinaIds.map((id) => this.cur(id))).size > 1;
 
   /** Boat owners who have booked at one of these marinas, plus new owners with no bookings yet. */
   ownersIn(marinaIds: string[], all: boolean) {
@@ -138,11 +169,16 @@ export class Index {
     return upTo(addDays(`${month}-${String(daysInMonth(month)).padStart(2, "0")}`, 1)) - upTo(`${month}-01`);
   }
 
+  /** Revenue per month in the reporting currency (each booking's share converted, then rounded). */
   revenueByMonth(marinaIds: string[], months: string[]): number[] {
     const totals = months.map(() => 0);
     for (const bk of this.bookingsIn(marinaIds)) {
       if (!REVENUE.includes(bk.status)) continue;
-      months.forEach((m, i) => { totals[i] += this.monthShare(bk, m); });
+      const marinaId = this.berth(bk.berthId)?.marinaId;
+      months.forEach((m, i) => {
+        const share = this.monthShare(bk, m);
+        if (share) totals[i] += Math.round(this.toReporting(share, marinaId));
+      });
     }
     return totals;
   }

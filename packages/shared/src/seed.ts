@@ -9,6 +9,7 @@ import { bookingAmount } from "./pricing";
 import { DEFAULT_PERMISSIONS } from "./permissions";
 import { SHIFT_START_HOUR } from "./shifts";
 import { SERVICES } from "./actions";
+import { withGulf } from "./gulf";
 
 export interface Db {
   counties: County[];
@@ -482,5 +483,6 @@ export function createSeed(): Db {
     ];
   });
 
-  return { counties, cities, marinas, berths, owners, boats, bookings, staff, tasks, invoices, users, activity, messages, timeEntries, requests, chat, handovers, patrols, waitlist, contracts, meterReadings, timesheetApprovals: [], maintenancePlans, inventory, incidents, settings, readNotifications: [] };
+  // The Gulf marinas are added after the US ones, with their own random sequence.
+  return withGulf({ counties, cities, marinas, berths, owners, boats, bookings, staff, tasks, invoices, users, activity, messages, timeEntries, requests, chat, handovers, patrols, waitlist, contracts, meterReadings, timesheetApprovals: [], maintenancePlans, inventory, incidents, settings, readNotifications: [] });
 }

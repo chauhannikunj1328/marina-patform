@@ -3,6 +3,8 @@ import type { Db } from "./seed";
 import type { Contract, InventoryItem, Invoice, InvoiceLine, MaintenancePlan, MaintenanceTask, MeterKind, MeterReading, Message, Recurrence } from "./types";
 import { nextId } from "./util";
 import { addDays, addMonths, daysBetween, today } from "./date";
+import { marinaCurrency } from "./selectors";
+import { convert, localPrice, roundMoney } from "./countries";
 
 export function withInvoice(d: Db, bookingId: string, amount: number): Db {
   if (d.invoices.some((i) => i.bookingId === bookingId && i.status !== "void")) return d;
@@ -26,7 +28,7 @@ export function withMessage(d: Db, msg: Omit<Message, "id" | "at">): Db {
   return { ...d, messages: [{ ...msg, id: nextId("msg", d.messages), at: new Date().toISOString() }, ...d.messages] };
 }
 
-/** Services staff can charge to a stay. */
+/** Services staff can charge to a stay. Prices in US dollars: servicePrice gives a marina's price. */
 export const SERVICES = [
   { id: "gas", label: "Gasoline", unit: "gal", price: 5.4, step: 5 },
   { id: "diesel", label: "Diesel", unit: "gal", price: 5.1, step: 5 },
@@ -47,7 +49,7 @@ export function withServiceCharge(d: Db, bookingId: string, stayAmount: number, 
     ...next,
     invoices: next.invoices.map((i) =>
       i.bookingId === bookingId && i.status !== "void"
-        ? { ...i, lines: [...(i.lines ?? []), line], amount: Math.round((i.amount + line.amount) * 100) / 100, status: i.status === "paid" ? "due" : i.status }
+        ? { ...i, lines: [...(i.lines ?? []), line], amount: Math.round((i.amount + line.amount) * 1000) / 1000, status: i.status === "paid" ? "due" : i.status }
         : i,
     ),
   };
@@ -70,7 +72,19 @@ export function renewalsDue(contracts: Contract[], now: string): Contract[] {
   return contracts.filter((c) => c.status === "active" && c.end > now && !renewed.has(c.id) && daysBetween(now, c.end) <= RENEWAL_NOTICE_DAYS[c.term]);
 }
 
+/** Electricity and water rates, in US dollars. A marina outside the US charges them in its own currency: see utilityRates. */
 export const DEFAULT_UTILITIES = { powerPerKwh: 0.35, waterPerGallon: 0.02 };
+
+/** The utility rates at a marina, in its currency (Settings → Pricing sets them in US dollars). */
+export function utilityRates(d: Db, marinaId: string) {
+  const rates = d.settings.utilities ?? DEFAULT_UTILITIES;
+  const cur = marinaCurrency(d, marinaId);
+  const local = (usd: number) => (cur === "USD" ? usd : Math.round(convert(usd, "USD", cur, d.settings.fx) * 1000) / 1000);
+  return { powerPerKwh: local(rates.powerPerKwh), waterPerGallon: local(rates.waterPerGallon), currency: cur };
+}
+
+/** A service's price (SERVICES lists them in US dollars) at a marina, in its currency. */
+export const servicePrice = (d: Db, marinaId: string, usd: number) => localPrice(usd, marinaCurrency(d, marinaId), d.settings.fx);
 export const METER_UNIT: Record<MeterKind, string> = { power: "kWh", water: "gal" };
 
 /** Latest reading on a berth's meter. */
@@ -84,8 +98,9 @@ export const lastReading = (d: Db, berthId: string, kind: MeterKind): MeterReadi
 export function withMeterReading(d: Db, reading: Omit<MeterReading, "id" | "charged" | "bookingId">, booking: { id: string; amount: number } | undefined): { db: Db; usage: number; charge: number } {
   const prev = lastReading(d, reading.berthId, reading.kind);
   const usage = prev ? Math.max(0, reading.value - prev.value) : 0;
-  const rates = d.settings.utilities ?? DEFAULT_UTILITIES;
-  const charge = Math.round(usage * (reading.kind === "power" ? rates.powerPerKwh : rates.waterPerGallon) * 100) / 100;
+  const marinaId = d.berths.find((b) => b.id === reading.berthId)?.marinaId ?? "";
+  const rates = utilityRates(d, marinaId);
+  const charge = roundMoney(usage * (reading.kind === "power" ? rates.powerPerKwh : rates.waterPerGallon), rates.currency);
   const id = nextId("mr", d.meterReadings ?? []);
   let next: Db = { ...d, meterReadings: [...(d.meterReadings ?? []), { ...reading, id, charged: booking && charge > 0 ? charge : undefined, bookingId: booking && charge > 0 ? booking.id : undefined }] };
   if (booking && charge > 0) {

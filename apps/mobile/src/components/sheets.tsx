@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Image, Linking, Pressable, ScrollView, View } from "react-native";
 import { ArrowRightLeft, Banknote, Fuel, Gauge, CalendarCog, Camera, CircleCheck, CircleX, ImagePlus, LogIn, LogOut, Mail, Phone, Search, TriangleAlert, X } from "lucide-react-native";
 import {
-  addDays, bookingAmount, daysBetween, DEFAULT_UTILITIES, withPartsUsed, lastReading, METER_UNIT, priceNote, withMeterReading, fmtDate, fmtShort, linesTotal, money2, nextId, prepChecklist, relative, SERVICES, today, withInvoice, withServiceCharge,
+  addDays, bookingAmount, daysBetween, decimalsOf, ftM, roundMoney, servicePrice, utilityRates, withPartsUsed, lastReading, METER_UNIT, priceNote, withMeterReading, fmtDate, fmtShort, linesTotal, money2, nextId, prepChecklist, relative, SERVICES, today, withInvoice, withServiceCharge,
   type ArrivalRecord, type Berth, type MeterKind, type BoatCondition, type Booking, type BookingStatus, type BoatType, type Invoice, type MaintenanceTask, type PaymentMethod, type Priority,
 } from "@marina/shared";
 import { ALL, useMe, useStore } from "../store";
@@ -121,21 +121,22 @@ function InvoiceRow({ bookingId, onPay }: { bookingId: string; onPay: (inv: Invo
   const inv = db.invoices.find((i) => i.bookingId === bookingId && i.status !== "void");
   if (!inv || can("billing") === "none") return null;
   const owed = ix.balance(inv);
+  const currency = ix.curOfInvoice(inv);
   return (
     <View style={{ borderWidth: 1, borderColor: t.border, borderRadius: 16, padding: 12, marginBottom: 12, gap: 8 }}>
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
         <View>
           <Txt v="bodySm" weight="medium">{tr("Invoice")} {inv.number}</Txt>
-          <Txt v="caption" num color={t.text3}>{tr("{amount} · paid {paid}", { amount: money2(inv.amount), paid: money2(ix.paidSoFar(inv)) })}</Txt>
+          <Txt v="caption" num color={t.text3}>{tr("{amount} · paid {paid}", { amount: money2(inv.amount, currency), paid: money2(ix.paidSoFar(inv), currency) })}</Txt>
         </View>
         {inv.status === "paid" ? <Badge tone="success" icon={CircleCheck} label={tr("Paid")} />
-          : inv.status === "overdue" ? <Badge tone="cancelled" label={`${money2(owed)} overdue`} />
-          : <Badge tone="pending" label={`${money2(owed)} due`} />}
+          : inv.status === "overdue" ? <Badge tone="cancelled" label={`${money2(owed, currency)} overdue`} />
+          : <Badge tone="pending" label={`${money2(owed, currency)} due`} />}
       </View>
       {(inv.lines ?? []).map((l, i) => (
         <View key={i} style={{ flexDirection: "row", justifyContent: "space-between" }}>
           <Txt v="caption" color={t.text2}>{tr(l.label)} · {l.qty} {l.unit} · {fmtShort(l.at.slice(0, 10))}</Txt>
-          <Txt v="caption" num color={t.text2}>{money2(l.amount)}</Txt>
+          <Txt v="caption" num color={t.text2}>{money2(l.amount, currency)}</Txt>
         </View>
       ))}
       {owed > 0 && can("billing") !== "view" && <Button size="sm" icon={Banknote} label={tr("Take payment")} onPress={() => onPay(inv)} style={{ alignSelf: "flex-start" }} />}
@@ -151,25 +152,26 @@ export function PaymentSheet({ invoice, onClose }: { invoice: Invoice; onClose: 
   const { db, ix, update, toast, user } = useStore();
   const methods: PaymentMethod[] = user?.role === "staff" ? DOCK_METHODS : [...DOCK_METHODS, "Bank transfer"];
   const balance = ix.balance(invoice);
-  const [amount, setAmount] = useState(balance.toFixed(2));
+  const currency = ix.curOfInvoice(invoice);
+  const [amount, setAmount] = useState(balance.toFixed(decimalsOf(currency)));
   const [method, setMethod] = useState<PaymentMethod>("Card");
   const [error, setError] = useState("");
   const save = () => {
-    const value = Math.round(Number(amount.replace(/[^\d.]/g, "")) * 100) / 100;
+    const value = roundMoney(Number(amount.replace(/[^\d.]/g, "")), currency);
     if (!(value > 0)) return setError(tr("Enter an amount above zero."));
-    if (value > balance) return setError(tr("That's more than the {amount} still owed.", { amount: money2(balance) }));
+    if (value > balance) return setError(tr("That's more than the {amount} still owed.", { amount: money2(balance, currency) }));
     const before = db;
     const full = value >= balance;
     const now = today();
     update(
       (d) => ({ ...d, invoices: d.invoices.map((i) => (i.id === invoice.id ? { ...i, payments: [...i.payments, { date: now, amount: value, method }], ...(full ? { status: "paid" as const, paidAt: now, method } : {}) } : i)) }),
-      { text: `Recorded ${money2(value)} ${full ? "payment" : "part payment"} for ${invoice.number} (${method})`, to: `/billing?open=${invoice.id}`, marinaId: ix.marinaOfInvoice(invoice) },
+      { text: `Recorded ${money2(value, currency)} ${full ? "payment" : "part payment"} for ${invoice.number} (${method})`, to: `/billing?open=${invoice.id}`, marinaId: ix.marinaOfInvoice(invoice) },
     );
-    toast(full ? tr("{number} is paid", { number: invoice.number }) : tr("{amount} taken. {amount2} still owed.", { amount: money2(value), amount2: money2(balance - value) }), before);
+    toast(full ? tr("{number} is paid", { number: invoice.number }) : tr("{amount} taken. {amount2} still owed.", { amount: money2(value, currency), amount2: money2(balance - value, currency) }), before);
     onClose();
   };
   return (
-    <Sheet open onClose={onClose} title={tr("Take payment")} subtitle={tr("{number} · {amount} owed", { number: invoice.number, amount: money2(balance) })} footer={<Button variant="primary" size="lg" label={tr("Record {amount}", { amount: money2(Number(amount) || 0) })} onPress={save} />}>
+    <Sheet open onClose={onClose} title={tr("Take payment")} subtitle={tr("{number} · {amount} owed", { number: invoice.number, amount: money2(balance, currency) })} footer={<Button variant="primary" size="lg" label={tr("Record {amount}", { amount: money2(Number(amount) || 0, currency) })} onPress={save} />}>
       <View style={{ gap: 16 }}>
         <Field label={tr("Amount")} error={error}>
           <Input value={amount} onChangeText={(v) => { setAmount(v); setError(""); }} keyboardType="decimal-pad" inputMode="decimal" invalid={!!error} accessibilityLabel={tr("Amount")} />
@@ -223,6 +225,7 @@ export function NewBookingSheet({ onClose, onDone }: { onClose: () => void; onDo
     .sort((a, b) => a.maxLength - b.maxLength || a.code.localeCompare(b.code));
   const berth = free.find((b) => b.id === berthId);
   const price = berth ? bookingAmount(now, end, berth, db.settings.monthlyFromNights, db.settings.pricing) : 0;
+  const currency = ix.cur(berth?.marinaId);
   const set = (k: keyof typeof f, v: string) => { setF({ ...f, [k]: v }); setErrors({}); };
 
   const save = () => {
@@ -262,7 +265,7 @@ export function NewBookingSheet({ onClose, onDone }: { onClose: () => void; onDo
   };
 
   return (
-    <Sheet open onClose={onClose} title={tr("New booking")} subtitle={arrivingToday ? tr("Arriving today, or pick a later day") : tr("Arriving {date}", { date: fmtShort(start) })} footer={<Button variant="primary" size="lg" icon={checkIn ? LogIn : undefined} label={berth ? `${checkIn ? "Book, then check in" : "Book"} · ${money2(price)}` : tr("Book")} onPress={save} />}>
+    <Sheet open onClose={onClose} title={tr("New booking")} subtitle={arrivingToday ? tr("Arriving today, or pick a later day") : tr("Arriving {date}", { date: fmtShort(start) })} footer={<Button variant="primary" size="lg" icon={checkIn ? LogIn : undefined} label={berth ? `${checkIn ? "Book, then check in" : "Book"} · ${money2(price, currency)}` : tr("Book")} onPress={save} />}>
       <View style={{ gap: 16 }}>
         {current === ALL && <MarinaPicker openOnly value={marinaId} onChange={(id) => { setMarina(id); setBerthId(""); }} />}
         {closed && (
@@ -277,7 +280,7 @@ export function NewBookingSheet({ onClose, onDone }: { onClose: () => void; onDo
               <Pressable accessibilityRole="button" accessibilityLabel={tr("{name}. Change boat", { name: boat.name })} onPress={() => { setBoatId(""); setBerthId(""); }} style={{ flexDirection: "row", alignItems: "center", gap: 12, borderWidth: 1, borderColor: t.primary, borderRadius: 12, padding: 12 }}>
                 <View style={{ flex: 1 }}>
                   <Txt weight="semibold">{boat.name}</Txt>
-                  <Txt v="caption" color={t.text3}>{tr(boat.type)} · {boat.length} {tr("ft ·")} {ix.owner(boat.ownerId)?.name}</Txt>
+                  <Txt v="caption" color={t.text3}>{tr(boat.type)} · {ftM(boat.length)} · {ix.owner(boat.ownerId)?.name}</Txt>
                 </View>
                 <Txt v="bodySm" weight="semibold" color={t.greenText}>{tr("Change")}</Txt>
               </Pressable>
@@ -290,7 +293,7 @@ export function NewBookingSheet({ onClose, onDone }: { onClose: () => void; onDo
                 {matches.map((b) => (
                   <Pressable key={b.id} accessibilityRole="button" onPress={() => { setBoatId(b.id); setBerthId(""); setErrors({}); }} style={({ pressed }) => ({ borderWidth: 1, borderColor: t.border, borderRadius: 12, padding: 12, backgroundColor: pressed ? t.sidebar : t.surface })}>
                     <Txt weight="medium">{b.name}</Txt>
-                    <Txt v="caption" color={t.text3}>{tr(b.type)} · {b.length} {tr("ft ·")} {b.registration} · {ix.owner(b.ownerId)?.name}</Txt>
+                    <Txt v="caption" color={t.text3}>{tr(b.type)} · {ftM(b.length)} · {b.registration} · {ix.owner(b.ownerId)?.name}</Txt>
                   </Pressable>
                 ))}
                 {s.length >= 2 && matches.length === 0 && (
@@ -330,7 +333,7 @@ export function NewBookingSheet({ onClose, onDone }: { onClose: () => void; onDo
             </View>
           )}
         </Field>
-        {berth && <Row label={tr("Price")} value={money2(price)} sub={priceNote(now, end, db.settings.monthlyFromNights, db.settings.pricing)} />}
+        {berth && <Row label={tr("Price")} value={money2(price, currency)} sub={priceNote(now, end, db.settings.monthlyFromNights, db.settings.pricing)} />}
         {arrivingToday && <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: checkIn }} onPress={() => setCheckIn(!checkIn)} style={{ flexDirection: "row", alignItems: "center", gap: 12, borderWidth: 1, borderColor: t.border, borderRadius: 12, padding: 12 }}>
           <View style={{ width: 22, height: 22, borderRadius: 6, borderWidth: 1.5, borderColor: t.primary, backgroundColor: checkIn ? t.primary : "transparent", alignItems: "center", justifyContent: "center" }}>
             {checkIn && <CircleCheck size={14} color={t.onPrimary} />}
@@ -681,6 +684,7 @@ export function ChangeBookingSheet({ booking: b, onClose }: { booking: Booking; 
   const berth = ix.berth(berthId);
   const fits = free.some((x) => x.id === berthId);
   const amount = berth ? bookingAmount(start, end, berth, db.settings.monthlyFromNights, db.settings.pricing) : 0;
+  const currency = ix.curOfBooking(b);
   const invoice = db.invoices.find((i) => i.bookingId === b.id && i.status !== "void");
   const changed = start !== b.start || end !== b.end || berthId !== b.berthId || guests !== b.guests;
   const days = Array.from({ length: 120 }, (_, i) => addDays(now, i));
@@ -702,7 +706,7 @@ export function ChangeBookingSheet({ booking: b, onClose }: { booking: Booking; 
   };
 
   return (
-    <Sheet open onClose={onClose} title={tr("Change {code}", { code: b.code })} subtitle={tr("{name} · {n} ft", { name: boat?.name, n: boat?.length })} footer={<Button variant="primary" size="lg" label={tr("Save · {amount}", { amount: money2(amount) })} disabled={!changed} onPress={save} />}>
+    <Sheet open onClose={onClose} title={tr("Change {code}", { code: b.code })} subtitle={tr("{name} · {n} ft", { name: boat?.name, n: boat?.length })} footer={<Button variant="primary" size="lg" label={tr("Save · {amount}", { amount: money2(amount, currency) })} disabled={!changed} onPress={save} />}>
       <View style={{ gap: 16 }}>
         <Field label={tr("Arrival")} hint={started ? tr("Already arrived") : undefined}>
           {started ? <Txt>{fmtShort(start)}</Txt> : <DayChips days={b.start < now ? [b.start, ...days] : days} value={start} onChange={(d) => { setStart(d); setError(""); }} />}
@@ -716,7 +720,7 @@ export function ChangeBookingSheet({ booking: b, onClose }: { booking: Booking; 
             {free.slice(0, 16).map((x) => <Chip key={x.id} label={x.code} sub={`${x.maxLength} ft`} on={berthId === x.id} onPress={() => { setBerthId(x.id); setError(""); }} />)}
           </View>
         </Field>
-        <Row label={tr("New total")} value={money2(amount)} sub={invoice ? (invoice.status === "paid" ? tr("The invoice is already paid. Adjust any difference in Billing.") : tr("Invoice {number} is updated to match.", { number: invoice.number })) : undefined} />
+        <Row label={tr("New total")} value={money2(amount, currency)} sub={invoice ? (invoice.status === "paid" ? tr("The invoice is already paid. Adjust any difference in Billing.") : tr("Invoice {number} is updated to match.", { number: invoice.number })) : undefined} />
         {!fits && <Txt v="caption" color={t.error.fg}>{tr("Pick one of the free berths above to save.")}</Txt>}
       </View>
     </Sheet>
@@ -749,7 +753,7 @@ export function CancelBookingSheet({ booking: b, decline, onClose }: { booking: 
       <Txt v="bodySm" color={t.text2}>
         {(decline ? tr("Berth {code} becomes free for those nights. {name} isn't told automatically: call or email them from the booking.", { code: ix.berth(b.berthId)?.code, name: owner?.name }) : tr("Berth {code} becomes free for those nights and any unpaid invoice is voided. {name} isn't told automatically: call or email them from the booking.", { code: ix.berth(b.berthId)?.code, name: owner?.name }))}
       </Txt>
-      {paid && <Txt v="bodySm" color={t.error.fg} style={{ marginTop: 12 }}>{tr("{name} has already paid {amount}. Refund it from Billing in the web app.", { name: owner?.name, amount: money2(ix.paidSoFar(paid)) })}</Txt>}
+      {paid && <Txt v="bodySm" color={t.error.fg} style={{ marginTop: 12 }}>{tr("{name} has already paid {amount}. Refund it from Billing in the web app.", { name: owner?.name, amount: money2(ix.paidSoFar(paid), ix.curOfInvoice(paid)) })}</Txt>}
     </Sheet>
   );
 }
@@ -891,7 +895,11 @@ export function ServiceSheet({ booking: b, onClose }: { booking: Booking; onClos
   const [serviceId, setServiceId] = useState<(typeof SERVICES)[number]["id"]>("gas");
   const service = SERVICES.find((x) => x.id === serviceId)!;
   const [qty, setQty] = useState(20);
-  const amount = Math.round(qty * service.price * 100) / 100;
+  // SERVICES are priced in US dollars; a marina abroad charges the same in its own currency.
+  const marinaId = ix.berth(b.berthId)?.marinaId ?? "";
+  const currency = ix.cur(marinaId);
+  const unitPrice = servicePrice(db, marinaId, service.price);
+  const amount = roundMoney(qty * unitPrice, currency);
   const boat = ix.boat(b.boatId);
   const pick = (id: (typeof SERVICES)[number]["id"]) => {
     const next = SERVICES.find((x) => x.id === id)!;
@@ -900,17 +908,17 @@ export function ServiceSheet({ booking: b, onClose }: { booking: Booking; onClos
   };
   const save = () => {
     const before = db;
-    const line = { label: service.label, qty, unit: service.unit, unitPrice: service.price, amount, at: new Date().toISOString(), by: me?.name ?? user?.name ?? "Staff" };
-    update((d) => withServiceCharge(d, b.id, ix.amount(b), line), { text: `${service.label} for ${boat?.name}: ${qty} ${service.unit}, ${money2(amount)} added to the invoice`, to: `/bookings?q=${b.code}`, marinaId: ix.berth(b.berthId)?.marinaId });
-    toast(tr("{amount} added to {name}'s invoice", { amount: money2(amount), name: boat?.name }), before);
+    const line = { label: service.label, qty, unit: service.unit, unitPrice, amount, at: new Date().toISOString(), by: me?.name ?? user?.name ?? "Staff" };
+    update((d) => withServiceCharge(d, b.id, ix.amount(b), line), { text: `${service.label} for ${boat?.name}: ${qty} ${service.unit}, ${money2(amount, currency)} added to the invoice`, to: `/bookings?q=${b.code}`, marinaId: ix.berth(b.berthId)?.marinaId });
+    toast(tr("{amount} added to {name}'s invoice", { amount: money2(amount, currency), name: boat?.name }), before);
     onClose();
   };
   return (
-    <Sheet open onClose={onClose} title={tr("Add a service")} subtitle={tr("{name} · berth {code}", { name: boat?.name, code: ix.berth(b.berthId)?.code })} footer={<Button variant="primary" size="lg" label={tr("Add {amount} to invoice", { amount: money2(amount) })} onPress={save} />}>
+    <Sheet open onClose={onClose} title={tr("Add a service")} subtitle={tr("{name} · berth {code}", { name: boat?.name, code: ix.berth(b.berthId)?.code })} footer={<Button variant="primary" size="lg" label={tr("Add {amount} to invoice", { amount: money2(amount, currency) })} onPress={save} />}>
       <View style={{ gap: 16 }}>
         <Field label={tr("Service")}>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-            {SERVICES.map((x) => <Chip key={x.id} label={x.label} sub={`${money2(x.price)} / ${x.unit}`} on={serviceId === x.id} onPress={() => pick(x.id)} />)}
+            {SERVICES.map((x) => <Chip key={x.id} label={x.label} sub={`${money2(servicePrice(db, marinaId, x.price), currency)} / ${x.unit}`} on={serviceId === x.id} onPress={() => pick(x.id)} />)}
           </View>
         </Field>
         <Field label={service.unit === "gal" ? tr("Gallons") : tr("How many?")}>
@@ -919,7 +927,7 @@ export function ServiceSheet({ booking: b, onClose }: { booking: Booking; onClos
             {service.unit === "gal" && [10, 50, 100].map((n) => <Chip key={n} label={`+${n}`} on={false} onPress={() => setQty(Math.min(500, qty + n))} />)}
           </View>
         </Field>
-        <Row label={tr("Charge")} value={money2(amount)} sub={`${qty} × ${money2(service.price)}`} />
+        <Row label={tr("Charge")} value={money2(amount, currency)} sub={`${qty} × ${money2(unitPrice, currency)}`} />
         <Txt v="caption" color={t.text3}>{tr("Added to the stay's invoice. If it was already paid, the extra becomes due.")}</Txt>
       </View>
     </Sheet>
@@ -936,7 +944,8 @@ export function MeterSheet({ berth, onClose }: { berth: Berth; onClose: () => vo
   const [values, setValues] = useState<Record<MeterKind, string>>({ power: "", water: "" });
   const [error, setError] = useState("");
   const cur = ix.currentBooking(berth.id);
-  const rates = db.settings.utilities ?? DEFAULT_UTILITIES;
+  const rates = utilityRates(db, berth.marinaId);
+  const currency = rates.currency;
   const usageOf = (k: MeterKind) => {
     const prev = lastReading(db, berth.id, k);
     const v = Number(values[k]);
@@ -960,7 +969,7 @@ export function MeterSheet({ berth, onClose }: { berth: Berth; onClose: () => vo
       }
       return next;
     }, { text: `Meter readings for berth ${berth.code}${cur ? `, billed to ${ix.boat(cur.boatId)?.name}` : ""}`, marinaId: berth.marinaId });
-    toast(cur && total > 0 ? tr("Saved. {amount} added to {name}'s invoice.", { amount: money2(total), name: ix.boat(cur.boatId)?.name }) : tr("Readings saved"), before);
+    toast(cur && total > 0 ? tr("Saved. {amount} added to {name}'s invoice.", { amount: money2(total, currency), name: ix.boat(cur.boatId)?.name }) : tr("Readings saved"), before);
     onClose();
   };
   return (
@@ -971,7 +980,7 @@ export function MeterSheet({ berth, onClose }: { berth: Berth; onClose: () => vo
           const usage = usageOf(k);
           const rate = k === "power" ? rates.powerPerKwh : rates.waterPerGallon;
           return (
-            <Field key={k} label={`${k === "power" ? tr("Power") : tr("Water")} (${tr(METER_UNIT[k])})`} hint={usage !== undefined ? tr("{n} {unit} used · {amount}", { n: usage.toLocaleString(), unit: tr(METER_UNIT[k]), amount: money2(Math.round(usage * rate * 100) / 100) }) : prev ? tr("Last {n}, {date}", { n: prev.value.toLocaleString(), date: fmtShort(prev.at.slice(0, 10)) }) : tr("First reading")}>
+            <Field key={k} label={`${k === "power" ? tr("Power") : tr("Water")} (${tr(METER_UNIT[k])})`} hint={usage !== undefined ? tr("{n} {unit} used · {amount}", { n: usage.toLocaleString(), unit: tr(METER_UNIT[k]), amount: money2(roundMoney(usage * rate, currency), currency) }) : prev ? tr("Last {n}, {date}", { n: prev.value.toLocaleString(), date: fmtShort(prev.at.slice(0, 10)) }) : tr("First reading")}>
               <Input value={values[k]} onChangeText={(v) => { setValues({ ...values, [k]: v.replace(/[^\d.]/g, "") }); setError(""); }} keyboardType="number-pad" placeholder={prev ? String(prev.value) : "0"} />
             </Field>
           );

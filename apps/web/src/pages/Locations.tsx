@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Building, Landmark, MapPin, Pencil, Plus, Trash, Warehouse } from "lucide-react";
 import { nextId, useStore } from "@/data/store";
 import type { City, County } from "@marina/shared";
-import { t, count, marinaPoint, money, pct } from "@marina/shared";
+import { t, count, COUNTRIES, marinaPoint, money, pct, type CountryCode } from "@marina/shared";
 import { MapView, type MapMarker } from "@/components/MapView";
 import { Button, Card, CardHeader, ConfirmDialog, Field, IconButton, Input, Meter, Modal, PageHeader, Select, StatCard, Table, Tabs, useDirty } from "@/components/ui";
 
@@ -19,6 +19,7 @@ function LocationForm({ target, onClose }: { target: Target; onClose: () => void
     name: city?.name ?? county?.name ?? "",
     countyId: city?.countyId ?? db.counties[0]?.id ?? "",
     state: county?.state ?? "",
+    country: (county?.country ?? "US") as CountryCode,
     lat: city ? String(city.lat) : "",
     lng: city ? String(city.lng) : "",
   });
@@ -30,7 +31,7 @@ function LocationForm({ target, onClose }: { target: Target; onClose: () => void
     if (!name) e.name = t("Enter a name.");
     else if (kind === "city" && db.cities.some((c) => c.name.toLowerCase() === name.toLowerCase() && c.countyId === f.countyId && c.id !== city?.id)) e.name = t("This city already exists in that county.");
     else if (kind === "county" && db.counties.some((c) => c.name.toLowerCase() === name.toLowerCase() && c.id !== county?.id)) e.name = t("This county already exists.");
-    if (kind === "county" && !f.state.trim()) e.state = t("Enter the state.");
+    if (kind === "county" && f.country === "US" && !f.state.trim()) e.state = t("Enter the state.");
     const lat = Number(f.lat), lng = Number(f.lng);
     if (kind === "city" && (!f.lat || !f.lng || isNaN(lat) || isNaN(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180)) e.coords = t("Enter latitude (−90 to 90) and longitude (−180 to 180).");
     setErrors(e);
@@ -40,7 +41,8 @@ function LocationForm({ target, onClose }: { target: Target; onClose: () => void
         const data = { name, countyId: f.countyId, lat, lng };
         return city ? { ...d, cities: d.cities.map((c) => (c.id === city.id ? { ...c, ...data } : c)) } : { ...d, cities: [...d.cities, { ...data, id: nextId("ct", d.cities) }] };
       }
-      const data = { name, state: f.state.trim() };
+      // Outside the US, places are grouped under the country's name; the country also sets the marinas' currency.
+      const data = { name, state: f.country === "US" ? f.state.trim() : COUNTRIES[f.country].name, country: f.country === "US" ? undefined : f.country };
       return county ? { ...d, counties: d.counties.map((c) => (c.id === county.id ? { ...c, ...data } : c)) } : { ...d, counties: [...d.counties, { ...data, id: nextId("c", d.counties) }] };
     }, `${editing ? "Updated" : "Added"} ${kind} ${name}`);
     toast(editing ? t("{name} updated", { name }) : t("{name} added", { name }));
@@ -50,7 +52,7 @@ function LocationForm({ target, onClose }: { target: Target; onClose: () => void
     <Modal open dirty={dirty} onClose={onClose} title={editing ? t("Edit {name}", { name: f.name }) : t("Add location")} footer={<><Button onClick={onClose}>{t("Cancel")}</Button><Button variant="primary" onClick={save}>{editing ? t("Save changes") : t("Add {kind}", { kind: t(kind) })}</Button></>}>
       <div className="space-y-4">
         {!editing && <Field label={t("Type")}>{(id) => <Select id={id} value={kind} onChange={(e) => setKind(e.target.value as typeof kind)}><option value="city">{t("City")}</option><option value="county">{t("County")}</option></Select>}</Field>}
-        <Field label={kind === "city" ? t("City name") : t("County name")} error={errors.name}>{(id) => <Input id={id} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />}</Field>
+        <Field label={kind === "city" ? t("City name") : t("County, emirate or province")} error={errors.name}>{(id) => <Input id={id} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />}</Field>
         {kind === "city" ? (
           <>
             <Field label={t("County")}>{(id) => <Select id={id} value={f.countyId} onChange={(e) => setF({ ...f, countyId: e.target.value })}>{db.counties.map((c) => <option key={c.id} value={c.id}>{c.name}, {t(c.state)}</option>)}</Select>}</Field>
@@ -60,7 +62,10 @@ function LocationForm({ target, onClose }: { target: Target; onClose: () => void
             </div>
           </>
         ) : (
-          <Field label={t("State")} error={errors.state}>{(id) => <Input id={id} value={f.state} onChange={(e) => setF({ ...f, state: e.target.value })} />}</Field>
+          <>
+            <Field label={t("Country")} hint={t("Marinas here charge in {code}.", { code: COUNTRIES[f.country].currency })}>{(id) => <Select id={id} value={f.country} onChange={(e) => setF({ ...f, country: e.target.value as CountryCode })}>{(Object.keys(COUNTRIES) as CountryCode[]).map((c) => <option key={c} value={c}>{t(COUNTRIES[c].name)}</option>)}</Select>}</Field>
+            {f.country === "US" && <Field label={t("State")} error={errors.state}>{(id) => <Input id={id} value={f.state} onChange={(e) => setF({ ...f, state: e.target.value })} />}</Field>}
+          </>
         )}
       </div>
     </Modal>
@@ -123,7 +128,7 @@ export function Locations() {
 
   return (
     <>
-      <PageHeader title={t("Locations")} description={t("Counties and cities your marinas belong to")} actions={<Button variant="primary" icon={Plus} onClick={() => setForm({ kind: tab === "counties" ? "county" : "city" })}>{t("Add location")}</Button>} />
+      <PageHeader title={t("Locations")} description={t("Counties, emirates and cities your marinas belong to")} actions={<Button variant="primary" icon={Plus} onClick={() => setForm({ kind: tab === "counties" ? "county" : "city" })}>{t("Add location")}</Button>} />
       <div className="mb-4 grid grid-cols-2 gap-4 min-[1400px]:grid-cols-4">
         <StatCard label={t("Counties")} icon={Landmark} value={db.counties.length} active={tab === "counties"} onClick={() => setTab("counties")} />
         <StatCard label={t("Cities")} icon={Building} value={db.cities.length} active={tab === "cities"} onClick={() => setTab("cities")} />
@@ -133,7 +138,7 @@ export function Locations() {
       <Tabs value={tab} onChange={setTab} items={[{ value: "counties", label: t("Counties"), count: db.counties.length }, { value: "cities", label: t("Cities"), count: db.cities.length }, { value: "map", label: t("Map") }]} />
       <Card>
         {tab === "counties" && (
-          <Table head={["County", "State", "Cities", "Marinas", "Berths", "Occupancy", "Revenue (month)", "Actions"]}>
+          <Table head={["County / emirate", "State / country", "Cities", "Marinas", "Berths", "Occupancy", "Revenue (month)", "Actions"]}>
             {db.counties.map((c) => {
               const ids = ix.marinaIdsInCounty(c.id);
               const m = ix.metrics(ids);

@@ -3,9 +3,9 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Ban, CircleAlert, CircleCheck, CircleDollarSign, Clock, DollarSign, Download, Eye, Printer, Send } from "lucide-react";
 import { useStore } from "@/data/store";
 import type { Invoice, InvoiceStatus, PaymentMethod } from "@marina/shared";
-import { tn, t, linesTotal, withMessage } from "@marina/shared";
+import { tn, t, linesTotal, withMessage, ftM } from "@marina/shared";
 import { daysBetween, fmtDate, monthKey, today } from "@marina/shared";
-import { money, money2 } from "@marina/shared";
+import { money, money2, roundMoney } from "@marina/shared";
 import { downloadCsv } from "@/lib/csv";
 import { Button, Card, ConfirmDialog, Field, IconButton, Input, Modal, PageHeader, Pagination, paginate, SearchInput, Select, StatCard, Table, Toolbar, useSort } from "@/components/ui";
 import { InvoiceBadge } from "@/components/status";
@@ -30,12 +30,13 @@ function useInvoiceActions() {
 function RecordPayment({ invoice, onClose }: { invoice: Invoice; onClose: () => void }) {
   const { db, ix, update, toast } = useStore();
   const balance = ix.balance(invoice);
+  const cur = ix.curOfInvoice(invoice);
   const [f, setF] = useState({ date: today(), method: "Card" as PaymentMethod, amount: String(balance) });
   const [error, setError] = useState("");
   const save = () => {
-    const amount = Math.round(Number(f.amount) * 100) / 100;
+    const amount = roundMoney(Number(f.amount), cur);
     if (!(amount > 0)) return setError(t("Enter an amount above zero."));
-    if (amount > balance) return setError(t("That's more than the {amount} still owed.", { amount: money2(balance) }));
+    if (amount > balance) return setError(t("That's more than the {amount} still owed.", { amount: money2(balance, cur) }));
     if (f.date > today()) return setError(t("Payment date can't be in the future."));
     const before = db;
     const full = amount >= balance;
@@ -48,9 +49,9 @@ function RecordPayment({ invoice, onClose }: { invoice: Invoice; onClose: () => 
             : i,
         ),
       }),
-      { text: `Recorded ${money2(amount)} ${full ? "payment" : "part payment"} for ${invoice.number} (${f.method})`, to: `/billing?open=${invoice.id}`, marinaId: ix.marinaOfInvoice(invoice) },
+      { text: `Recorded ${money2(amount, cur)} ${full ? "payment" : "part payment"} for ${invoice.number} (${f.method})`, to: `/billing?open=${invoice.id}`, marinaId: ix.marinaOfInvoice(invoice) },
     );
-    toast(full ? t("{number} is now paid", { number: invoice.number }) : t("{amount} recorded. {amount2} still owed.", { amount: money2(amount), amount2: money2(balance - amount) }), before);
+    toast(full ? t("{number} is now paid", { number: invoice.number }) : t("{amount} recorded. {amount2} still owed.", { amount: money2(amount, cur), amount2: money2(balance - amount, cur) }), before);
     onClose();
   };
   return (
@@ -58,7 +59,7 @@ function RecordPayment({ invoice, onClose }: { invoice: Invoice; onClose: () => 
       open
       onClose={onClose}
       title={t("Record payment for {number}", { number: invoice.number })}
-      description={t("{amount} still owed of {amount2}", { amount: money2(balance), amount2: money2(invoice.amount) })}
+      description={t("{amount} still owed of {amount2}", { amount: money2(balance, cur), amount2: money2(invoice.amount, cur) })}
       footer={<><Button onClick={onClose}>{t("Cancel")}</Button><Button variant="primary" onClick={save}>{t("Record payment")}</Button></>}
     >
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -90,6 +91,7 @@ function InvoiceDetail({ invoice: inv, onClose }: { invoice: Invoice; onClose: (
   const [paying, setPaying] = useState(false);
   const [voiding, setVoiding] = useState(false);
   const live = db.invoices.find((i) => i.id === inv.id) ?? inv;
+  const cur = ix.curOfInvoice(live);
   const bk = ix.booking(live.bookingId)!;
   const boat = ix.boat(bk.boatId);
   const owner = ix.ownerOfBooking(bk);
@@ -141,7 +143,7 @@ function InvoiceDetail({ invoice: inv, onClose }: { invoice: Invoice; onClose: (
           <div>
             <p className="text-xs text-ink-3">{t("Vessel")}</p>
             <p className="font-medium">{boat?.name}</p>
-            <p className="text-ink-3">{t(boat?.type)} · {boat?.length} {t("ft ·")} {boat?.registration}</p>
+            <p className="text-ink-3">{t(boat?.type)} · {ftM(boat?.length)} · {boat?.registration}</p>
           </div>
         </div>
         <table className="w-full">
@@ -156,26 +158,26 @@ function InvoiceDetail({ invoice: inv, onClose }: { invoice: Invoice; onClose: (
           <tbody>
             <tr className="border-b border-line">
               <td className="py-3">
-                {t("Berth")} {berth?.code} ({berth?.maxLength} {t("ft")} {berth?.type.toLowerCase()})
+                {t("Berth")} {berth?.code} ({ftM(berth?.maxLength)} {berth?.type.toLowerCase()})
                 <span className="block text-xs text-ink-3">{fmtDate(bk.start)} – {fmtDate(bk.end)}</span>
               </td>
               <td className="py-3 text-end num">{monthly ? t("{n} mo", { n: (nights / 30).toFixed(2) }) : tn(nights, "{n} night", "{n} nights")}</td>
-              <td className="py-3 text-end num">{money2(monthly ? berth?.monthlyRate ?? 0 : berth?.dailyRate ?? 0)}</td>
-              <td className="py-3 text-end num">{money2(live.amount - linesTotal(live))}</td>
+              <td className="py-3 text-end num">{money2(monthly ? berth?.monthlyRate ?? 0 : berth?.dailyRate ?? 0, cur)}</td>
+              <td className="py-3 text-end num">{money2(live.amount - linesTotal(live), cur)}</td>
             </tr>
             {(live.lines ?? []).map((l, k) => (
               <tr key={k} className="border-b border-line">
                 <td className="py-3">{t(l.label)}<span className="block text-xs text-ink-3">{fmtDate(l.at.slice(0, 10))} {t("· added by")} {l.by}</span></td>
                 <td className="py-3 text-end num">{l.qty} {l.unit}</td>
-                <td className="py-3 text-end num">{money2(l.unitPrice)}</td>
-                <td className="py-3 text-end num">{money2(l.amount)}</td>
+                <td className="py-3 text-end num">{money2(l.unitPrice, cur)}</td>
+                <td className="py-3 text-end num">{money2(l.amount, cur)}</td>
               </tr>
             ))}
           </tbody>
           <tfoot>
             <tr>
               <td colSpan={3} className="pt-3 text-end font-semibold">{t("Total")}</td>
-              <td className="pt-3 text-end text-base font-semibold num" style={{ color: brand }}>{money2(live.amount)}</td>
+              <td className="pt-3 text-end text-base font-semibold num" style={{ color: brand }}>{money2(live.amount, cur)}</td>
             </tr>
           </tfoot>
         </table>
@@ -185,12 +187,12 @@ function InvoiceDetail({ invoice: inv, onClose }: { invoice: Invoice; onClose: (
               {live.payments.map((p, k) => (
                 <li key={k} className="flex justify-between gap-4">
                   <span>{t("Paid")} {fmtDate(p.date)} {t("by")} {p.method.toLowerCase()}</span>
-                  <span className="num font-medium">{money2(p.amount)}</span>
+                  <span className="num font-medium">{money2(p.amount, cur)}</span>
                 </li>
               ))}
             </ul>
           )}
-          {open && <p className="flex justify-between gap-4"><strong>{t("Balance due")}</strong><span className="num font-semibold">{money2(ix.balance(live))}</span></p>}
+          {open && <p className="flex justify-between gap-4"><strong>{t("Balance due")}</strong><span className="num font-semibold">{money2(ix.balance(live), cur)}</span></p>}
           {live.status === "overdue" && <p><strong>{tn(daysBetween(live.due, today()), "{n} day overdue.", "{n} days overdue.")}</strong></p>}
           {live.status === "void" && <p><strong>{t("Void.")}</strong> {t("This invoice is no longer payable.")}</p>}
           <p className="text-ink-3">{live.reminders.length ? t("Reminders sent: {join}", { join: live.reminders.map(fmtDate).join(", ") }) : t("No reminders sent.")}</p>
@@ -256,11 +258,12 @@ export function Billing() {
   const overdueVisible = rows.filter((r) => r.i.status === "overdue");
   const [bulkRemind, setBulkRemind] = useState(false);
 
-  const sum = (f: (i: Invoice) => boolean) => invoices.filter((r) => f(r.i)).reduce((s, r) => s + ix.balance(r.i), 0);
+  // Totals are in the reporting currency: each invoice's balance or payment is converted from its marina's currency.
+  const sum = (f: (i: Invoice) => boolean) => invoices.filter((r) => f(r.i)).reduce((s, r) => s + ix.invoiceToReporting(r.i, ix.balance(r.i)), 0);
   const outstanding = sum((i) => i.status === "due" || i.status === "overdue");
   const overdue = sum((i) => i.status === "overdue");
   // Every payment received this month, including part payments.
-  const collected = invoices.reduce((t, r) => t + r.i.payments.filter((p) => monthKey(p.date) === monthKey(now)).reduce((a, p) => a + p.amount, 0), 0);
+  const collected = invoices.reduce((t, r) => t + r.i.payments.filter((p) => monthKey(p.date) === monthKey(now)).reduce((a, p) => a + ix.invoiceToReporting(r.i, p.amount), 0), 0);
   const open = (id: string) => setParams((p) => { p.set("open", id); return p; });
 
   return (
@@ -272,8 +275,8 @@ export function Billing() {
           <Button
             icon={Download}
             onClick={() =>
-              downloadCsv("invoices.csv", ["Invoice", "Booking", "Boat owner", "Marina", "Issued", "Due", "Amount", "Paid so far", "Balance", "Status", "Paid on", "Method"], rows.map((r) => [
-                r.i.number, r.bk.code, ix.ownerOfBooking(r.bk)?.name ?? "", ix.marinaOfBerth(r.bk.berthId)?.name ?? "", r.i.issued, r.i.due, r.i.amount, ix.paidSoFar(r.i), ix.balance(r.i), r.i.status, r.i.paidAt ?? "", r.i.method ?? "",
+              downloadCsv("invoices.csv", ["Invoice", "Booking", "Boat owner", "Marina", "Issued", "Due", "Currency", "Amount", "Paid so far", "Balance", "Status", "Paid on", "Method"], rows.map((r) => [
+                r.i.number, r.bk.code, ix.ownerOfBooking(r.bk)?.name ?? "", ix.marinaOfBerth(r.bk.berthId)?.name ?? "", r.i.issued, r.i.due, ix.curOfInvoice(r.i), r.i.amount, ix.paidSoFar(r.i), ix.balance(r.i), r.i.status, r.i.paidAt ?? "", r.i.method ?? "",
               ]))
             }
           >
@@ -323,8 +326,8 @@ export function Billing() {
                 <td className="whitespace-nowrap">{fmtDate(i.issued)}</td>
                 <td className="whitespace-nowrap">{fmtDate(i.due)}{late > 0 && <span className="block text-xs font-semibold">{tn(late, "{n} day late", "{n} days late")}</span>}</td>
                 <td className={`font-medium num ${i.status === "void" ? "text-ink-3 line-through" : ""}`}>
-                  {money(i.amount)}
-                  {ix.paidSoFar(i) > 0 && ix.balance(i) > 0 && <span className="block text-xs font-normal text-ink-3">{money(ix.balance(i))} {t("left")}</span>}
+                  {money(i.amount, ix.curOfInvoice(i))}
+                  {ix.paidSoFar(i) > 0 && ix.balance(i) > 0 && <span className="block text-xs font-normal text-ink-3">{money(ix.balance(i), ix.curOfInvoice(i))} {t("left")}</span>}
                 </td>
                 <td><InvoiceStatus inv={i} /></td>
                 <td className="whitespace-nowrap" onClick={(e) => e.stopPropagation()}>

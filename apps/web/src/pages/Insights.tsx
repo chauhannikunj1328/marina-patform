@@ -5,7 +5,7 @@ import { Logo } from "@/components/Logo";
 import { CompanyMark, useBrandColor } from "@/components/CompanyMark";
 import { useStore } from "@/data/store";
 import { t, daysBetween, fmtDate, fmtMonth, lastMonths, monthKey, REVENUE, today } from "@marina/shared";
-import { money, pct } from "@marina/shared";
+import { money, money2, pct } from "@marina/shared";
 import { downloadCsv, downloadWorkbook } from "@/lib/csv";
 import { allDataSheets } from "@/lib/exportAll";
 import { ReportSchedules } from "./ReportSchedules";
@@ -45,7 +45,7 @@ export function Reports() {
       const statuses = ["pending", "confirmed", "checked-in", "completed", "cancelled"] as const;
       const rows = statuses.map((s) => {
         const list = inMonth.filter((b) => b.status === s);
-        return [s[0].toUpperCase() + s.slice(1), list.length, list.reduce((t, b) => t + daysBetween(b.start, b.end), 0), list.reduce((t, b) => t + ix.amount(b), 0)];
+        return [s[0].toUpperCase() + s.slice(1), list.length, list.reduce((t, b) => t + daysBetween(b.start, b.end), 0), Math.round(list.reduce((t, b) => t + ix.toReporting(ix.amount(b), ix.berth(b.berthId)?.marinaId), 0))];
       });
       return { head: ["Status", "Bookings", "Nights", "Value"], rows, display: rows.map((r) => [r[0], r[1], r[2], money(Number(r[3]))]) };
     }
@@ -57,12 +57,13 @@ export function Reports() {
         .map((i) => {
           const bk = ix.booking(i.bookingId)!;
           const owner = ix.owner(ix.boat(bk.boatId)?.ownerId ?? "");
-          return [i.number, owner?.name ?? "", ix.marinaOfBerth(bk.berthId)?.name ?? "", i.due, Math.max(0, daysBetween(i.due, now)), ix.balance(i)];
+          return [i.number, owner?.name ?? "", ix.marinaOfBerth(bk.berthId)?.name ?? "", i.due, Math.max(0, daysBetween(i.due, now)), ix.balance(i), ix.curOfInvoice(i)];
         });
-      return { head: ["Invoice", "Boat owner", "Marina", "Due", "Days late", "Balance due"], rows, display: rows.map((r) => [...r.slice(0, 5), money(Number(r[5]))]) };
+      // Each balance is in its marina's currency.
+      return { head: ["Invoice", "Boat owner", "Marina", "Due", "Days late", "Balance due", "Currency"], rows, display: rows.map((r) => [...r.slice(0, 5), money2(Number(r[5]), String(r[6])), r[6]]) };
     }
     if (kind === "services") {
-      const totals = new Map<string, { service: string; marina: string; qty: number; unit: string; count: number; amount: number }>();
+      const totals = new Map<string, { service: string; marina: string; currency: string; qty: number; unit: string; count: number; amount: number }>();
       for (const inv of db.invoices) {
         if (inv.status === "void") continue;
         const marinaId = ix.marinaOfInvoice(inv) ?? "";
@@ -70,15 +71,15 @@ export function Reports() {
         for (const l of inv.lines ?? []) {
           if (monthKey(l.at.slice(0, 10)) !== month) continue;
           const key = `${l.label}|${marinaId}`;
-          const t = totals.get(key) ?? { service: l.label, marina: ix.marina(marinaId)?.name ?? "", qty: 0, unit: l.unit, count: 0, amount: 0 };
+          const t = totals.get(key) ?? { service: l.label, marina: ix.marina(marinaId)?.name ?? "", currency: ix.cur(marinaId), qty: 0, unit: l.unit, count: 0, amount: 0 };
           t.qty += l.qty;
           t.count += 1;
           t.amount += l.amount;
           totals.set(key, t);
         }
       }
-      const rows = [...totals.values()].sort((a, b) => a.service.localeCompare(b.service) || b.amount - a.amount).map((t) => [t.service, t.marina, `${Math.round(t.qty * 10) / 10} ${t.unit}`, t.count, Math.round(t.amount * 100) / 100]);
-      return { head: ["Service", "Marina", "Quantity", "Charges", "Revenue"], rows, display: rows.map((r) => [...r.slice(0, 4), money(Number(r[4]))]) };
+      const rows = [...totals.values()].sort((a, b) => a.service.localeCompare(b.service) || b.amount - a.amount).map((t) => [t.service, t.marina, `${Math.round(t.qty * 10) / 10} ${t.unit}`, t.count, Math.round(t.amount * 1000) / 1000, t.currency]);
+      return { head: ["Service", "Marina", "Quantity", "Charges", "Revenue", "Currency"], rows, display: rows.map((r) => [...r.slice(0, 4), money2(Number(r[4]), String(r[5])), r[5]]) };
     }
     const byOwner = new Map<string, number>();
     for (const b of ix.bookingsIn(scope)) {
@@ -86,7 +87,7 @@ export function Reports() {
       const share = ix.monthShare(b, month);
       if (!share) continue;
       const o = ix.boat(b.boatId)?.ownerId ?? "";
-      byOwner.set(o, (byOwner.get(o) ?? 0) + share);
+      byOwner.set(o, (byOwner.get(o) ?? 0) + ix.toReporting(share, ix.berth(b.berthId)?.marinaId));
     }
     const rows = [...byOwner.entries()].sort((a, b) => b[1] - a[1]).slice(0, 25).map(([o, v]) => {
       const owner = ix.owner(o);

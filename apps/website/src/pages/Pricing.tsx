@@ -1,9 +1,9 @@
 // Rates and fees: nightly and monthly rates by marina, contracts, extras and how to pay.
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { addDays, CONTRACT_TERMS, DEFAULT_UTILITIES, money, money2, quote, RENEWAL_NOTICE_DAYS, SERVICES, t, today, type ContractTerm } from "@marina/shared";
+import { addDays, CONTRACT_TERMS, DEFAULT_UTILITIES, lowestRate, money, money2, quote, RENEWAL_NOTICE_DAYS, SERVICES, t, today, type ContractTerm, ftM } from "@marina/shared";
 import { useStore } from "@/data/store";
-import { SearchForm } from "@/components/SearchForm";
+import { LengthInput, SearchForm } from "@/components/SearchForm";
 import { Search } from "lucide-react";
 import { Badge, ButtonLink, Card, Container, Field, Input, PageHero, Select, usePageTitle } from "@/components/ui";
 import { marinaFacts, openMarinas, termFee } from "@/lib/marinas";
@@ -11,7 +11,7 @@ import { pricingMeta } from "@/lib/seo";
 
 /** Rough price for a stay: the cheapest berth the boat fits, at the marina's rules (not a booking). */
 function Estimate() {
-  const { db } = useStore();
+  const { db, ix } = useStore();
   const marinas = openMarinas(db);
   const [marinaId, setMarinaId] = useState(marinas[0]?.id ?? "");
   const [length, setLength] = useState("30");
@@ -26,14 +26,14 @@ function Estimate() {
       <p className="mt-1 text-[13px] text-ink-3">{t("The cheapest berth your boat fits, starting tomorrow. Search to see what's free on your dates.")}</p>
       <div className="mt-5 grid gap-3 sm:grid-cols-3">
         <Field label={t("Marina")}>{(id) => <Select id={id} value={marinaId} onChange={(e) => setMarinaId(e.target.value)}>{marinas.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}</Select>}</Field>
-        <Field label={t("Boat length (ft)")}>{(id) => <Input id={id} type="number" min={10} max={200} inputMode="numeric" value={length} onChange={(e) => setLength(e.target.value)} />}</Field>
+        <Field label={t("Boat length (ft)")}>{(id) => <LengthInput id={id} value={length} onChange={setLength} />}</Field>
         <Field label={t("Nights")}>{(id) => <Input id={id} type="number" min={1} max={365} inputMode="numeric" value={nights} onChange={(e) => setNights(e.target.value)} />}</Field>
       </div>
       <p className="mt-5 text-[13px] text-ink-2" aria-live="polite">
         {price === undefined ? t("No berth at this marina takes a boat that long.") : (
           <>
-            {t("About")} <span className="num text-[22px] font-semibold text-ink">{money(price)}</span>{" "}
-            {n >= db.settings.monthlyFromNights ? t("(monthly rate, prorated)") : t("({n} nights at {rate} a night)", { n, rate: money(fits[0].dailyRate) })}
+            {t("About")} <span className="num text-[22px] font-semibold text-ink">{money(price, ix.cur(marinaId))}</span>{" "}
+            {n >= db.settings.monthlyFromNights ? t("(monthly rate, prorated)") : t("({n} nights at {rate} a night)", { n, rate: money(fits[0].dailyRate, ix.cur(marinaId)) })}
           </>
         )}
       </p>
@@ -42,12 +42,13 @@ function Estimate() {
 }
 
 export function Pricing() {
-  const { db } = useStore();
+  const { db, ix } = useStore();
   usePageTitle(t("Rates and fees"), pricingMeta(db, window.location.origin));
   const marinas = openMarinas(db);
   const utilities = db.settings.utilities ?? DEFAULT_UTILITIES;
   const rules = db.settings.pricing;
-  const lowestMonthly = Math.min(...marinas.map((m) => marinaFacts(db, m.id).fromMonthly));
+  const gulf = marinas.some((m) => ix.cur(m.id) !== "USD");
+  const lowestMonthly = lowestRate(db, marinas, "monthly");
   return (
     <>
       <PageHero eyebrow={t("Rates and fees")} title={t("Simple rates, no booking fees")} intro={t("No booking fees. You pay for the nights you stay, plus anything you use at the dock.")} actions={<ButtonLink to="/book" variant="primary" size="lg" icon={Search}>{t("Check availability")}</ButtonLink>} />
@@ -73,9 +74,9 @@ export function Pricing() {
                     return (
                       <tr key={m.id} className="border-t border-table-line">
                         <td className="px-4 py-3"><Link to={`/marinas/${m.id}`} className="font-medium hover:underline">{m.name}</Link></td>
-                        <td className="px-4 py-3 text-ink-2"><span className="num">{f.maxLength}</span> {t("ft")}</td>
-                        <td className="num px-4 py-3 text-end">{money(f.fromDaily)}</td>
-                        <td className="num px-4 py-3 text-end">{money(f.fromMonthly)}</td>
+                        <td className="px-4 py-3 text-ink-2"><span className="num">{ftM(f.maxLength)}</span></td>
+                        <td className="num px-4 py-3 text-end">{money(f.fromDaily, f.currency)}</td>
+                        <td className="num px-4 py-3 text-end">{money(f.fromMonthly, f.currency)}</td>
                       </tr>
                     );
                   })}
@@ -107,7 +108,7 @@ export function Pricing() {
               return (
                 <Card key={k} className={k === "annual" ? "border-accent-strong p-6" : "p-6"}>
                   <p className="flex items-center justify-between gap-2 text-[15px] font-medium">{t(term.label)}{k === "annual" && <Badge tone="success">{t("Best value")}</Badge>}</p>
-                  <p className="mt-4 text-[13px] text-ink-3">{t("from")} <span className="num text-[28px] font-medium text-ink">{money(termFee(lowestMonthly, k))}</span> {t("/month")}</p>
+                  <p className="mt-4 text-[13px] text-ink-3">{t("from")} <span className="num text-[28px] font-medium text-ink">{money(termFee(lowestMonthly.amount, k), lowestMonthly.currency)}</span> {t("/month")}</p>
                   <p className="mt-3 text-[13px] text-ink-2">{term.discount ? t("{pct}% off the monthly rate", { pct: term.discount * 100 }) : t("The standard monthly rate")}</p>
                   <p className="mt-1 text-xs text-ink-3">{t("We'll remind you {n} days before it ends.", { n: RENEWAL_NOTICE_DAYS[k] })}</p>
                   <ButtonLink to="/contact?topic=contract" size="sm" variant={k === "annual" ? "primary" : "secondary"} className="mt-5">{t("Ask about a contract")}</ButtonLink>
@@ -120,13 +121,13 @@ export function Pricing() {
         <section className="mt-16 grid gap-6 lg:grid-cols-2">
           <Card className="p-6">
             <h2 className="text-[17px] font-medium">{t("Extras at the dock")}</h2>
-            <p className="mt-1 text-[13px] text-ink-3">{t("Added to your invoice when you use them.")}</p>
+            <p className="mt-1 text-[13px] text-ink-3">{t("Added to your invoice when you use them.")} {gulf && t("Prices at our US marinas. Marinas in the Gulf charge the same in their own currency.")}</p>
             <table className="mt-4 w-full text-[13px]">
               <tbody>
-                <tr className="border-t border-line"><td className="py-2.5">{t("Shore power (metered)")}</td><td className="num py-2.5 text-end">{money2(utilities.powerPerKwh)} / kWh</td></tr>
-                <tr className="border-t border-line"><td className="py-2.5">{t("Fresh water (metered)")}</td><td className="num py-2.5 text-end">{money2(utilities.waterPerGallon)} / {t("gal")}</td></tr>
+                <tr className="border-t border-line"><td className="py-2.5">{t("Shore power (metered)")}</td><td className="num py-2.5 text-end">{money2(utilities.powerPerKwh, "USD")} / kWh</td></tr>
+                <tr className="border-t border-line"><td className="py-2.5">{t("Fresh water (metered)")}</td><td className="num py-2.5 text-end">{money2(utilities.waterPerGallon, "USD")} / {t("gal")}</td></tr>
                 {SERVICES.map((s) => (
-                  <tr key={s.id} className="border-t border-line"><td className="py-2.5">{t(s.label)}</td><td className="num py-2.5 text-end">{money2(s.price)} / {t(s.unit)}</td></tr>
+                  <tr key={s.id} className="border-t border-line"><td className="py-2.5">{t(s.label)}</td><td className="num py-2.5 text-end">{money2(s.price, "USD")} / {t(s.unit)}</td></tr>
                 ))}
               </tbody>
             </table>

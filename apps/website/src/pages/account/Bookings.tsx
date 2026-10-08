@@ -108,7 +108,7 @@ export function MyBookings() {
                     </div>
                     <div className="text-end">
                       <BookingStatus b={b} />
-                      <p className="num mt-2 text-[15px] font-semibold">{money(ix.amount(b))}</p>
+                      <p className="num mt-2 text-[15px] font-semibold">{money(ix.amount(b), ix.curOfBooking(b))}</p>
                     </div>
                   </div>
                   {tab === "past" && (() => {

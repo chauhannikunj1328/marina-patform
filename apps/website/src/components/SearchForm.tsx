@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search } from "lucide-react";
-import { addDays, cx, t, today } from "@marina/shared";
+import { addDays, cx, t, today, toMetres } from "@marina/shared";
 import { useStore } from "@/data/store";
 import { openMarinas } from "@/lib/marinas";
 import { Button, Field, Input, Select } from "./ui";
@@ -43,8 +43,19 @@ export function SearchForm({ initial, compact, lockMarina }: { initial?: Partial
       )}
       <Field label={t("Arrive")}>{(id) => <Input id={id} type="date" required min={today()} value={v.start} onChange={(e) => set("start", e.target.value)} />}</Field>
       <Field label={t("date|Leave")}>{(id) => <Input id={id} type="date" required min={addDays(v.start || today(), 1)} value={v.end} onChange={(e) => set("end", e.target.value)} />}</Field>
-      <Field label={t("Boat length (ft)")}>{(id) => <Input id={id} type="number" required min={10} max={200} inputMode="numeric" value={v.length} onChange={(e) => set("length", e.target.value)} />}</Field>
+      <Field label={t("Boat length (ft)")}>{(id) => <LengthInput id={id} required value={v.length} onChange={(x) => set("length", x)} />}</Field>
       <Button type="submit" variant="primary" size="lg" icon={Search} className={cx(lockMarina && "sm:col-span-2 lg:col-span-1")}>{t("Search")}</Button>
     </form>
+  );
+}
+
+/** Boat length in feet, with the metres shown inside the box (the Gulf mostly uses metres). */
+export function LengthInput({ id, value, onChange, required }: { id: string; value: string; onChange: (v: string) => void; required?: boolean }) {
+  const m = Number(value) > 0 ? toMetres(Number(value)) : undefined;
+  return (
+    <div className="relative">
+      <Input id={id} type="number" required={required} min={10} max={200} inputMode="numeric" value={value} onChange={(e) => onChange(e.target.value)} className={m !== undefined ? "pe-16" : undefined} aria-describedby={m !== undefined ? `${id}-m` : undefined} />
+      {m !== undefined && <span id={`${id}-m`} className="num pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-xs text-ink-3">{t("{m} m", { m })}</span>}
+    </div>
   );
 }

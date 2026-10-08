@@ -70,6 +70,19 @@ Reviewers can also choose **Create an account** on the web sign-in page. New acc
 
 Changes you make are saved on that device until midnight; then fresh sample data is generated so dates stay current. Web: Settings → Demo data → **Reset demo data** starts over at any time.
 
+## Locations and currencies
+
+The sample data has **26 marinas**: 14 in the United States (California, Washington, Florida) and 12 in the Gulf: Dubai, Abu Dhabi, Sharjah and Ras Al Khaimah in the UAE, Jeddah and Al Khobar in Saudi Arabia, Doha, Manama, Muscat and Kuwait City. The Gulf places and map positions are real marina areas; the marina names, addresses, people and boats are made up (`packages/shared/src/gulf.ts`). They're added after the US data with their own random sequence, so the US marinas' bookings, invoices and staff are unchanged.
+
+- **Each marina charges in its country's currency** (`countries.ts`): US dollars, UAE dirhams (AED), Saudi riyals (SAR), Qatari riyals (QAR), and the Bahraini, Omani and Kuwaiti dinars (BHD, OMR, KWD, shown to 3 decimals). A berth's rates, a booking, its invoice, payments, contracts and parts are all in that marina's currency.
+- **Totals across marinas** (dashboards, Billing's cards, reports, the staff app's overview) are converted to the **reporting currency** in Settings → Company defaults (US dollars by default), using **Settings → Exchange rates**. The defaults are the Gulf currencies' dollar pegs.
+- **What one boat owner owes** across countries is shown per currency, without converting ("$120 + AED 400").
+- **Fuel, pump-outs, ice, laundry, electricity and water** are priced in US dollars (Settings → Pricing) and charged at each marina in its own currency.
+- **Staff pay** stays in US dollars.
+- **Lengths** are stored in feet and shown with metres ("40 ft (12.2 m)"). The boat length boxes show the metres as you type.
+- **Arabic names:** Gulf marinas, cities and emirates have Arabic names and addresses (`nameAr`, `addressAr`). The website and customer app show them in Arabic; the web and staff apps keep the English names that staff edit.
+- In Locations, a county's **Country** decides its marinas' currency; outside the US the country takes the place of the state.
+
 ## Deploying
 
 - **Web app:** pushes to `main` deploy automatically to https://marina-patform.vercel.app. The root `vercel.json` installs and builds `apps/web`.
@@ -111,7 +124,7 @@ The design is minimal and clean, in the brand's colours, type and fine square gr
 | Page | Route | What works |
 |---|---|---|
 | Home | `/` | Berth search; a marina photo with what's free tonight, the lowest nightly rate and the app; the places we have berths; about Marina with key numbers; **For boat owners** tabs (search and book, your account, pay online, sign contracts) with screenshots; your account and **Get the app** cards (App Store and Google Play buttons, shown as "Coming soon" until the store links are set); stay a night, a season or the whole year; our marinas on a map; how it works (with the dock office's web app); **reviews**; questions people ask; a final call to action |
-| Marinas | `/marinas`, `/marinas/:id` | Filter by state (`/marinas?state=Florida` opens with it chosen), map; each marina's berth sizes and rates, amenities, dock office contact, directions, availability search, rating and reviews |
+| Marinas | `/marinas`, `/marinas/:id` | Filter by US state or Gulf country (`/marinas?state=Florida` opens with it chosen), map; each marina's berth sizes and rates, amenities, dock office contact, directions, availability search, rating and reviews |
 | Rates and fees | `/pricing` | Rates by marina, a price estimator, how prices are worked out (monthly rate from 28 nights, any weekend, season and long-stay rules from Settings › Pricing), contract terms and discounts, dock extras, how to pay |
 | Contact | `/contact` | Head office and every dock office; a message form |
 | Site map | `/sitemap` | Every page in one list: main pages, owner pages, the marinas by state and the three languages (search engines read `sitemap.xml`) |
@@ -267,7 +280,7 @@ How it's put together:
 Every app runs in **English** (default), **Spanish** and **Arabic**. Switch from the language button in the web app's and website's top bar (the website also has the languages in its footer and its own address per language), **Me → Language** in the staff app, or **Account → Language** in the customer app; the choice is remembered.
 
 - **Arabic reads right to left:** the layout is mirrored (sidebar and tab order on the right, arrows and chevrons flipped, chart axes reversed) and text uses **IBM Plex Sans Arabic**. Numbers stay in Western digits (0–9), and codes, emails, phone numbers and amounts keep reading left to right.
-- Dates, times, currency and plurals follow the language (Arabic has its own forms for 1, 2, 3–10 and 11+).
+- Dates, times, number formats and plurals follow the language (Arabic has its own forms for 1, 2, 3–10 and 11+). Each amount is in its marina's currency (see "Locations and currencies").
 - Text is written in English in the code (`t("Check in")` on the web, `tr("Check in")` on mobile, where `t` is the theme). Translations live in `packages/shared/src/i18n/es.ts` and `ar.ts`, keyed by the English text; anything missing falls back to English. The web app downloads a language's translations only when someone picks it, so English visitors don't load them.
 - The activity log and notifications are stored in English and shown in the reader's language.
 - Names, addresses and text people type (work order titles, notes, messages) are shown as entered.

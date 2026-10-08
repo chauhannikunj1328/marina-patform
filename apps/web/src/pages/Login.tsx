@@ -36,11 +36,10 @@ export function Login() {
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  if (user) return <Navigate to={target} replace />;
-
   const [busy, setBusy] = useState(false);
   const [remember, setRemember] = useState(false);
+
+  if (user) return <Navigate to={target} replace />;
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !password) {

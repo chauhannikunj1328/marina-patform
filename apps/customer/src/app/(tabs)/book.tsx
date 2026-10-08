@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { Pressable, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Check, ChevronDown, MapPin, Search, Ship } from "lucide-react-native";
-import { addDays, fmtDate, MAX_ONLINE_NIGHTS, openMarinas, searchProblem, stateOf, tn, today } from "@marina/shared";
+import { addDays, fmtDate, ftM, MAX_ONLINE_NIGHTS, openMarinas, searchProblem, stateOf, tn, today } from "@marina/shared";
 import { Button, Card, Chip, DayChips, Field, Input, Section, Sheet, Stepper, Txt } from "@/components/ui";
 import { Page } from "@/components/parts";
 import { useStore } from "@/store";
@@ -87,6 +87,7 @@ export default function Book() {
           {(!boats.length || !boatId) && (
             <Input value={length} onChangeText={(v) => { setLength(v.replace(/[^\d]/g, "")); setError(""); }} keyboardType="number-pad" accessibilityLabel={tr("Boat length (ft)")} placeholder={tr("Boat length (ft)")} />
           )}
+          {Number(length) > 0 && <Txt v="caption" color={t.text3}>{ftM(Number(length))}</Txt>}
         </Field>
 
         {error ? <Txt v="bodySm" weight="medium" color={t.error.fg}>{error}</Txt> : null}

@@ -32,11 +32,12 @@ export default function DayReport() {
   const berths = ix.berthsIn(ids);
   const occupied = berths.filter((b) => ix.berthStatus(b, day) === "occupied").length;
   const invoices = db.invoices.filter((i) => inIds.has(ix.marinaOfInvoice(i) ?? ""));
-  const payments = invoices.flatMap((i) => i.payments.filter((p) => p.date === day));
+  // Totals in the reporting currency: each payment or charge is converted from its marina's currency.
+  const payments = invoices.flatMap((i) => i.payments.filter((p) => p.date === day).map((p) => ({ ...p, amount: ix.invoiceToReporting(i, p.amount) })));
   const taken = payments.reduce((s, p) => s + p.amount, 0);
   const byMethod = (["Card", "Cash", "Check", "Bank transfer"] as PaymentMethod[]).map((m) => ({ m, n: payments.filter((p) => p.method === m).reduce((s, p) => s + p.amount, 0) })).filter((x) => x.n > 0);
   const services = invoices.flatMap((i) => (i.lines ?? []).filter((l) => localDay(l.at) === day));
-  const servicesTotal = services.reduce((sum, l) => sum + l.amount, 0);
+  const servicesTotal = invoices.reduce((sum, i) => sum + (i.lines ?? []).filter((l) => localDay(l.at) === day).reduce((s, l) => s + ix.invoiceToReporting(i, l.amount), 0), 0);
   const tasks = db.tasks.filter((x) => inIds.has(x.marinaId));
   const done = tasks.filter((x) => x.doneAt === day);
   const reported = tasks.filter((x) => x.created === day);

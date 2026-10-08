@@ -23,7 +23,7 @@ export default function Marinas() {
       <StackHeader title={tr("Marinas")} subtitle={tr("{n} marinas", { n: all.length })} />
       <Body>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-          {["", ...states].map((s) => <Chip key={s || "all"} label={`${s ? tr(s) : tr("All states")} ${s ? all.filter((m) => stateOf(db, m) === s).length : all.length}`} on={state === s} onPress={() => setState(s)} />)}
+          {["", ...states].map((s) => <Chip key={s || "all"} label={`${s ? tr(s) : tr("All locations")} ${s ? all.filter((m) => stateOf(db, m) === s).length : all.length}`} on={state === s} onPress={() => setState(s)} />)}
         </ScrollView>
         {shown.map((m) => {
           const f = marinaFacts(db, m.id);
@@ -36,7 +36,7 @@ export default function Marinas() {
               </View>
               <View style={{ alignItems: "flex-end" }}>
                 <Txt v="caption" color={t.text3}>{tr("from")}</Txt>
-                <Txt num weight="semibold">{money(f.fromDaily)}</Txt>
+                <Txt num weight="semibold">{money(f.fromDaily, f.currency)}</Txt>
                 <Txt v="caption" color={t.text3}>{tr("/night")}</Txt>
               </View>
               <ArrowRight size={18} color={t.text3} style={flipRtl()} />

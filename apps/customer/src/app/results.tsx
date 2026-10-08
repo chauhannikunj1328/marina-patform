@@ -19,7 +19,7 @@ const SHOWN_PER_MARINA = 4;
 function BerthRow({ berth, start, end, length, first }: { berth: Berth; start: string; end: string; length: string; first: boolean }) {
   const { t } = useTheme();
   const tr = useTr();
-  const { db, owner } = useStore();
+  const { db, ix, owner } = useStore();
   const price = quote(db, berth, start, end);
   const book = () => {
     const checkout = { pathname: "/checkout" as const, params: { berth: berth.id, start, end, length } };
@@ -38,7 +38,7 @@ function BerthRow({ berth, start, end, length, first }: { berth: Berth; start: s
         <Txt v="caption" color={t.text3}>{tr(priceNote(start, end, db.settings.monthlyFromNights, db.settings.pricing))}</Txt>
       </View>
       <View style={{ alignItems: "flex-end", gap: 6 }}>
-        <Txt num weight="semibold">{money(price)}</Txt>
+        <Txt num weight="semibold">{money(price, ix.curOfBerth(berth.id))}</Txt>
         <Button size="sm" variant="primary" label={tr("Book")} onPress={book} />
       </View>
     </View>

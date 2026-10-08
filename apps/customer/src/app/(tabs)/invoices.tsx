@@ -2,7 +2,7 @@
 import { View } from "react-native";
 import { router } from "expo-router";
 import { Receipt } from "lucide-react-native";
-import { amountDue, fmtDate, money2, ownerInvoices } from "@marina/shared";
+import { amountDue, fmtDate, money2, moneyTotal, ownerInvoices } from "@marina/shared";
 import { Card, EmptyState, Txt } from "@/components/ui";
 import { InvoiceStatus, Page, SignInPrompt } from "@/components/parts";
 import { useStore } from "@/store";
@@ -18,7 +18,7 @@ export default function Invoices() {
   const open = invoices.filter((i) => amountDue(i) > 0);
   return (
     <Page title={tr("Invoices")}>
-      <Txt color={t.text2} style={{ marginTop: -8 }}>{open.length ? tr("{amount} to pay across your open invoices.", { amount: money2(open.reduce((s, i) => s + amountDue(i), 0)) }) : tr("You're all paid up.")}</Txt>
+      <Txt color={t.text2} style={{ marginTop: -8 }}>{open.length ? tr("{amount} to pay across your open invoices.", { amount: moneyTotal(open.map((i) => ({ amount: amountDue(i), currency: ix.curOfInvoice(i) })), true) }) : tr("You're all paid up.")}</Txt>
       {invoices.length === 0 ? (
         <Card><EmptyState icon={Receipt} title={tr("No invoices yet")} body={tr("The marina sends an invoice once it confirms a booking.")} /></Card>
       ) : invoices.map((inv) => {
@@ -30,7 +30,7 @@ export default function Invoices() {
               <Txt v="caption" color={t.text3}>{tr("Issued {date}", { date: fmtDate(inv.issued) })} · {tr("due {date}", { date: fmtDate(inv.due) })}</Txt>
             </View>
             <View style={{ alignItems: "flex-end", gap: 6 }}>
-              <Txt num weight="semibold">{money2(amountDue(inv) || inv.amount)}</Txt>
+              <Txt num weight="semibold">{money2(amountDue(inv) || inv.amount, ix.curOfInvoice(inv))}</Txt>
               <InvoiceStatus inv={inv} />
             </View>
           </Card>

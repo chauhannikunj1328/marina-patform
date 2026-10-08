@@ -5,10 +5,10 @@
 // don't run JavaScript) see the right title, description and image.
 //
 // Imports use a relative path so vite.config.ts can load this file too.
-import { CONTACT, CONTRACT_TERMS, getLang, LANGS, marinaFacts, marinaPoint, money, openMarinas, stateOf, t, type Db, type Lang, type Marina } from "../../../../packages/shared/src/index";
+import { CONTACT, CONTRACT_TERMS, getLang, LANGS, lowestRate, marinaFacts, marinaPoint, money, openMarinas, stateOf, t, type Db, type Lang, type Marina } from "../../../../packages/shared/src/index";
 
 export const BRAND = "Marina";
-export const DEFAULT_TITLE = "Book a berth online in California, Washington and Florida · Marina";
+export const DEFAULT_TITLE = "Book a berth online in the US, the UAE and the Gulf · Marina";
 export const OG_IMAGE = "/og-image.png";
 
 export interface PageMeta {
@@ -95,10 +95,10 @@ function faqPage(db: Db) {
 
 export function homeMeta(db: Db, base: string): PageMeta {
   const marinas = openMarinas(db);
-  const from = Math.min(...marinas.map((m) => marinaFacts(db, m.id).fromDaily));
+  const from = lowestRate(db, marinas);
   return {
     title: title(),
-    description: t("Book a berth online at {n} marinas in California, Washington and Florida. See which berths fit your boat, check prices from {price} a night and book in minutes. No booking fees.", { n: marinas.length, price: money(from) }),
+    description: t("Book a berth online at {n} marinas in the United States, the UAE and across the Gulf. See which berths fit your boat, check prices from {price} a night and book in minutes. No booking fees.", { n: marinas.length, price: money(from.amount, from.currency) }),
     path: "/",
     jsonLd: [
       organization(base),
@@ -112,7 +112,7 @@ export function marinasMeta(db: Db, base: string): PageMeta {
   const marinas = openMarinas(db);
   return {
     title: title(t("Marinas")),
-    description: t("All {n} Marina locations in California, Washington and Florida: berth sizes, nightly and monthly rates, amenities and dock office contacts.", { n: marinas.length }),
+    description: t("All {n} Marina locations in the United States, the UAE and across the Gulf: berth sizes, nightly and monthly rates, amenities and dock office contacts.", { n: marinas.length }),
     path: "/marinas",
     jsonLd: [
       breadcrumbs(base, [[BRAND, "/"], [t("Marinas"), "/marinas"]]),
@@ -130,7 +130,7 @@ export function marinaMeta(db: Db, base: string, m: Marina): PageMeta {
   return {
     title: title(t("{name}, {city}: berths and rates", { name: m.name, city: city?.name ?? "" })),
     description: t("Book a berth at {name} in {city}, {state}. {n} berths for boats up to {ft} ft, from {price} a night. {amenities}. Check availability and book online.", {
-      name: m.name, city: city?.name ?? "", state: t(state), n: f.berths, ft: f.maxLength, price: money(f.fromDaily), amenities: m.amenities.slice(0, 4).map((a) => t(a)).join(", "),
+      name: m.name, city: city?.name ?? "", state: t(state), n: f.berths, ft: f.maxLength, price: money(f.fromDaily, f.currency), amenities: m.amenities.slice(0, 4).map((a) => t(a)).join(", "),
     }),
     path,
     jsonLd: [
@@ -144,9 +144,9 @@ export function marinaMeta(db: Db, base: string, m: Marina): PageMeta {
         image: abs(base, OG_IMAGE),
         telephone: m.phone,
         email: m.email,
-        address: { "@type": "PostalAddress", streetAddress: m.address, addressLocality: city?.name, addressRegion: state, addressCountry: "US" },
+        address: { "@type": "PostalAddress", streetAddress: m.address, addressLocality: city?.name, addressRegion: state, addressCountry: db.counties.find((c) => c.id === city?.countyId)?.country ?? "US" },
         ...(point ? { geo: { "@type": "GeoCoordinates", latitude: point.lat, longitude: point.lng } } : {}),
-        priceRange: `${money(f.fromDaily)}–${money(Math.max(...db.berths.filter((b) => b.marinaId === m.id).map((b) => b.dailyRate)))} / night`,
+        priceRange: `${money(f.fromDaily, f.currency)}–${money(Math.max(...db.berths.filter((b) => b.marinaId === m.id).map((b) => b.dailyRate)), f.currency)} / night`,
         amenityFeature: m.amenities.map((a) => ({ "@type": "LocationFeatureSpecification", name: a, value: true })),
         parentOrganization: { "@type": "Organization", name: BRAND },
       },
@@ -156,10 +156,10 @@ export function marinaMeta(db: Db, base: string, m: Marina): PageMeta {
 
 export function pricingMeta(db: Db, base: string): PageMeta {
   const marinas = openMarinas(db);
-  const from = Math.min(...marinas.map((m) => marinaFacts(db, m.id).fromDaily));
+  const from = lowestRate(db, marinas);
   return {
     title: title(t("Rates and fees")),
-    description: t("Berth rates at every Marina location, from {price} a night. Monthly rates from {n} nights, seasonal and annual contracts, dock extras and how to pay. No booking fees.", { price: money(from), n: db.settings.monthlyFromNights }),
+    description: t("Berth rates at every Marina location, from {price} a night. Monthly rates from {n} nights, seasonal and annual contracts, dock extras and how to pay. No booking fees.", { price: money(from.amount, from.currency), n: db.settings.monthlyFromNights }),
     path: "/pricing",
     jsonLd: [breadcrumbs(base, [[BRAND, "/"], [t("Rates and fees"), "/pricing"]])],
   };

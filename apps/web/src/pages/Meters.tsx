@@ -3,14 +3,16 @@
 import { useState } from "react";
 import { Gauge } from "lucide-react";
 import { useStore } from "@/data/store";
-import { t, DEFAULT_UTILITIES, fmtDateTime, lastReading, METER_UNIT, money2, withMeterReading, type Berth, type MeterKind } from "@marina/shared";
+import { t, DEFAULT_UTILITIES, fmtDateTime, lastReading, METER_UNIT, money2, roundMoney, utilityRates, withMeterReading, type Berth, type MeterKind } from "@marina/shared";
 import { Button, EmptyState, Field, Input, Modal, Table } from "@/components/ui";
 
 export function MetersPanel({ berths, canEdit }: { berths: Berth[]; canEdit: boolean }) {
   const { db, ix } = useStore();
   const [reading, setReading] = useState<Berth | undefined>();
   const metered = berths.filter((b) => b.power || b.water);
-  const rates = db.settings.utilities ?? DEFAULT_UTILITIES;
+  // One currency on screen: that marina's rates. Marinas in several countries: the US dollar rates they're set in.
+  const mixed = ix.mixedCurrencies([...new Set(metered.map((b) => b.marinaId))]);
+  const rates = metered.length && !mixed ? utilityRates(db, metered[0].marinaId) : { ...(db.settings.utilities ?? DEFAULT_UTILITIES), currency: "USD" };
   const cell = (b: Berth, kind: MeterKind) => {
     if (!(kind === "power" ? b.power : b.water)) return <span className="text-ink-3">—</span>;
     const r = lastReading(db, b.id, kind);
@@ -18,7 +20,7 @@ export function MetersPanel({ berths, canEdit }: { berths: Berth[]; canEdit: boo
   };
   return (
     <div>
-      <p className="px-4 py-3 text-[13px] text-ink-2">{t("Electricity")} {money2(rates.powerPerKwh)}{t("/kWh · water")} {money2(rates.waterPerGallon)}{t("/gal. Change the rates in Settings › Pricing.")}</p>
+      <p className="px-4 py-3 text-[13px] text-ink-2">{t("Electricity")} {money2(rates.powerPerKwh, rates.currency)}{t("/kWh · water")} {money2(rates.waterPerGallon, rates.currency)}{t("/gal. Change the rates in Settings › Pricing.")}{mixed && ` ${t("Marinas outside the US charge the same in their own currency.")}`}</p>
       {metered.length === 0 ? (
         <EmptyState icon={Gauge} title={t("No metered berths here")} />
       ) : (
@@ -48,13 +50,13 @@ function ReadingForm({ berth, onClose }: { berth: Berth; onClose: () => void }) 
   const [values, setValues] = useState<Record<MeterKind, string>>({ power: "", water: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const cur = ix.currentBooking(berth.id);
-  const rates = db.settings.utilities ?? DEFAULT_UTILITIES;
+  const rates = utilityRates(db, berth.marinaId);
   const preview = (k: MeterKind) => {
     const prev = lastReading(db, berth.id, k);
     const v = Number(values[k]);
     if (!values[k] || !prev || !(v >= prev.value)) return undefined;
     const usage = v - prev.value;
-    return { usage, charge: Math.round(usage * (k === "power" ? rates.powerPerKwh : rates.waterPerGallon) * 100) / 100 };
+    return { usage, charge: roundMoney(usage * (k === "power" ? rates.powerPerKwh : rates.waterPerGallon), rates.currency) };
   };
   const save = () => {
     const e: Record<string, string> = {};
@@ -79,7 +81,7 @@ function ReadingForm({ berth, onClose }: { berth: Berth; onClose: () => void }) 
       }
       return next;
     }, { text: `Meter readings for berth ${berth.code}${cur ? `, billed to ${ix.boat(cur.boatId)?.name}` : ""}`, to: "/berths", marinaId: berth.marinaId });
-    toast(cur && total > 0 ? t("Readings saved. {amount} added to {name}'s invoice.", { amount: money2(total), name: ix.boat(cur.boatId)?.name }) : t("Readings saved"), before);
+    toast(cur && total > 0 ? t("Readings saved. {amount} added to {name}'s invoice.", { amount: money2(total, rates.currency), name: ix.boat(cur.boatId)?.name }) : t("Readings saved"), before);
     onClose();
   };
   return (
@@ -89,7 +91,7 @@ function ReadingForm({ berth, onClose }: { berth: Berth; onClose: () => void }) 
           const prev = lastReading(db, berth.id, k);
           const p = preview(k);
           return (
-            <Field key={k} label={t("{v} meter ({v2})", { v: k === "power" ? t("Power") : t("Water"), v2: METER_UNIT[k] })} hint={p ? t("{toLocaleString} {v} used · {amount}", { toLocaleString: p.usage.toLocaleString(), v: METER_UNIT[k], amount: money2(p.charge) }) : prev ? t("Last: {toLocaleString} on {at}", { toLocaleString: prev.value.toLocaleString(), at: fmtDateTime(prev.at) }) : t("First reading")} error={errors[k]}>
+            <Field key={k} label={t("{v} meter ({v2})", { v: k === "power" ? t("Power") : t("Water"), v2: METER_UNIT[k] })} hint={p ? t("{toLocaleString} {v} used · {amount}", { toLocaleString: p.usage.toLocaleString(), v: METER_UNIT[k], amount: money2(p.charge, rates.currency) }) : prev ? t("Last: {toLocaleString} on {at}", { toLocaleString: prev.value.toLocaleString(), at: fmtDateTime(prev.at) }) : t("First reading")} error={errors[k]}>
               {(id) => <Input id={id} type="number" min={0} inputMode="numeric" value={values[k]} onChange={(e) => { setValues({ ...values, [k]: e.target.value }); setErrors({}); }} />}
             </Field>
           );

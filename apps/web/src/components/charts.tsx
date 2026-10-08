@@ -53,7 +53,7 @@ export function RevenueChart({ months, series }: { months: string[]; series: { n
         <BarChart data={data} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
           <CartesianGrid vertical={false} stroke="var(--chart-grid)" strokeDasharray="3 3" />
           <XAxis dataKey="month" tick={axis} tickLine={false} axisLine={false} dy={6} reversed={isRtl()} />
-          <YAxis orientation={isRtl() ? "right" : "left"} tickFormatter={moneyShort} ticks={ticks} domain={[0, ticks[ticks.length - 1]]} tick={axis} tickLine={false} axisLine={false} width={52} />
+          <YAxis orientation={isRtl() ? "right" : "left"} tickFormatter={(v) => moneyShort(v)} ticks={ticks} domain={[0, ticks[ticks.length - 1]]} tick={axis} tickLine={false} axisLine={false} width={52} />
           <Tooltip {...tooltipStyle} formatter={(v) => money(Number(v))} />
           {series.length > 1 && <Legend {...legendProps()} />}
           {series.map((s, i) => (

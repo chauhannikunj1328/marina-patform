@@ -108,7 +108,7 @@ export function HoursPanel({ staff, canEdit }: { staff: Staff[]; canEdit: boolea
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
-        <p className="font-semibold">{t("Week of")} {fmtShort(start)} <span className="font-normal text-ink-3">· {fmtDuration(total)} · {money2(rows.reduce((t, s) => t + pay(s).gross, 0))} {t("gross")}</span></p>
+        <p className="font-semibold">{t("Week of")} {fmtShort(start)} <span className="font-normal text-ink-3">· {fmtDuration(total)} · {money2(rows.reduce((t, s) => t + pay(s).gross, 0), "USD")} {t("gross")}</span></p>
         <div className="flex flex-wrap gap-1">
           <Button size="sm" onClick={() => setOffset(offset - 1)}>{t("Previous")}</Button>
           <Button size="sm" onClick={() => setOffset(-1)} disabled={offset === -1}>{t("Last week")}</Button>
@@ -141,7 +141,7 @@ export function HoursPanel({ staff, canEdit }: { staff: Staff[]; canEdit: boolea
                   );
                 })}
                 <td className="num font-semibold whitespace-nowrap">{fmtDuration(minutes(s))}{p.overtime > 0 && <span className="block text-xs font-normal text-ink-3">{p.overtime.toFixed(1)} {t("h overtime")}</span>}</td>
-                <td className="num whitespace-nowrap">{money2(p.gross)}<span className="block text-xs text-ink-3">{money2(hourlyRateOf(s))}/h</span></td>
+                <td className="num whitespace-nowrap">{money2(p.gross, "USD")}<span className="block text-xs text-ink-3">{money2(hourlyRateOf(s), "USD")}/h</span></td>
                 <td className="whitespace-nowrap">
                   {a && !changed ? <Badge tone="success" icon={Check}>{t("Approved")}</Badge> : changed ? <Badge tone="pending">{t("Changed since approval")}</Badge> : null}
                   {a && <span className="block text-xs text-ink-3">{t("by")} {a.approvedBy}</span>}

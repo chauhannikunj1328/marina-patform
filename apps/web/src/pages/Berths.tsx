@@ -13,7 +13,7 @@ import { Button, Card, ConfirmDialog, EmptyState, Field, IconButton, Input, Moda
 import { BerthBadge, berthLabel } from "@/components/status";
 
 function BerthForm({ berth, defaultMarina, onClose }: { berth?: Berth; defaultMarina: string; onClose: () => void }) {
-  const { db, scope, update, toast } = useStore();
+  const { db, ix, scope, update, toast } = useStore();
   const [f, setF] = useState(() => ({
     marinaId: berth?.marinaId ?? defaultMarina,
     code: berth?.code ?? "",
@@ -35,8 +35,8 @@ function BerthForm({ berth, defaultMarina, onClose }: { berth?: Berth; defaultMa
     else if (db.berths.some((b) => b.marinaId === f.marinaId && b.code === code && b.id !== berth?.id)) e.code = t("This berth number already exists at this marina.");
     const len = Number(f.maxLength), daily = Number(f.dailyRate), monthly = Number(f.monthlyRate);
     if (!(len >= 10 && len <= 300)) e.maxLength = t("Enter a length between 10 and 300 ft.");
-    if (!(daily > 0)) e.dailyRate = t("Enter a daily rate above $0.");
-    if (!(monthly > 0)) e.monthlyRate = t("Enter a monthly rate above $0.");
+    if (!(daily > 0)) e.dailyRate = t("Enter a daily rate above 0.");
+    if (!(monthly > 0)) e.monthlyRate = t("Enter a monthly rate above 0.");
     setErrors(e);
     if (Object.keys(e).length) return;
     const data = { marinaId: f.marinaId, code, maxLength: len, type: f.type, dailyRate: daily, monthlyRate: monthly, power: f.power, water: f.water };
@@ -75,8 +75,8 @@ function BerthForm({ berth, defaultMarina, onClose }: { berth?: Berth; defaultMa
             </Select>
           )}
         </Field>
-        <Field label={t("Daily rate ($)")} error={errors.dailyRate}>{(id) => <Input id={id} type="number" min={1} value={f.dailyRate} onChange={(e) => set("dailyRate", e.target.value)} />}</Field>
-        <Field label={t("Monthly rate ($)")} error={errors.monthlyRate} hint={t("Used for stays of 28+ nights")}>{(id) => <Input id={id} type="number" min={1} value={f.monthlyRate} onChange={(e) => set("monthlyRate", e.target.value)} />}</Field>
+        <Field label={t("Daily rate ({code})", { code: ix.cur(f.marinaId) })} error={errors.dailyRate}>{(id) => <Input id={id} type="number" min={1} value={f.dailyRate} onChange={(e) => set("dailyRate", e.target.value)} />}</Field>
+        <Field label={t("Monthly rate ({code})", { code: ix.cur(f.marinaId) })} error={errors.monthlyRate} hint={t("Used for stays of 28+ nights")}>{(id) => <Input id={id} type="number" min={1} value={f.monthlyRate} onChange={(e) => set("monthlyRate", e.target.value)} />}</Field>
         <label className="flex items-center gap-2 text-[13px]"><input type="checkbox" checked={f.power} onChange={(e) => set("power", e.target.checked)} className="size-4 accent-[var(--primary)]" /> {t("Shore power")}</label>
         <label className="flex items-center gap-2 text-[13px]"><input type="checkbox" checked={f.water} onChange={(e) => set("water", e.target.checked)} className="size-4 accent-[var(--primary)]" /> {t("Fresh water")}</label>
       </div>
@@ -118,12 +118,12 @@ export function Berths() {
     code: (r) => `${ix.marina(r.b.marinaId)?.name} ${r.b.code}`,
     size: (r) => r.b.maxLength,
     status: (r) => berthLabel[r.st],
-    price: (r) => r.b.dailyRate,
+    price: (r) => ix.toReporting(r.b.dailyRate, r.b.marinaId),
   });
   const pg = paginate(sorted, page);
   const filters = (q ? 1 : 0) + (status !== "all" ? 1 : 0) + (marinaId !== "all" ? 1 : 0);
   const clearFilters = () => { setQ(""); setStatus("all"); setParams({}); setPage(1); };
-  const dailyPotential = ix.berthsIn(ids).filter((b) => !b.underMaintenance).reduce((s, b) => s + b.dailyRate, 0);
+  const dailyPotential = ix.berthsIn(ids).filter((b) => !b.underMaintenance).reduce((s, b) => s + ix.toReporting(b.dailyRate, b.marinaId), 0);
 
   const toggleMaintenance = (b: Berth) => {
     if (!b.underMaintenance && ix.currentBooking(b.id)) {
@@ -197,7 +197,7 @@ export function Berths() {
                       </span>
                     </td>
                     <td><BerthBadge status={st} /></td>
-                    <td className="num whitespace-nowrap">{money(b.dailyRate)}{t("/day")}<span className="block text-xs text-ink-3">{money(b.monthlyRate)}{t("/month")}</span></td>
+                    <td className="num whitespace-nowrap">{money(b.dailyRate, ix.cur(b.marinaId))}{t("/day")}<span className="block text-xs text-ink-3">{money(b.monthlyRate, ix.cur(b.marinaId))}{t("/month")}</span></td>
                     <td className="whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                       <IconButton icon={Eye} label={t("Open berth {code}", { code: b.code })} onClick={() => setViewing(b)} />
                       {canEdit && (

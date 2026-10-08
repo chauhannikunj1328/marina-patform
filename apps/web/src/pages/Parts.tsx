@@ -13,7 +13,7 @@ export function PartsCard({ ids, canEdit }: { ids: string[]; canEdit: boolean })
   const items = (db.inventory ?? []).filter((i) => ids.includes(i.marinaId));
   const low = lowStock(items);
   const rows = (lowOnly ? low : items).sort((a, b) => Number(a.qty > a.reorderAt) - Number(b.qty > b.reorderAt) || a.name.localeCompare(b.name));
-  const value = items.reduce((s, i) => s + i.qty * i.unitCost, 0);
+  const value = items.reduce((s, i) => s + ix.toReporting(i.qty * i.unitCost, i.marinaId), 0);
   return (
     <Card className="mt-4" >
       <div id="parts" />
@@ -31,7 +31,7 @@ export function PartsCard({ ids, canEdit }: { ids: string[]; canEdit: boolean })
                 <td>{ix.marina(i.marinaId)?.name}</td>
                 <td className="num whitespace-nowrap">{i.qty} {i.unit}{i.qty <= i.reorderAt && <span className="ms-2"><Badge tone={i.qty === 0 ? "cancelled" : "pending"}>{i.qty === 0 ? t("Out") : t("Low")}</Badge></span>}</td>
                 <td className="num">{i.reorderAt}</td>
-                <td className="num">{money2(i.unitCost)}</td>
+                <td className="num">{money2(i.unitCost, ix.cur(i.marinaId))}</td>
                 <td className="num">{used || "–"}</td>
                 <td>{canEdit && <Button size="sm" icon={PackagePlus} onClick={() => setRestocking(i)}>{t("Restock")}</Button>}</td>
               </tr>
@@ -46,7 +46,7 @@ export function PartsCard({ ids, canEdit }: { ids: string[]; canEdit: boolean })
 }
 
 function RestockForm({ item, onClose }: { item: InventoryItem; onClose: () => void }) {
-  const { db, update, toast } = useStore();
+  const { db, ix, update, toast } = useStore();
   const [qty, setQty] = useState(String(Math.max(item.reorderAt * 2 - item.qty, 1)));
   const [error, setError] = useState("");
   const save = () => {
@@ -59,13 +59,13 @@ function RestockForm({ item, onClose }: { item: InventoryItem; onClose: () => vo
   };
   return (
     <Modal open onClose={onClose} title={t("Restock {name}", { name: item.name })} description={t("{qty} {unit} in stock now, reorder at {reorderAt}.", { qty: item.qty, unit: item.unit, reorderAt: item.reorderAt })} footer={<><Button onClick={onClose}>{t("Cancel")}</Button><Button variant="primary" onClick={save}>{t("Add to stock")}</Button></>}>
-      <Field label={t("How many arrived")} hint={Number(qty) > 0 ? t("Cost {amount}", { amount: money2(Number(qty) * item.unitCost) }) : undefined} error={error}>{(id) => <Input id={id} type="number" min={1} value={qty} onChange={(e) => { setQty(e.target.value); setError(""); }} />}</Field>
+      <Field label={t("How many arrived")} hint={Number(qty) > 0 ? t("Cost {amount}", { amount: money2(Number(qty) * item.unitCost, ix.cur(item.marinaId)) }) : undefined} error={error}>{(id) => <Input id={id} type="number" min={1} value={qty} onChange={(e) => { setQty(e.target.value); setError(""); }} />}</Field>
     </Modal>
   );
 }
 
 function ItemForm({ ids, onClose }: { ids: string[]; onClose: () => void }) {
-  const { db, update, toast } = useStore();
+  const { db, ix, update, toast } = useStore();
   const [f, setF] = useState({ marinaId: ids[0], name: "", unit: "each", qty: "10", reorderAt: "3", unitCost: "" });
   const [error, setError] = useState("");
   const save = () => {
@@ -81,7 +81,7 @@ function ItemForm({ ids, onClose }: { ids: string[]; onClose: () => void }) {
         <Field label={t("Marina")}>{(id) => <Select id={id} value={f.marinaId} onChange={(e) => setF({ ...f, marinaId: e.target.value })}>{db.marinas.filter((m) => ids.includes(m.id)).map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}</Select>}</Field>
         <Field label={t("Item")} error={error}>{(id) => <Input id={id} value={f.name} placeholder={t("e.g. Dock cleat, 10 in")} onChange={(e) => { setF({ ...f, name: e.target.value }); setError(""); }} />}</Field>
         <Field label={t("Unit")}>{(id) => <Input id={id} value={f.unit} onChange={(e) => setF({ ...f, unit: e.target.value })} />}</Field>
-        <Field label={t("Unit cost")}>{(id) => <Input id={id} type="number" min={0} step="0.01" value={f.unitCost} onChange={(e) => setF({ ...f, unitCost: e.target.value })} />}</Field>
+        <Field label={t("Unit cost")} hint={t("In {code}", { code: ix.cur(f.marinaId) })}>{(id) => <Input id={id} type="number" min={0} step="0.01" value={f.unitCost} onChange={(e) => setF({ ...f, unitCost: e.target.value })} />}</Field>
         <Field label={t("In stock now")}>{(id) => <Input id={id} type="number" min={0} value={f.qty} onChange={(e) => setF({ ...f, qty: e.target.value })} />}</Field>
         <Field label={t("Reorder at")}>{(id) => <Input id={id} type="number" min={0} value={f.reorderAt} onChange={(e) => setF({ ...f, reorderAt: e.target.value })} />}</Field>
       </div>
@@ -91,7 +91,7 @@ function ItemForm({ ids, onClose }: { ids: string[]; onClose: () => void }) {
 
 /** "Parts used" on a work order: pick from the marina's stock. */
 export function PartsUsed({ task: wo }: { task: MaintenanceTask }) {
-  const { db, update, toast } = useStore();
+  const { db, ix, update, toast } = useStore();
   const items = (db.inventory ?? []).filter((i) => i.marinaId === wo.marinaId);
   const [itemId, setItemId] = useState("");
   const [qty, setQty] = useState("1");
@@ -108,7 +108,7 @@ export function PartsUsed({ task: wo }: { task: MaintenanceTask }) {
   const cost = (wo.parts ?? []).reduce((s, p) => s + p.qty * (items.find((i) => i.id === p.itemId)?.unitCost ?? 0), 0);
   return (
     <div className="mb-5">
-      <h3 className="mb-2 text-[13px] font-semibold">{t("Parts used")} {cost > 0 && <span className="font-normal text-ink-3">· {money2(cost)}</span>}</h3>
+      <h3 className="mb-2 text-[13px] font-semibold">{t("Parts used")} {cost > 0 && <span className="font-normal text-ink-3">· {money2(cost, ix.cur(wo.marinaId))}</span>}</h3>
       {(wo.parts ?? []).length === 0 ? <p className="mb-2 text-[13px] text-ink-3">{t("None yet.")}</p> : (
         <ul className="mb-2 space-y-1 text-[13px]">
           {wo.parts!.map((p) => { const i = items.find((x) => x.id === p.itemId); return <li key={p.itemId}>{p.qty} × {i?.name ?? t("Part")}</li>; })}

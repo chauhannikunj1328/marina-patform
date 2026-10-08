@@ -3,7 +3,7 @@
 import { Pressable, ScrollView, View } from "react-native";
 import { router } from "expo-router";
 import { Anchor, ArrowRight, CalendarCheck, CalendarDays, Clock, FileSignature, MapPin, Receipt, Search, Ship } from "lucide-react-native";
-import { amountDue, daysBetween, fmtDate, marinaFacts, money, openMarinas, ownerBookings, ownerInvoices, ownerWaitlist, radius, stateOf, tn, today, type Marina } from "@marina/shared";
+import { amountDue, daysBetween, fmtDate, marinaFacts, money, moneyTotal, openMarinas, ownerBookings, ownerInvoices, ownerWaitlist, radius, stateOf, tn, today, type Marina } from "@marina/shared";
 import { Badge, Button, Card, Logo, Section, Txt } from "@/components/ui";
 import { BookingStatus, MarinaActions, Page } from "@/components/parts";
 import { useStore } from "@/store";
@@ -26,7 +26,7 @@ function MarinaTile({ marina }: { marina: Marina }) {
       <Txt v="caption" color={t.text3} numberOfLines={1}>{ix.city(marina.cityId)?.name}, {tr(stateOf(db, marina))}</Txt>
       <Txt weight="medium" numberOfLines={1}>{marina.name}</Txt>
       <Txt v="caption" color={t.text3}>{tr("{n} berths · boats up to {ft} ft", { n: f.berths, ft: f.maxLength })}</Txt>
-      <Txt v="bodySm" style={{ marginTop: 8 }}>{tr("from")} <Txt v="bodySm" num weight="semibold">{money(f.fromDaily)}</Txt> {tr("/night")}</Txt>
+      <Txt v="bodySm" style={{ marginTop: 8 }}>{tr("from")} <Txt v="bodySm" num weight="semibold">{money(f.fromDaily, f.currency)}</Txt> {tr("/night")}</Txt>
     </Pressable>
   );
 }
@@ -97,7 +97,7 @@ export default function Home() {
   const next = live[0];
   const nextMarina = next && ix.marinaOfBerth(next.berthId);
   const owed = ownerInvoices(db, owner.id).filter((i) => amountDue(i) > 0);
-  const balance = owed.reduce((s, i) => s + amountDue(i), 0);
+  const balance = moneyTotal(owed.map((i) => ({ amount: amountDue(i), currency: ix.curOfInvoice(i) })));
   const toSign = db.contracts.filter((c) => c.ownerId === owner.id && c.status === "active" && c.end > now && !c.signed);
   const boats = db.boats.filter((b) => b.ownerId === owner.id);
   const waiting = ownerWaitlist(db, owner.email);
@@ -137,7 +137,7 @@ export default function Home() {
           <Receipt size={16} color={t.text3} />
           <Txt v="bodySm" color={t.text3}>{tr("To pay")}</Txt>
         </View>
-        <Txt v="kpi" num>{money(balance)}</Txt>
+        <Txt v="kpi" num>{balance}</Txt>
         <Txt v="bodySm" color={t.text2}>{owed.length ? tn(owed.length, "{n} open invoice", "{n} open invoices") : tr("You're all paid up.")}</Txt>
         {owed.length > 0 && (
           <Button variant="primary" size="sm" label={tr("Pay now")} style={{ alignSelf: "flex-start", marginTop: 8 }}

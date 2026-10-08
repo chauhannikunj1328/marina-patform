@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { CalendarCheck, CalendarPlus, ChevronLeft, ChevronRight, CircleCheck, Clock, DollarSign, Download, Eye, LogIn, LogOut, Mail, Pencil, Sailboat, TriangleAlert } from "lucide-react";
 import { nextId, useStore } from "@/data/store";
 import type { Booking, BookingStatus, BoatType } from "@marina/shared";
-import { en, t, tn, linesTotal, bookingAmount, priceNote } from "@marina/shared";
+import { en, t, tn, linesTotal, bookingAmount, priceNote, ftM } from "@marina/shared";
 import { WaitlistPanel } from "./Waitlist";
 import { withInvoice, withMessage } from "@marina/shared";
 import { addDays, daysBetween, fmtDate, fmtShort, fromISO, relative, toISO, today } from "@marina/shared";
@@ -51,7 +51,7 @@ export function Bookings() {
     marina: (b) => `${ix.marinaOfBerth(b.berthId)?.name} ${ix.berth(b.berthId)?.code}`,
     dates: (b) => b.start,
     status: (b) => bookingLabel[b.status],
-    amount: (b) => ix.amount(b),
+    amount: (b) => ix.toReporting(ix.amount(b), ix.berth(b.berthId)?.marinaId),
   });
   const pg = paginate(sorted, page);
   const m = ix.metrics(ids);
@@ -64,17 +64,17 @@ export function Bookings() {
     update((d) => pendingVisible.reduce((acc, b) => withInvoice({ ...acc, bookings: acc.bookings.map((x) => (x.id === b.id ? { ...x, status: "confirmed" as const } : x)) }, b.id, ix.amount(b)), d), `Approved ${pendingVisible.length} pending bookings`);
     toast(t("{n} bookings approved and invoiced", { n: pendingVisible.length }), before);
   };
-  const bookedValue = all.filter((b) => b.status === "confirmed" || b.status === "checked-in" || b.status === "pending").filter((b) => b.end > now).reduce((s, b) => s + ix.amount(b), 0);
+  const bookedValue = all.filter((b) => b.status === "confirmed" || b.status === "checked-in" || b.status === "pending").filter((b) => b.end > now).reduce((s, b) => s + ix.toReporting(ix.amount(b), ix.berth(b.berthId)?.marinaId), 0);
   const conflicts = ix.conflicts().filter(([a]) => ids.includes(ix.berth(a.berthId)?.marinaId ?? ""));
   const outOfService = ix.serviceConflicts().filter((b) => ids.includes(ix.berth(b.berthId)?.marinaId ?? ""));
 
   const exportRows = () =>
     downloadCsv(
       "bookings.csv",
-      ["Booking", "Boat owner", "Boat", "Marina", "Berth", "Arrival", "Departure", "Nights", "Status", "Amount"],
+      ["Booking", "Boat owner", "Boat", "Marina", "Berth", "Arrival", "Departure", "Nights", "Status", "Amount", "Currency"],
       rows.map((b) => {
         const boat = ix.boat(b.boatId);
-        return [b.code, ix.owner(boat?.ownerId ?? "")?.name ?? "", boat?.name ?? "", ix.marinaOfBerth(b.berthId)?.name ?? "", ix.berth(b.berthId)?.code ?? "", b.start, b.end, daysBetween(b.start, b.end), bookingLabel[b.status], b.status === "cancelled" ? 0 : ix.amount(b)];
+        return [b.code, ix.owner(boat?.ownerId ?? "")?.name ?? "", boat?.name ?? "", ix.marinaOfBerth(b.berthId)?.name ?? "", ix.berth(b.berthId)?.code ?? "", b.start, b.end, daysBetween(b.start, b.end), bookingLabel[b.status], b.status === "cancelled" ? 0 : ix.amount(b), ix.curOfBooking(b)];
       }),
     );
 
@@ -205,11 +205,11 @@ function BookingTable({ rows, onOpen, empty, sort }: { rows: Booking[]; onOpen: 
         return (
           <tr key={b.id} className="cursor-pointer hover:bg-row-hover" onClick={() => onOpen(b)}>
             <td><span className="font-medium">{b.code}</span><span className="block text-xs text-ink-3">{owner?.name}</span></td>
-            <td>{boat?.name}<span className="block text-xs text-ink-3">{t(boat?.type)} · {boat?.length} {t("ft")}</span></td>
+            <td>{boat?.name}<span className="block text-xs text-ink-3">{t(boat?.type)} · {ftM(boat?.length)}</span></td>
             <td>{ix.marinaOfBerth(b.berthId)?.name}<span className="block text-xs text-ink-3">{t("Berth")} {ix.berth(b.berthId)?.code}</span></td>
             <td className="whitespace-nowrap">{fmtShort(b.start)} – {fmtShort(b.end)}<span className="block text-xs text-ink-3">{daysBetween(b.start, b.end)} {t("nights")}</span></td>
             <td><BookingBadge status={b.status} /></td>
-            <td className={`font-medium num ${b.status === "cancelled" ? "text-ink-3 line-through" : ""}`}>{money(ix.amount(b))}</td>
+            <td className={`font-medium num ${b.status === "cancelled" ? "text-ink-3 line-through" : ""}`}>{money(ix.amount(b), ix.curOfBooking(b))}</td>
             <td><IconButton icon={Eye} label={t("Open {code}", { code: b.code })} onClick={(e) => { e.stopPropagation(); onOpen(b); }} /></td>
           </tr>
         );
@@ -368,7 +368,7 @@ function BookingDetail({ booking: b, onClose }: { booking: Booking; onClose: () 
         <Detail label={t("Boat")} value={`${boat?.name}`} sub={t("{type} · {n} ft · {registration}", { type: boat?.type, n: boat?.length, registration: boat?.registration })} />
         <Detail label={t("Marina")} value={ix.marinaOfBerth(b.berthId)?.name} sub={t("Berth {code} · up to {maxLength} ft", { code: berth?.code, maxLength: berth?.maxLength })} />
         <Detail label={t("Dates")} value={`${fmtDate(b.start)} – ${fmtDate(b.end)}`} sub={t("{daysBetween} nights · {guests} guests", { daysBetween: daysBetween(b.start, b.end), guests: b.guests })} />
-        <Detail label={t("Amount")} value={money(ix.amount(b))} sub={b.price !== undefined ? t("Price agreed when booked") : priceNote(b.start, b.end, db.settings.monthlyFromNights)} />
+        <Detail label={t("Amount")} value={money(ix.amount(b), ix.curOfBooking(b))} sub={b.price !== undefined ? t("Price agreed when booked") : priceNote(b.start, b.end, db.settings.monthlyFromNights)} />
         <div>
           <dt className="text-xs text-ink-3">{t("Invoice")}</dt>
           {invoice ? (
@@ -457,7 +457,7 @@ function EditBooking({ booking: b, onDone }: { booking: Booking; onDone: () => v
           {(id) => (
             <Select id={id} value={f.berthId} onChange={(e) => { setF({ ...f, berthId: e.target.value }); setError(""); }}>
               {!options.some((x) => x.id === f.berthId) && <option value={f.berthId}>{ix.berth(f.berthId)?.code} {t("(not free for these dates)")}</option>}
-              {options.map((x) => <option key={x.id} value={x.id}>{x.code} · {x.maxLength} {t("ft ·")} {money(x.dailyRate)}{t("/day")}</option>)}
+              {options.map((x) => <option key={x.id} value={x.id}>{x.code} · {ftM(x.maxLength)} · {money(x.dailyRate, ix.cur(marinaId))}{t("/day")}</option>)}
             </Select>
           )}
         </Field>
@@ -465,7 +465,7 @@ function EditBooking({ booking: b, onDone }: { booking: Booking; onDone: () => v
       </div>
       <div className="mt-4 flex items-center justify-between rounded-md bg-surface-2 px-4 py-3 text-[13px]">
         <span>{t("New total")} <span className="block text-xs text-ink-3">{nights > 0 ? priceNote(f.start, f.end, db.settings.monthlyFromNights, db.settings.pricing) : "—"}</span></span>
-        <span className="text-lg font-semibold num">{money(amount)}</span>
+        <span className="text-lg font-semibold num">{money(amount, ix.cur(marinaId))}</span>
       </div>
       {invoice?.status === "paid" && <p className="mt-2 text-xs text-ink-3">{t("The invoice is already paid. Adjust any difference in Billing.")}</p>}
       {error && <p role="alert" className="mt-3 text-[13px] font-medium">⚠ {error}</p>}
@@ -613,7 +613,7 @@ function BookingForm({ onClose, defaultMarina, defaultBerth }: { onClose: () => 
                 {(id) => (
                   <Select id={id} value={f.boatId} onChange={(e) => set("boatId", e.target.value)} disabled={!f.ownerId}>
                     {!f.ownerId && <option value="">{t("Choose an owner first")}</option>}
-                    {ownerBoats.map((b) => <option key={b.id} value={b.id}>{b.name} · {t(b.type)} · {b.length} {t("ft")}</option>)}
+                    {ownerBoats.map((b) => <option key={b.id} value={b.id}>{b.name} · {t(b.type)} · {ftM(b.length)}</option>)}
                   </Select>
                 )}
               </Field>
@@ -673,7 +673,7 @@ function BookingForm({ onClose, defaultMarina, defaultBerth }: { onClose: () => 
                     className={`rounded-md border p-2 text-start cursor-pointer ${berthId === b.id ? "border-ink bg-primary text-on-primary" : "border-line hover:bg-row-hover"}`}
                   >
                     <span className="block text-[13px] font-semibold">{b.code}</span>
-                    <span className="block text-[11px] opacity-75">{b.maxLength} {t("ft ·")} {money(b.dailyRate)}/d</span>
+                    <span className="block text-[11px] opacity-75">{ftM(b.maxLength)} · {money(b.dailyRate, ix.cur(f.marinaId))}/d</span>
                   </button>
                 ))}
               </div>
@@ -694,8 +694,8 @@ function BookingForm({ onClose, defaultMarina, defaultBerth }: { onClose: () => 
           </Field>
           <div className="rounded-md bg-surface-2 px-4 py-3">
             <p className="text-xs text-ink-3">{t("Total")}</p>
-            <p className="text-lg font-semibold num">{money(price)}</p>
-            <p className="text-[11px] text-ink-3">{berth ? (nights >= db.settings.monthlyFromNights ? t("Monthly rate, prorated") : `${nights} × ${money(berth.dailyRate)}`) : t("Select a berth")}</p>
+            <p className="text-lg font-semibold num">{money(price, ix.cur(f.marinaId))}</p>
+            <p className="text-[11px] text-ink-3">{berth ? (nights >= db.settings.monthlyFromNights ? t("Monthly rate, prorated") : `${nights} × ${money(berth.dailyRate, ix.cur(f.marinaId))}`) : t("Select a berth")}</p>
           </div>
         </section>
       </div>

@@ -1,9 +1,18 @@
 export type ID = string;
 
+/**
+ * A county (US) or its equivalent elsewhere: an emirate (UAE), a province (Saudi Arabia) or a
+ * governorate. `state` is the region it's grouped under on the website and dashboards: the US
+ * state, or the country's name outside the US.
+ */
 export interface County {
   id: ID;
   name: string;
   state: string;
+  /** ISO country code; missing means the United States. Decides the marinas' currency. */
+  country?: import("./countries").CountryCode;
+  /** Name in Arabic, shown when the website or customer app is in Arabic. */
+  nameAr?: string;
 }
 
 export interface City {
@@ -12,6 +21,7 @@ export interface City {
   countyId: ID;
   lat: number;
   lng: number;
+  nameAr?: string;
 }
 
 export type MarinaStatus = "active" | "inactive";
@@ -28,6 +38,9 @@ export interface Marina {
   lng?: number;
   status: MarinaStatus;
   amenities: string[];
+  /** Name and address in Arabic (Gulf marinas), shown when the website or customer app is in Arabic. */
+  nameAr?: string;
+  addressAr?: string;
 }
 
 export type BerthType = "Floating" | "Fixed" | "Mooring";
@@ -244,7 +257,10 @@ export interface Message {
 
 export interface Settings {
   company: string;
-  currency: "USD" | "CAD" | "EUR" | "GBP";
+  /** Reporting currency: company-wide totals are converted to it. Each marina charges in its own country's currency. */
+  currency: import("./countries").CurrencyCode;
+  /** US dollars for one unit of each currency (DEFAULT_FX when missing). */
+  fx?: Partial<Record<import("./countries").CurrencyCode, number>>;
   timezone: string;
   invoiceDueDays: number;
   monthlyFromNights: number;

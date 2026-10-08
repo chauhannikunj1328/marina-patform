@@ -89,7 +89,7 @@ export default function Checkout() {
           <Row label={tr("Nights")} value={String(nights)} />
           <View style={{ flexDirection: "row", alignItems: "baseline", justifyContent: "space-between" }}>
             <Txt weight="medium">{tr("Total")}</Txt>
-            <Txt v="h2" num weight="semibold">{money(price)}</Txt>
+            <Txt v="h2" num weight="semibold">{money(price, ix.curOfBerth(berth.id))}</Txt>
           </View>
           <Txt v="caption" color={t.text3}>{tr(priceNote(q.start, q.end, db.settings.monthlyFromNights, db.settings.pricing))}</Txt>
           <Txt v="caption" color={t.text3}>{tr("Power, water and fuel you use are added to the invoice.")}</Txt>

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Anchor, ArrowRight, BadgeCheck, CalendarCheck, ChevronDown, CircleCheck, FileSignature, Receipt, Search, Wallet } from "lucide-react";
-import { CONTACT, CONTRACT_TERMS, cx, marinaPoint, money, t, tn } from "@marina/shared";
+import { CONTACT, CONTRACT_TERMS, cx, ftM, lowestRate, marinaPoint, money, t, tn } from "@marina/shared";
 import { useStore } from "@/data/store";
 import { useReviews } from "@/data/reviews";
 import { Map, type MapMarker } from "@/components/Map";
@@ -15,7 +15,7 @@ import { ReviewCard, ReviewsSection } from "@/components/Reviews";
 import { freeTonight, TrustPoints } from "@/components/Trust";
 import { ButtonLink, Container, Eyebrow, usePageTitle } from "@/components/ui";
 import { Img, PHOTOS, Shot, type ShotName } from "@/lib/photos";
-import { marinaFacts, openMarinas, stateOf, termFee } from "@/lib/marinas";
+import { marinaFacts, openMarinas, termFee } from "@/lib/marinas";
 import { faqs, homeMeta } from "@/lib/seo";
 
 /** Section heading in the site's large style. */
@@ -32,8 +32,8 @@ function Heading({ id, eyebrow, title, intro, center }: { id?: string; eyebrow?:
 function Hero() {
   const { db, ix } = useStore();
   const marinas = openMarinas(db);
-  const states = [...new Set(marinas.map((m) => stateOf(db, m)))];
-  const from = Math.min(...marinas.map((m) => marinaFacts(db, m.id).fromDaily));
+  const countries = new Set(marinas.map((m) => ix.countyOfCity(m.cityId)?.country ?? "US"));
+  const from = lowestRate(db, marinas);
   // Three marinas with the most berths free tonight, from the bookings.
   const free = marinas.map((m) => ({ m, n: freeTonight(db, m.id) })).filter((x) => x.n > 0).sort((a, b) => b.n - a.n).slice(0, 3);
   return (
@@ -41,7 +41,7 @@ function Hero() {
       <Container className="pt-14 text-center sm:pt-20">
         <p className="inline-flex items-center gap-2 rounded-full border border-line bg-surface/80 px-3.5 py-1 text-xs font-medium text-ink-2 backdrop-blur">
           <span className="size-1.5 rounded-full bg-green" aria-hidden />
-          {t("{n} marinas · {states}", { n: marinas.length, states: states.map((s) => t(s)).join(" · ") })}
+          {t("{n} marinas in {c} countries", { n: marinas.length, c: countries.size })}
         </p>
         <h1 className="mx-auto mt-6 max-w-4xl text-[44px] leading-[50px] font-medium tracking-[-0.03em] text-balance sm:text-[64px] sm:leading-[70px] lg:text-[76px] lg:leading-[82px]">{t("Your berth, booked in minutes.")}</h1>
         <p className="mx-auto mt-6 max-w-xl text-[17px] leading-7 text-ink-2">{t("See which berths are free for your dates and boat, check the price, and book online. Stay a night, a season or the whole year.")}</p>
@@ -78,7 +78,7 @@ function Hero() {
           )}
           <div className="float-slower absolute end-4 bottom-4 hidden w-[240px] rounded-[16px] border border-line bg-surface/95 p-4 text-start shadow-e3 backdrop-blur sm:block sm:end-6 sm:bottom-6 lg:end-auto lg:start-[32%] lg:-bottom-8">
             <p className="flex items-center gap-2 text-[13px] font-medium"><span className="flex size-7 items-center justify-center rounded-full bg-accent text-on-accent"><Wallet className="size-4" aria-hidden /></span>{t("Nightly rates from")}</p>
-            <p className="num mt-2 text-[28px] leading-9 font-medium">{money(from)}</p>
+            <p className="num mt-2 text-[28px] leading-9 font-medium">{money(from.amount, from.currency)}</p>
             <p className="mt-1 flex items-center gap-1.5 text-xs text-ink-3"><CircleCheck className="size-3.5 text-green" aria-hidden />{t("No booking fees")}</p>
           </div>
           <PhoneFrame className="float-slower absolute -end-6 top-10 hidden w-[210px] lg:block xl:-end-12">
@@ -110,12 +110,12 @@ function About() {
   const { db } = useStore();
   const marinas = openMarinas(db);
   const berths = db.berths.filter((b) => marinas.some((m) => m.id === b.marinaId)).length;
-  const from = Math.min(...marinas.map((m) => marinaFacts(db, m.id).fromDaily));
+  const from = lowestRate(db, marinas);
   const longest = Math.max(...marinas.map((m) => marinaFacts(db, m.id).maxLength));
   const stats: [string, string, string][] = [
     ["01", t("Marinas"), String(marinas.length)],
     ["02", t("Berths"), String(berths)],
-    ["03", t("Boats up to"), t("{ft} ft", { ft: longest })],
+    ["03", t("Boats up to"), ftM(longest)],
   ];
   return (
     <section aria-labelledby="about" className="py-20 sm:py-28">
@@ -123,7 +123,7 @@ function About() {
         <Eyebrow>{t("About Marina")}</Eyebrow>
         <h2 id="about" className="sr-only">{t("About Marina")}</h2>
         <p className="max-w-4xl text-[28px] leading-9 font-medium tracking-[-0.02em] sm:text-[40px] sm:leading-[50px]">
-          <span className="text-ink-3">{t("Marina looks after {n} marinas on the West Coast and in Florida.", { n: marinas.length })}</span>{" "}
+          <span className="text-ink-3">{t("Marina looks after {n} marinas in the United States, the UAE and across the Gulf.", { n: marinas.length })}</span>{" "}
           <span className="text-ink">{t("Find a berth that fits your boat, book it online and keep every stay, invoice and contract in one place.")}</span>
         </p>
         <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -138,7 +138,7 @@ function About() {
             </div>
           ))}
         </div>
-        <p className="mt-4 text-[13px] text-ink-3">{t("Nightly rates from {price}. No booking fees.", { price: money(from) })}</p>
+        <p className="mt-4 text-[13px] text-ink-3">{t("Nightly rates from {price}. No booking fees.", { price: money(from.amount, from.currency) })}</p>
       </Container>
     </section>
   );
@@ -231,12 +231,12 @@ function Promos() {
 function StayLengths() {
   const { db } = useStore();
   const marinas = openMarinas(db);
-  const fromDaily = Math.min(...marinas.map((m) => marinaFacts(db, m.id).fromDaily));
-  const fromMonthly = Math.min(...marinas.map((m) => marinaFacts(db, m.id).fromMonthly));
+  const fromDaily = lowestRate(db, marinas);
+  const fromMonthly = lowestRate(db, marinas, "monthly");
   const items = [
-    { photo: PHOTOS.dock, title: t("A night or a week"), price: t("from {price} a night", { price: money(fromDaily) }), body: t("Pay the berth's nightly rate. Stays of {n} nights or more are charged at the monthly rate.", { n: db.settings.monthlyFromNights }), to: "/book", cta: t("Find a berth") },
-    { photo: PHOTOS.aerial, title: t("A season"), price: t("from {price} a month", { price: money(termFee(fromMonthly, "seasonal")) }), body: t("Keep the same berth for six months for {pct}% off the monthly rate.", { pct: CONTRACT_TERMS.seasonal.discount * 100 }), to: "/contact?topic=contract", cta: t("Ask about a contract") },
-    { photo: PHOTOS.harbor, title: t("The whole year"), price: t("from {price} a month", { price: money(termFee(fromMonthly, "annual")) }), body: t("Our best value: twelve months in the same berth for {pct}% off.", { pct: CONTRACT_TERMS.annual.discount * 100 }), to: "/pricing", cta: t("See rates and contracts") },
+    { photo: PHOTOS.dock, title: t("A night or a week"), price: t("from {price} a night", { price: money(fromDaily.amount, fromDaily.currency) }), body: t("Pay the berth's nightly rate. Stays of {n} nights or more are charged at the monthly rate.", { n: db.settings.monthlyFromNights }), to: "/book", cta: t("Find a berth") },
+    { photo: PHOTOS.aerial, title: t("A season"), price: t("from {price} a month", { price: money(termFee(fromMonthly.amount, "seasonal"), fromMonthly.currency) }), body: t("Keep the same berth for six months for {pct}% off the monthly rate.", { pct: CONTRACT_TERMS.seasonal.discount * 100 }), to: "/contact?topic=contract", cta: t("Ask about a contract") },
+    { photo: PHOTOS.harbor, title: t("The whole year"), price: t("from {price} a month", { price: money(termFee(fromMonthly.amount, "annual"), fromMonthly.currency) }), body: t("Our best value: twelve months in the same berth for {pct}% off.", { pct: CONTRACT_TERMS.annual.discount * 100 }), to: "/pricing", cta: t("See rates and contracts") },
   ];
   return (
     <section aria-labelledby="stays" className="border-t border-line py-20 sm:py-28">

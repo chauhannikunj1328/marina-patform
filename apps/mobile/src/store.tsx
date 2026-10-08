@@ -58,7 +58,7 @@ const Ctx = createContext<Store | null>(null);
 /** Marina switcher value meaning "every marina I can see". */
 export const ALL = "all";
 
-const DATA_KEY = "marina.data.v1";
+const DATA_KEY = "marina.data.v2";
 const SESSION_KEY = "marina.session";
 const MARINA_KEY = "marina.staff.marina";
 const PASSWORDS_KEY = "marina.passwords";

@@ -28,7 +28,7 @@ function SignDialog({ contract, onClose }: { contract: Contract; onClose: () => 
           <div><dt className="text-xs text-ink-3">{t("Boat")}</dt><dd className="font-medium text-ink">{ix.boat(contract.boatId)?.name}</dd></div>
           <div><dt className="text-xs text-ink-3">{t("From")}</dt><dd className="text-ink">{fmtDate(contract.start)}</dd></div>
           <div><dt className="text-xs text-ink-3">{t("Until")}</dt><dd className="text-ink">{fmtDate(contract.end)}</dd></div>
-          <div><dt className="text-xs text-ink-3">{t("Monthly fee")}</dt><dd className="num font-medium text-ink">{money(contract.monthlyFee)}</dd></div>
+          <div><dt className="text-xs text-ink-3">{t("Monthly fee")}</dt><dd className="num font-medium text-ink">{money(contract.monthlyFee, ix.cur(contract.marinaId))}</dd></div>
           <div><dt className="text-xs text-ink-3">{t("Renewal")}</dt><dd className="text-ink">{contract.autoRenew ? t("Renews automatically") : t("Ends on the last day")}</dd></div>
         </dl>
         <ol className="list-decimal space-y-1.5 ps-5">
@@ -73,7 +73,7 @@ export function MyContracts() {
                     <div>
                       <p className="text-[17px] font-medium">{ix.marina(c.marinaId)?.name} <span className="text-[13px] font-normal text-ink-3">· <bdi>{c.code}</bdi></span></p>
                       <p className="mt-1 text-[13px] text-ink-2">{t(CONTRACT_TERMS[c.term].label)} · {fmtDate(c.start)} – {fmtDate(c.end)}</p>
-                      <p className="mt-1 text-xs text-ink-3">{t("Berth {code}", { code: ix.berth(c.berthId)?.code })} · {ix.boat(c.boatId)?.name} · <span className="num">{money(c.monthlyFee)}</span> {t("/month")}</p>
+                      <p className="mt-1 text-xs text-ink-3">{t("Berth {code}", { code: ix.berth(c.berthId)?.code })} · {ix.boat(c.boatId)?.name} · <span className="num">{money(c.monthlyFee, ix.cur(c.marinaId))}</span> {t("/month")}</p>
                     </div>
                     {current ? <Badge tone="active">{c.autoRenew ? t("Auto-renews") : t("Fixed term")}</Badge> : <Badge tone="outline">{t("Ended")}</Badge>}
                   </div>

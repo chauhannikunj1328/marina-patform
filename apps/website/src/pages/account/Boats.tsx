@@ -1,7 +1,7 @@
 // The owner's boats: add one, or update name, type, length and registration.
 import { useState } from "react";
 import { Pencil, Plus, Ship } from "lucide-react";
-import { ownerBookings, t, today, withBoat, type Boat, type BoatType } from "@marina/shared";
+import { ownerBookings, t, today, withBoat, type Boat, type BoatType, ftM } from "@marina/shared";
 import { useStore } from "@/data/store";
 import { Button, Card, EmptyState, Field, Input, Modal, Select, usePageTitle } from "@/components/ui";
 
@@ -62,7 +62,7 @@ export function MyBoats() {
               <Card className="flex items-start justify-between gap-3 p-5">
                 <div>
                   <p className="text-[17px] font-medium">{b.name}</p>
-                  <p className="mt-1 text-[13px] text-ink-2">{t(b.type)} · <span className="num">{b.length}</span> {t("ft")}</p>
+                  <p className="mt-1 text-[13px] text-ink-2">{t(b.type)} · <span className="num">{ftM(b.length)}</span></p>
                   <p className="mt-1 text-xs text-ink-3">{b.registration ? <bdi>{b.registration}</bdi> : t("No registration on file")}</p>
                 </div>
                 <Button size="sm" icon={Pencil} onClick={() => setEditing(b)}>{t("Edit")}</Button>

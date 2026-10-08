@@ -20,4 +20,6 @@ export * from "./i18n";
 export * from "./geo";
 export * from "./portal";
 export * from "./marinas";
+export * from "./countries";
+export * from "./localize";
 export * from "./guides";

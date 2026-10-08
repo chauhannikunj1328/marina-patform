@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { CalendarPlus, Droplets, Wrench, Zap } from "lucide-react";
 import { useStore } from "@/data/store";
 import type { Berth } from "@marina/shared";
-import { tn, t, fmtDate, fmtShort, today } from "@marina/shared";
+import { tn, t, fmtDate, fmtShort, today, ftM } from "@marina/shared";
 import { money } from "@marina/shared";
 import { Button, EmptyState, Modal, Table } from "./ui";
 import { BerthBadge, BookingBadge, TaskBadge } from "./status";
@@ -60,8 +60,8 @@ export function BerthDetail({ berth: b, onClose, onEdit }: { berth: Berth; onClo
     >
       <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="rounded-md bg-surface-2 p-3"><p className="text-xs text-ink-3">{t("Status")}</p><div className="mt-1"><BerthBadge status={status} /></div></div>
-        <div className="rounded-md bg-surface-2 p-3"><p className="text-xs text-ink-3">{t("Max length")}</p><p className="font-semibold">{live.maxLength} {t("ft ·")} {t(live.type)}</p></div>
-        <div className="rounded-md bg-surface-2 p-3"><p className="text-xs text-ink-3">{t("Rates")}</p><p className="font-semibold">{money(live.dailyRate)}{t("/day")}</p><p className="text-xs text-ink-3">{money(live.monthlyRate)}{t("/month")}</p></div>
+        <div className="rounded-md bg-surface-2 p-3"><p className="text-xs text-ink-3">{t("Max length")}</p><p className="font-semibold">{ftM(live.maxLength)} · {t(live.type)}</p></div>
+        <div className="rounded-md bg-surface-2 p-3"><p className="text-xs text-ink-3">{t("Rates")}</p><p className="font-semibold">{money(live.dailyRate, ix.cur(live.marinaId))}{t("/day")}</p><p className="text-xs text-ink-3">{money(live.monthlyRate, ix.cur(live.marinaId))}{t("/month")}</p></div>
         <div className="rounded-md bg-surface-2 p-3">
           <p className="text-xs text-ink-3">{t("Services")}</p>
           <p className="mt-1 flex flex-wrap gap-2 text-[13px]">

@@ -3,6 +3,8 @@
 import type { Db } from "./seed";
 import type { Marina } from "./types";
 import { CONTRACT_TERMS } from "./actions";
+import { marinaCurrency } from "./selectors";
+import { convert } from "./countries";
 
 export interface MarinaFacts {
   berths: number;
@@ -14,6 +16,8 @@ export interface MarinaFacts {
   sizes: { maxLength: number; count: number; daily: number; monthly: number }[];
   power: boolean;
   water: boolean;
+  /** The marina's currency: every rate above is in it. */
+  currency: string;
 }
 
 export function marinaFacts(d: Db, marinaId: string): MarinaFacts {
@@ -32,6 +36,7 @@ export function marinaFacts(d: Db, marinaId: string): MarinaFacts {
     fromDaily: Math.min(...berths.map((b) => b.dailyRate)),
     fromMonthly: Math.min(...berths.map((b) => b.monthlyRate)),
     sizes: [...bySize.values()].sort((a, b) => a.maxLength - b.maxLength),
+    currency: marinaCurrency(d, marinaId),
     power: berths.some((b) => b.power),
     water: berths.some((b) => b.water),
   };
@@ -63,3 +68,18 @@ export const CUSTOMER_APP = {
   appStore: "",
   playStore: "",
 };
+
+/**
+ * The lowest rate across several marinas, in the currency of the marina that has it (rates in
+ * different currencies are compared in US dollars). E.g. "from $22 a night".
+ */
+export function lowestRate(d: Db, marinas: Marina[], kind: "daily" | "monthly" = "daily"): { amount: number; currency: string } {
+  let best = { amount: 0, currency: "USD", usd: Infinity };
+  for (const m of marinas) {
+    const f = marinaFacts(d, m.id);
+    const amount = kind === "daily" ? f.fromDaily : f.fromMonthly;
+    const usd = convert(amount, f.currency, "USD", d.settings.fx);
+    if (usd < best.usd) best = { amount, currency: f.currency, usd };
+  }
+  return { amount: best.amount, currency: best.currency };
+}

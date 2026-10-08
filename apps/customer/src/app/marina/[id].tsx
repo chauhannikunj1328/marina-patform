@@ -2,7 +2,7 @@
 import { Linking, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Droplets, Mail, MapPin, Phone, Plug, Ruler, Search } from "lucide-react-native";
-import { marinaFacts, money, stateOf } from "@marina/shared";
+import { ftM, marinaFacts, money, stateOf } from "@marina/shared";
 import { Button, Card, EmptyState, Section, StackHeader, Txt } from "@/components/ui";
 import { Body, MarinaActions } from "@/components/parts";
 import { useStore } from "@/store";
@@ -32,7 +32,7 @@ export default function MarinaScreen() {
         <Card style={{ gap: 6, backgroundColor: t.primary, borderColor: t.primary }}>
           <Txt v="caption" color={t.onPrimary} style={{ opacity: 0.8 }}>{city?.name}, {tr(stateOf(db, marina))}</Txt>
           <Txt v="h1" color={t.onPrimary}>{marina.name}</Txt>
-          <Txt v="bodySm" color={t.onPrimary} style={{ opacity: 0.85 }}>{tr("{n} berths · boats up to {ft} ft · from {price} a night", { n: f.berths, ft: f.maxLength, price: money(f.fromDaily) })}</Txt>
+          <Txt v="bodySm" color={t.onPrimary} style={{ opacity: 0.85 }}>{tr("{n} berths · boats up to {length} · from {price} a night", { n: f.berths, length: ftM(f.maxLength), price: money(f.fromDaily, f.currency) })}</Txt>
           <Button size="lg" icon={Search} label={tr("Check availability")} style={{ marginTop: 12 }} onPress={() => { router.dismissAll(); router.navigate({ pathname: "/book", params: { marina: marina.id, at: stamp() } }); }} />
         </Card>
 
@@ -49,8 +49,8 @@ export default function MarinaScreen() {
               <View key={s.maxLength} style={{ flexDirection: "row", paddingVertical: 10, borderTopWidth: i ? 1 : 0, borderColor: t.border }}>
                 <Txt v="bodySm" weight="medium" style={{ flex: 1.2 }}>{tr("{ft} ft", { ft: s.maxLength })}</Txt>
                 <Txt v="bodySm" num color={t.text2} style={{ flex: 0.8 }}>{s.count}</Txt>
-                <Txt v="bodySm" num style={{ flex: 1, textAlign: alignEnd() }}>{money(s.daily)}</Txt>
-                <Txt v="bodySm" num style={{ flex: 1, textAlign: alignEnd() }}>{money(s.monthly)}</Txt>
+                <Txt v="bodySm" num style={{ flex: 1, textAlign: alignEnd() }}>{money(s.daily, f.currency)}</Txt>
+                <Txt v="bodySm" num style={{ flex: 1, textAlign: alignEnd() }}>{money(s.monthly, f.currency)}</Txt>
               </View>
             ))}
           </Card>

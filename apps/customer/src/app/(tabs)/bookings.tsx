@@ -36,7 +36,7 @@ function BookingSheet({ booking, onClose }: { booking?: Booking; onClose: () => 
         <Row label={tr("Berth")} value={ix.berth(booking.berthId)?.code ?? ""} />
         <Row label={tr("Boat")} value={ix.boat(booking.boatId)?.name ?? ""} />
         <Row label={tr("People on board")} value={String(booking.guests)} />
-        <Row label={tr("Total")} value={money(ix.amount(booking))} />
+        <Row label={tr("Total")} value={money(ix.amount(booking), ix.curOfBooking(booking))} />
       </View>
       <View style={{ gap: 8, marginTop: 8 }}>
         {marina && <MarinaActions marina={marina} />}
@@ -108,7 +108,7 @@ export default function Bookings() {
           <Card key={b.id} onPress={() => setOpenId(b.id)} style={[{ gap: 4 }, b.code === params.fresh && { borderColor: t.green }]}>
             <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 8 }}>
               <Txt weight="medium" style={{ flex: 1 }} numberOfLines={1}>{marina?.name}</Txt>
-              <Txt num weight="semibold">{money(ix.amount(b))}</Txt>
+              <Txt num weight="semibold">{money(ix.amount(b), ix.curOfBooking(b))}</Txt>
             </View>
             <Txt v="bodySm" color={t.text2}>{fmtDate(b.start)} – {fmtDate(b.end)} · {tn(daysBetween(b.start, b.end), "{n} night", "{n} nights")}</Txt>
             <Txt v="caption" color={t.text3}>{b.code} · {tr("Berth {code}", { code: ix.berth(b.berthId)?.code })} · {ix.boat(b.boatId)?.name}</Txt>

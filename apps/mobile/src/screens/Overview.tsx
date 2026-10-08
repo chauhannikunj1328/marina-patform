@@ -21,7 +21,7 @@ export function Overview() {
   const staffIds = new Set(db.staff.filter((s) => inIds.has(s.marinaId)).map((s) => s.id));
   const requests = db.requests.filter((r) => r.status === "pending" && staffIds.has(r.staffId)).length;
   const overdue = db.invoices.filter((i) => i.status === "overdue" && inIds.has(ix.marinaOfInvoice(i) ?? ""));
-  const overdueTotal = overdue.reduce((s, i) => s + ix.balance(i), 0);
+  const overdueTotal = overdue.reduce((s, i) => s + ix.invoiceToReporting(i, ix.balance(i)), 0);
   const urgent = db.tasks.filter((x) => inIds.has(x.marinaId) && x.priority === "high" && x.status !== "done");
   const openTasks = db.tasks.filter((x) => inIds.has(x.marinaId) && x.status !== "done");
   const late = ix.bookingsIn(ids).filter((b) => b.end < now && b.status === "checked-in");

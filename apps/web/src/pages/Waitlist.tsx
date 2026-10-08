@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { CalendarPlus, Hourglass, Send, Trash, UserPlus } from "lucide-react";
 import { nextId, useStore } from "@/data/store";
-import { t, addDays, bookingAmount, daysBetween, fmtDate, fmtShort, money, today, withInvoice, withMessage, type Booking, type WaitlistEntry } from "@marina/shared";
+import { t, toMetres, addDays, bookingAmount, daysBetween, fmtDate, fmtShort, money, today, withInvoice, withMessage, type Booking, type WaitlistEntry, ftM } from "@marina/shared";
 import { Badge, Button, EmptyState, Field, IconButton, Input, Modal, Select, Table, Textarea, useDirty } from "@/components/ui";
 
 const STATUS: Record<WaitlistEntry["status"], { tone: "pending" | "info" | "success" | "muted"; label: string }> = {
@@ -51,7 +51,7 @@ export function WaitlistPanel({ ids, canEdit }: { ids: string[]; canEdit: boolea
       const next = { ...d, owners, boats, bookings: [...d.bookings, booking], waitlist: (d.waitlist ?? []).map((x) => (x.id === w.id ? { ...x, status: "booked" as const, offeredBerthId: berthId, bookingId: id } : x)) };
       return withInvoice(next, id, price);
     }, { text: `Booked ${w.boatName} from the waitlist into berth ${berth.code}, ${fmtShort(w.start)} – ${fmtShort(w.end)}`, to: "/bookings?view=waitlist", marinaId: w.marinaId });
-    toast(t("{boatName} booked into {code} and invoiced ({amount})", { boatName: w.boatName, code: berth.code, amount: money(price) }), before);
+    toast(t("{boatName} booked into {code} and invoiced ({amount})", { boatName: w.boatName, code: berth.code, amount: money(price, ix.cur(berth.marinaId)) }), before);
   };
 
   const remove = (w: WaitlistEntry) => {
@@ -76,7 +76,7 @@ export function WaitlistPanel({ ids, canEdit }: { ids: string[]; canEdit: boolea
             const pick = offered ?? matches[0]?.id;
             return (
               <tr key={w.id}>
-                <td><p className="font-medium">{w.name}</p><p className="text-xs text-ink-3">{w.boatName} · {w.boatLength} {t("ft ·")} {w.phone}</p>{w.note && <p className="text-xs text-ink-3">“{w.note}”</p>}</td>
+                <td><p className="font-medium">{w.name}</p><p className="text-xs text-ink-3">{w.boatName} · {ftM(w.boatLength)} · {w.phone}</p>{w.note && <p className="text-xs text-ink-3">“{w.note}”</p>}</td>
                 <td>{ix.marina(w.marinaId)?.name}</td>
                 <td className="whitespace-nowrap">{fmtShort(w.start)} – {fmtShort(w.end)}<span className="block text-xs text-ink-3">{daysBetween(w.start, w.end)} {t("nights · added")} {fmtDate(w.createdAt)}</span></td>
                 <td><Badge tone={STATUS[w.status].tone}>{t(STATUS[w.status].label)}</Badge>{w.status === "offered" && w.offeredBerthId && <span className="block text-xs text-ink-3">{t("Berth")} {ix.berth(w.offeredBerthId)?.code}</span>}</td>
@@ -133,7 +133,7 @@ function AddToWaitlist({ ids, onClose }: { ids: string[]; onClose: () => void })
         <Field label={t("Email")} error={errors.email}>{(id) => <Input id={id} type="email" value={f.email} onChange={(e) => set("email", e.target.value)} />}</Field>
         <Field label={t("Phone")}>{(id) => <Input id={id} value={f.phone} onChange={(e) => set("phone", e.target.value)} />}</Field>
         <Field label={t("Boat name")} error={errors.boatName}>{(id) => <Input id={id} value={f.boatName} onChange={(e) => set("boatName", e.target.value)} />}</Field>
-        <Field label={t("Boat length (ft)")} error={errors.boatLength}>{(id) => <Input id={id} type="number" min={10} value={f.boatLength} onChange={(e) => set("boatLength", e.target.value)} />}</Field>
+        <Field label={t("Boat length (ft)")} hint={Number(f.boatLength) > 0 ? t("{m} m", { m: toMetres(Number(f.boatLength)) }) : undefined} error={errors.boatLength}>{(id) => <Input id={id} type="number" min={10} value={f.boatLength} onChange={(e) => set("boatLength", e.target.value)} />}</Field>
         <Field label={t("Arrival")} error={errors.start}>{(id) => <Input id={id} type="date" value={f.start} onChange={(e) => set("start", e.target.value)} />}</Field>
         <Field label={t("Departure")} error={errors.end}>{(id) => <Input id={id} type="date" value={f.end} onChange={(e) => set("end", e.target.value)} />}</Field>
         <div className="sm:col-span-2"><Field label={t("Note (optional)")}>{(id) => <Textarea id={id} rows={2} value={f.note} onChange={(e) => set("note", e.target.value)} />}</Field></div>

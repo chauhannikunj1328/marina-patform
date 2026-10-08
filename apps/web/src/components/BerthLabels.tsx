@@ -5,7 +5,7 @@ import { Printer } from "lucide-react";
 import { useStore } from "@/data/store";
 import { Button, Field, Modal, Select } from "@/components/ui";
 import { Logomark } from "@/components/Logo";
-import { t } from "@marina/shared";
+import { t, ftM } from "@marina/shared";
 
 /** Link the staff app opens: marinastaff://berth/<id>. Phone cameras open the app from it too. */
 export const berthLink = (berthId: string) => `marinastaff://berth/${berthId}`;
@@ -55,7 +55,7 @@ export function BerthLabels({ defaultMarina, onClose }: { defaultMarina: string;
           <div key={b.id} className="flex break-inside-avoid flex-col items-center rounded-md border border-line bg-white p-3 text-center text-[#17191E]">
             <QrCode value={berthLink(b.id)} />
             <p className="mt-2 text-xl font-semibold">{t("Berth")} {b.code}</p>
-            <p className="text-[11px] text-[#656565]">{marina?.name} · {b.maxLength} {t("ft")}</p>
+            <p className="text-[11px] text-[#656565]">{marina?.name} · {ftM(b.maxLength)}</p>
             <p className="mt-1 flex items-center gap-1 text-[10px] text-[#656565]"><Logomark size={10} /> {t("Scan with Marina Staff")}</p>
           </div>
         ))}

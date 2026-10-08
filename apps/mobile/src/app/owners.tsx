@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Pressable, View } from "react-native";
 import { Redirect } from "expo-router";
 import { Search, UsersRound } from "lucide-react-native";
-import { money2 } from "@marina/shared";
+import { moneyTotal } from "@marina/shared";
 import { OwnerSheet } from "@/components/owner";
 import { Avatar, EmptyState, Screen, SearchBox, StackHeader, Txt } from "@/components/ui";
 import { useRole } from "@/lib/role";
@@ -31,7 +31,7 @@ export default function Owners() {
   const open = db.owners.find((o) => o.id === openId);
   const owes = (id: string) => {
     const bookingIds = new Set(db.bookings.filter((b) => boatsOf(id).some((x) => x.id === b.boatId)).map((b) => b.id));
-    return db.invoices.filter((i) => bookingIds.has(i.bookingId)).reduce((sum, i) => sum + ix.balance(i), 0);
+    return db.invoices.filter((i) => bookingIds.has(i.bookingId)).map((i) => ({ amount: ix.balance(i), currency: ix.curOfInvoice(i) }));
   };
 
   return (
@@ -53,7 +53,7 @@ export default function Owners() {
                     <Txt weight="medium" numberOfLines={1}>{o.name}</Txt>
                     <Txt v="caption" color={t.text3} numberOfLines={1}>{boats.map((b) => b.name).join(", ") || tr("No boats")}</Txt>
                   </View>
-                  {due > 0 && <Txt v="caption" num weight="semibold" color={t.status.pending.fg}>{money2(due)} {tr("due")}</Txt>}
+                  {due.some((x) => x.amount > 0) && <Txt v="caption" num weight="semibold" color={t.status.pending.fg}>{moneyTotal(due.filter((x) => x.amount > 0), true)} {tr("due")}</Txt>}
                 </Pressable>
               );
             })}

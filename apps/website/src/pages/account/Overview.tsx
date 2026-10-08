@@ -1,7 +1,7 @@
 // Account overview: next stay, what's owed, contracts to sign, recent bookings.
 import { Link } from "react-router-dom";
 import { ArrowRight, CalendarDays, Clock, FileSignature, Receipt, Ship } from "lucide-react";
-import { amountDue, daysBetween, fmtDate, money, ownerBookings, ownerInvoices, ownerWaitlist, t, tn, today } from "@marina/shared";
+import { amountDue, daysBetween, fmtDate, moneyTotal, ownerBookings, ownerInvoices, ownerWaitlist, t, tn, today } from "@marina/shared";
 import { useStore } from "@/data/store";
 import { Badge, ButtonLink, Card, EmptyState, flip, usePageTitle } from "@/components/ui";
 import { BookingStatus } from "./status";
@@ -15,7 +15,7 @@ export function Overview() {
   const live = bookings.filter((b) => b.status !== "cancelled" && b.status !== "completed" && b.end > now).sort((a, b) => a.start.localeCompare(b.start));
   const next = live[0];
   const owed = ownerInvoices(db, owner.id).filter((i) => amountDue(i) > 0);
-  const balance = owed.reduce((s, i) => s + amountDue(i), 0);
+  const balance = moneyTotal(owed.map((i) => ({ amount: amountDue(i), currency: ix.curOfInvoice(i) })));
   const toSign = db.contracts.filter((c) => c.ownerId === owner.id && c.status === "active" && c.end > now && !c.signed);
   const boats = db.boats.filter((b) => b.ownerId === owner.id);
   const waiting = ownerWaitlist(db, owner.email);
@@ -40,7 +40,7 @@ export function Overview() {
         </Card>
         <Card className="p-6">
           <p className="flex items-center gap-2 text-[13px] text-ink-3"><Receipt className="size-4" aria-hidden /> {t("To pay")}</p>
-          <p className="num mt-3 text-[32px] leading-10 font-medium">{money(balance)}</p>
+          <p className="num mt-3 text-[32px] leading-10 font-medium">{balance}</p>
           <p className="mt-1 text-[13px] text-ink-2">{owed.length ? tn(owed.length, "{n} open invoice", "{n} open invoices") : t("You're all paid up.")}</p>
           {owed.length > 0 && <ButtonLink to={owed.length === 1 ? `/account/invoices/${owed[0].id}` : "/account/invoices"} variant="primary" size="sm" className="mt-4">{t("Pay now")}</ButtonLink>}
         </Card>

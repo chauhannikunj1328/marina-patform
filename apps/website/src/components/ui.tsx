@@ -73,7 +73,7 @@ export function usePageTitle(title?: string, meta?: Omit<PageMeta, "path" | "tit
   useEffect(() => {
     applyHead({
       title: title ? `${title} · ${BRAND}` : t(DEFAULT_TITLE),
-      description: meta?.description ?? t("Book a berth online at marinas in California, Washington and Florida."),
+      description: meta?.description ?? t("Book a berth online at marinas in the United States, the UAE and across the Gulf."),
       path: pathname,
       noindex: meta?.noindex || isPrivate(pathname, search),
       jsonLd: meta?.jsonLd,

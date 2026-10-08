@@ -41,7 +41,7 @@ function SignSheet({ contract, onClose }: { contract: Contract; onClose: () => v
         <Row label={tr("Boat")} value={ix.boat(contract.boatId)?.name ?? ""} />
         <Row label={tr("From")} value={fmtDate(contract.start)} />
         <Row label={tr("Until")} value={fmtDate(contract.end)} />
-        <Row label={tr("Monthly fee")} value={money(contract.monthlyFee)} />
+        <Row label={tr("Monthly fee")} value={money(contract.monthlyFee, ix.cur(contract.marinaId))} />
         <Row label={tr("Renewal")} value={contract.autoRenew ? tr("Renews automatically") : tr("Ends on the last day")} />
       </View>
       <View style={{ gap: 6, marginVertical: 8 }}>
@@ -82,7 +82,7 @@ export default function Contracts() {
                 {current ? <Badge tone="active" label={c.autoRenew ? tr("Auto-renews") : tr("Fixed term")} /> : <Badge tone="outline" label={tr("Ended")} />}
               </View>
               <Txt v="bodySm" color={t.text2}>{tr(CONTRACT_TERMS[c.term].label)} · {fmtDate(c.start)} – {fmtDate(c.end)}</Txt>
-              <Txt v="caption" color={t.text3}>{tr("Berth {code}", { code: ix.berth(c.berthId)?.code })} · {ix.boat(c.boatId)?.name} · {money(c.monthlyFee)} {tr("/month")}</Txt>
+              <Txt v="caption" color={t.text3}>{tr("Berth {code}", { code: ix.berth(c.berthId)?.code })} · {ix.boat(c.boatId)?.name} · {money(c.monthlyFee, ix.cur(c.marinaId))} {tr("/month")}</Txt>
               <View style={{ borderTopWidth: 1, borderColor: t.border, marginTop: 10, paddingTop: 10 }}>
                 {c.signed ? (
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>

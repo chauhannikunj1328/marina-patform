@@ -1,7 +1,7 @@
 // All marinas (by state, with a map) and one marina's page: berths, rates, amenities and contact.
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Droplets, Mail, MapPin, Navigation, Phone, Plug, Ruler } from "lucide-react";
-import { count, cx, directionsUrl, marinaPoint, money, t, tn } from "@marina/shared";
+import { count, cx, directionsUrl, marinaPoint, money, t, tn, ftM } from "@marina/shared";
 import { useStore } from "@/data/store";
 import { Map, type MapMarker } from "@/components/Map";
 import { MarinaCard } from "@/components/MarinaCard";
@@ -33,11 +33,11 @@ export function Marinas() {
     <>
       <PageHero eyebrow={t("Where to stay")} title={t("Marinas")} intro={t("{n} marinas with berths for boats up to {ft} ft. Pick one to see its berths, rates and amenities.", { n: all.length, ft: Math.max(...all.map((m) => marinaFacts(db, m.id).maxLength)) })} />
       <Container className="py-12">
-        <div role="group" aria-label={t("State")} className="mb-6 flex flex-wrap gap-2">
+        <div role="group" aria-label={t("Location")} className="mb-6 flex flex-wrap gap-2">
           {["", ...states].map((s) => (
             <button key={s || "all"} type="button" aria-pressed={state === s} onClick={() => setState(s)}
               className={cx("rounded-full border px-4 py-1.5 text-[13px] font-medium cursor-pointer", state === s ? "border-transparent bg-primary text-on-primary" : "border-line text-ink-2 hover:bg-sidebar")}>
-              {s ? t(s) : t("All states")} <span className="num opacity-70">{s ? all.filter((m) => stateOf(db, m) === s).length : all.length}</span>
+              {s ? t(s) : t("All locations")} <span className="num opacity-70">{s ? all.filter((m) => stateOf(db, m) === s).length : all.length}</span>
             </button>
           ))}
         </div>
@@ -80,7 +80,7 @@ export function MarinaPage() {
           <Link to="/marinas" className="inline-flex items-center gap-1.5 text-[13px] font-medium text-ink-2 hover:text-ink"><ArrowLeft className={`size-4 ${flip(ArrowLeft) ?? ""}`} aria-hidden /> {t("All marinas")}</Link>
           <Eyebrow><span className="mt-6 block">{city?.name}, {t(stateOf(db, marina))}</span></Eyebrow>
           <h1 className="text-[36px] leading-[44px] font-medium tracking-[-0.01em] sm:text-[48px] sm:leading-[56px]">{marina.name}</h1>
-          <p className="mt-3 text-[15px] text-ink-2">{t("{n} berths · boats up to {ft} ft · from {price} a night", { n: f.berths, ft: f.maxLength, price: money(f.fromDaily) })}</p>
+          <p className="mt-3 text-[15px] text-ink-2">{t("{n} berths · boats up to {length} · from {price} a night", { n: f.berths, length: ftM(f.maxLength), price: money(f.fromDaily, f.currency) })}</p>
           {(rating || free > 0) && (
             <div className="mt-3 flex flex-wrap items-center gap-3">
               {rating && (
@@ -119,10 +119,10 @@ export function MarinaPage() {
                 <tbody>
                   {f.sizes.map((s) => (
                     <tr key={s.maxLength} className="border-t border-table-line">
-                      <td className="px-4 py-3 font-medium"><span className="num">{s.maxLength}</span> {t("ft")}</td>
+                      <td className="px-4 py-3 font-medium"><span className="num">{ftM(s.maxLength)}</span></td>
                       <td className="num px-4 py-3 text-ink-2">{s.count}</td>
-                      <td className="num px-4 py-3 text-end">{money(s.daily)}</td>
-                      <td className="num px-4 py-3 text-end">{money(s.monthly)}</td>
+                      <td className="num px-4 py-3 text-end">{money(s.daily, f.currency)}</td>
+                      <td className="num px-4 py-3 text-end">{money(s.monthly, f.currency)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -170,7 +170,7 @@ export function MarinaPage() {
           </Card>
           <Card className="bg-promo p-6">
             <h2 className="text-[17px] font-medium text-ink">{t("Staying a season or longer?")}</h2>
-            <p className="mt-2 text-[13px] leading-5 text-ink-2">{t("Monthly berths here start at {price}. Contracts of 6 or 12 months cost less per month.", { price: money(f.fromMonthly) })}</p>
+            <p className="mt-2 text-[13px] leading-5 text-ink-2">{t("Monthly berths here start at {price}. Contracts of 6 or 12 months cost less per month.", { price: money(f.fromMonthly, f.currency) })}</p>
             <div className="mt-4 flex flex-wrap gap-2">
               <ButtonLink to={`/contact?topic=contract&marina=${marina.id}`} variant="primary" size="sm">{t("Ask about a contract")}</ButtonLink>
               <ButtonLink to="/pricing" size="sm">{t("Rates and contracts")}</ButtonLink>
@@ -179,7 +179,7 @@ export function MarinaPage() {
           <p className="px-1 text-xs text-ink-3">{count(f.berths)} {t("berths in total")}</p>
         </aside>
       </Container>
-      <StickyCta price={money(f.fromDaily)} />
+      <StickyCta price={money(f.fromDaily, f.currency)} />
     </>
   );
 }

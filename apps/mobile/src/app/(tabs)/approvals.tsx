@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { View } from "react-native";
 import { CalendarCheck, CircleCheck, TriangleAlert } from "lucide-react-native";
-import { daysBetween, fmtShort, money2, relative, withInvoice, type Booking, type StaffRequest } from "@marina/shared";
+import { daysBetween, fmtShort, money2, relative, withInvoice, type Booking, type StaffRequest, ftM } from "@marina/shared";
 import { Badge, Button, Card, EmptyState, Screen, Segmented, Sheet, Txt } from "@/components/ui";
 import { useViewParam } from "@/lib/useOpenParam";
 import { useStore } from "@/store";
@@ -69,9 +69,9 @@ export default function Approvals() {
                   <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 12 }}>
                     <View style={{ flex: 1 }}>
                       <Txt weight="semibold">{ix.boat(b.boatId)?.name}</Txt>
-                      <Txt v="bodySm" color={t.text3}>{ix.ownerOfBooking(b)?.name} · {ix.boat(b.boatId)?.length} {tr("ft")}</Txt>
+                      <Txt v="bodySm" color={t.text3}>{ix.ownerOfBooking(b)?.name} · {ftM(ix.boat(b.boatId)?.length)}</Txt>
                     </View>
-                    <Txt num weight="semibold">{money2(ix.amount(b))}</Txt>
+                    <Txt num weight="semibold">{money2(ix.amount(b), ix.curOfBooking(b))}</Txt>
                   </View>
                   <Txt v="bodySm" color={t.text2}>
                     {fmtShort(b.start)} – {fmtShort(b.end)} · {tn(nights, "{n} night", "{n} nights")} · {tr("Berth {code}", { code: ix.berth(b.berthId)?.code })}{many ? ` · ${ix.marinaOfBerth(b.berthId)?.name}` : ""}
@@ -127,7 +127,7 @@ export default function Approvals() {
       )}
       {confirmAll && (() => {
         const ok = bookings.filter((b) => !clashes(b));
-        const total = ok.reduce((sum, b) => sum + ix.amount(b), 0);
+        const total = ok.reduce((sum, b) => sum + ix.toReporting(ix.amount(b), ix.berth(b.berthId)?.marinaId), 0);
         return (
           <Sheet
             open

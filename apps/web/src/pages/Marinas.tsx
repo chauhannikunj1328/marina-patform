@@ -4,7 +4,7 @@ import { Anchor, ArrowLeft, CalendarDays, CalendarPlus, DollarSign, Eye, Gauge, 
 import { nextId, useStore } from "@/data/store";
 import type { Berth, Marina } from "@marina/shared";
 import { BerthDetail } from "@/components/BerthDetail";
-import { t, count, directionsUrl, marinaPoint, money, pct, validPoint } from "@marina/shared";
+import { t, count, directionsUrl, marinaPoint, money, pct, validPoint, ftM } from "@marina/shared";
 import { MapView, type MapMarker } from "@/components/MapView";
 import { lastMonths, fmtShort } from "@marina/shared";
 import { Badge, Button, Card, CardHeader, ConfirmDialog, EmptyState, Field, IconButton, Input, Meter, Modal, PageHeader, SearchInput, Select, StatCard, Table, Toolbar, useDirty, useSort } from "@/components/ui";
@@ -398,7 +398,7 @@ export function MarinaDetail() {
             {berths.map((b) => (
               <button key={b.id} onClick={() => setViewing(b)} className="rounded-md border border-line p-2 text-start hover:border-line-strong hover:bg-row-hover cursor-pointer">
                 <p className="text-[13px] font-semibold">{b.code}</p>
-                <p className="mb-1.5 text-xs text-ink-3">{b.maxLength} {t("ft")}</p>
+                <p className="mb-1.5 text-xs text-ink-3">{ftM(b.maxLength)}</p>
                 <BerthBadge status={ix.berthStatus(b)} />
               </button>
             ))}

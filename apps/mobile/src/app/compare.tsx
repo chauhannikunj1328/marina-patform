@@ -22,7 +22,7 @@ export default function Compare() {
   if (!office || scope.length < 2) return <Redirect href="/" />;
 
   const weekStart = addDays(today(), -fromISO(today()).getDay());
-  const overdue = (id: string) => db.invoices.filter((i) => i.status === "overdue" && ix.marinaOfInvoice(i) === id).reduce((s, i) => s + ix.balance(i), 0);
+  const overdue = (id: string) => db.invoices.filter((i) => i.status === "overdue" && ix.marinaOfInvoice(i) === id).reduce((s, i) => s + ix.invoiceToReporting(i, ix.balance(i)), 0);
   const metrics: Metric[] = [
     { label: tr("Occupancy today"), value: (id) => ix.metrics([id]).occupancy, format: pct, better: "high" },
     { label: tr("Revenue this month"), value: (id) => ix.metrics([id]).revenue, format: moneyShort, better: "high" },

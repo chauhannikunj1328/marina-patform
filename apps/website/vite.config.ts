@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
-import { addLang, createSeed, isRtl, LANGS, setLang, type Lang } from "../../packages/shared/src/index";
+import { addLang, createSeed, isRtl, LANGS, localizeDb, setLang, type Lang } from "../../packages/shared/src/index";
 import { es } from "../../packages/shared/src/i18n/es";
 import { ar } from "../../packages/shared/src/i18n/ar";
 import { headTags, publicPages, withLang, type PageMeta } from "./src/lib/seo";
@@ -47,7 +47,8 @@ function seoPages(): Plugin {
       const byLang = new Map<Lang, PageMeta[]>();
       for (const { code: l } of LANGS) {
         setLang(l);
-        const pages = publicPages(db, SITE_URL);
+        // In Arabic, Gulf marinas and places use their Arabic names, as on the live pages.
+        const pages = publicPages(localizeDb(db, l), SITE_URL);
         byLang.set(l, pages);
         for (const m of pages) {
           const path = withLang(m.path, l);

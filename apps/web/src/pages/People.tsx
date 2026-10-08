@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Ban, CalendarPlus, MailPlus, Pencil, Plus, RotateCcw, Sailboat, UserPlus, Users } from "lucide-react";
 import { nextId, useStore } from "@/data/store";
 import type { Boat, BoatOwner, BoatType, Role, SystemUser } from "@marina/shared";
-import { t, withMessage } from "@marina/shared";
+import { t, withMessage, ftM } from "@marina/shared";
 import { fmtDate, relative, today } from "@marina/shared";
 import { money } from "@marina/shared";
 import { Avatar, Badge, Button, Card, Field, IconButton, Input, Modal, PageHeader, Pagination, paginate, SearchInput, Select, StatCard, Table, Tabs, Toolbar, useDirty, useSort } from "@/components/ui";
@@ -101,9 +101,9 @@ function OwnerDetail({ owner, onClose }: { owner: BoatOwner; onClose: () => void
   const bookings = db.bookings
     .filter((b) => boats.some((bt) => bt.id === b.boatId) && (user?.role === "admin" || scope.includes(ix.berth(b.berthId)?.marinaId ?? "")))
     .sort((a, b) => b.start.localeCompare(a.start));
-  const spent = bookings.filter((b) => b.status !== "cancelled" && b.status !== "pending").reduce((s, b) => s + ix.amount(b), 0);
+  const spent = bookings.filter((b) => b.status !== "cancelled" && b.status !== "pending").reduce((s, b) => s + ix.toReporting(ix.amount(b), ix.berth(b.berthId)?.marinaId), 0);
   const invoices = db.invoices.filter((i) => bookings.some((b) => b.id === i.bookingId));
-  const owed = invoices.reduce((s, i) => s + ix.balance(i), 0);
+  const owed = invoices.reduce((s, i) => s + ix.invoiceToReporting(i, ix.balance(i)), 0);
 
   if (editing) return <OwnerForm owner={o} onClose={() => setEditing(false)} />;
   if (boatForm) return <BoatForm ownerId={o.id} boat={boatForm === "new" ? undefined : boatForm} onClose={() => setBoatForm(undefined)} />;
@@ -137,7 +137,7 @@ function OwnerDetail({ owner, onClose }: { owner: BoatOwner; onClose: () => void
           <li key={b.id} className="flex items-center gap-3 rounded-md border border-line px-3 py-2 text-[13px]">
             <Sailboat className="size-4 text-ink-3" aria-hidden />
             <span className="font-medium">{b.name}</span>
-            <span className="flex-1 text-ink-3">{t(b.type)} · {b.length} {t("ft ·")} {b.registration}</span>
+            <span className="flex-1 text-ink-3">{t(b.type)} · {ftM(b.length)} · {b.registration}</span>
             <IconButton icon={Pencil} label={t("Edit {name}", { name: b.name })} onClick={() => setBoatForm(b)} />
           </li>
         ))}

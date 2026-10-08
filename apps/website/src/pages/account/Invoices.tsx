@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, CreditCard, Printer, Receipt } from "lucide-react";
-import { amountDue, daysBetween, fmtDate, linesTotal, money2, ownerInvoices, t, today, withCardPayment } from "@marina/shared";
+import { amountDue, daysBetween, decimalsOf, fmtDate, linesTotal, money2, moneyTotal, roundMoney, ownerInvoices, t, today, withCardPayment } from "@marina/shared";
 import { useStore } from "@/data/store";
 import { Button, ButtonLink, Card, EmptyState, Field, Input, Modal, Notice, flip, usePageTitle } from "@/components/ui";
 import { InvoiceStatus } from "./status";
@@ -16,7 +16,7 @@ export function MyInvoices() {
   return (
     <div>
       <h2 className="mb-2 text-[22px] leading-[30px] font-medium">{t("Invoices")}</h2>
-      <p className="mb-6 text-[13px] text-ink-3">{open.length ? t("{amount} to pay across your open invoices.", { amount: money2(open.reduce((s, i) => s + amountDue(i), 0)) }) : t("You're all paid up.")}</p>
+      <p className="mb-6 text-[13px] text-ink-3">{open.length ? t("{amount} to pay across your open invoices.", { amount: moneyTotal(open.map((i) => ({ amount: amountDue(i), currency: ix.curOfInvoice(i) })), true) }) : t("You're all paid up.")}</p>
       {invoices.length === 0 ? (
         <Card><EmptyState icon={Receipt} title={t("No invoices yet")} body={t("The marina sends an invoice once it confirms a booking.")} /></Card>
       ) : (
@@ -32,7 +32,7 @@ export function MyInvoices() {
                       <span className="block text-xs text-ink-3">{t("Issued {date}", { date: fmtDate(inv.issued) })} · {t("due {date}", { date: fmtDate(inv.due) })}</span>
                     </span>
                     <span className="flex items-center gap-3">
-                      <span className="num text-[15px] font-semibold">{money2(amountDue(inv) || inv.amount)}</span>
+                      <span className="num text-[15px] font-semibold">{money2(amountDue(inv) || inv.amount, ix.curOfInvoice(inv))}</span>
                       <InvoiceStatus inv={inv} />
                     </span>
                   </Link>
@@ -47,22 +47,23 @@ export function MyInvoices() {
 }
 
 function PayDialog({ invoiceId, onClose }: { invoiceId: string; onClose: () => void }) {
-  const { db, update, toast } = useStore();
+  const { db, ix, update, toast } = useStore();
   const inv = db.invoices.find((i) => i.id === invoiceId)!;
   const due = amountDue(inv);
-  const [amount, setAmount] = useState(due.toFixed(2));
+  const cur = ix.curOfInvoice(inv);
+  const [amount, setAmount] = useState(due.toFixed(decimalsOf(cur)));
   const [error, setError] = useState<string | null>(null);
   const pay = () => {
-    const a = Math.round(Number(amount) * 100) / 100;
+    const a = roundMoney(Number(amount), cur);
     if (!(a > 0)) return setError(t("Enter an amount to pay."));
-    if (a > due) return setError(t("That's more than the {amount} still owed.", { amount: money2(due) }));
+    if (a > due) return setError(t("That's more than the {amount} still owed.", { amount: money2(due, cur) }));
     update((d) => withCardPayment(d, inv.id, a, { now: today(), at: new Date().toISOString() }));
-    toast(a >= due ? t("{number} is paid. Thank you!", { number: inv.number }) : t("Payment of {amount} received", { amount: money2(a) }));
+    toast(a >= due ? t("{number} is paid. Thank you!", { number: inv.number }) : t("Payment of {amount} received", { amount: money2(a, cur) }));
     onClose();
   };
   return (
-    <Modal open onClose={onClose} title={t("Pay {number}", { number: inv.number })} description={t("{amount} still owed", { amount: money2(due) })}
-      footer={<><Button onClick={onClose}>{t("Cancel")}</Button><Button variant="primary" icon={CreditCard} onClick={pay}>{t("Pay {amount}", { amount: money2(Math.max(0, Number(amount) || 0)) })}</Button></>}>
+    <Modal open onClose={onClose} title={t("Pay {number}", { number: inv.number })} description={t("{amount} still owed", { amount: money2(due, cur) })}
+      footer={<><Button onClick={onClose}>{t("Cancel")}</Button><Button variant="primary" icon={CreditCard} onClick={pay}>{t("Pay {amount}", { amount: money2(Math.max(0, Number(amount) || 0), cur) })}</Button></>}>
       <div className="space-y-4">
         <Field label={t("Amount")} hint={t("Pay the full balance or part of it.")}>{(id) => <Input id={id} type="number" inputMode="decimal" min={0.01} max={due} step="0.01" value={amount} onChange={(e) => { setAmount(e.target.value); setError(null); }} />}</Field>
         {error && <Notice tone="error">{error}</Notice>}
@@ -83,6 +84,7 @@ export function InvoicePage() {
   const marina = b ? ix.marinaOfBerth(b.berthId) : undefined;
   const boat = b ? ix.boat(b.boatId) : undefined;
   const due = amountDue(inv);
+  const cur = ix.curOfInvoice(inv);
   const stay = inv.amount - linesTotal(inv);
   const receipt = inv.status === "paid";
   return (
@@ -91,7 +93,7 @@ export function InvoicePage() {
         <Link to="/account/invoices" className="inline-flex items-center gap-1.5 text-[13px] font-medium text-ink-2 hover:text-ink"><ArrowLeft className={`size-4 ${flip(ArrowLeft) ?? ""}`} aria-hidden /> {t("All invoices")}</Link>
         <div className="flex gap-2">
           <Button size="sm" icon={Printer} onClick={() => window.print()}>{receipt ? t("Print receipt") : t("Print invoice")}</Button>
-          {due > 0 && <Button size="sm" variant="primary" icon={CreditCard} onClick={() => setPaying(true)}>{t("Pay {amount}", { amount: money2(due) })}</Button>}
+          {due > 0 && <Button size="sm" variant="primary" icon={CreditCard} onClick={() => setPaying(true)}>{t("Pay {amount}", { amount: money2(due, cur) })}</Button>}
         </div>
       </div>
       <Card className="print-area p-6 sm:p-8">
@@ -114,11 +116,11 @@ export function InvoicePage() {
         <table className="mt-8 w-full text-[13px]">
           <thead className="text-xs text-ink-3"><tr><th scope="col" className="pb-2 text-start font-medium">{t("Description")}</th><th scope="col" className="pb-2 text-end font-medium">{t("Amount")}</th></tr></thead>
           <tbody>
-            <tr className="border-t border-line"><td className="py-2.5">{b ? t("Berth, {n} nights", { n: daysBetween(b.start, b.end) }) : t("Berth")}</td><td className="num py-2.5 text-end">{money2(stay)}</td></tr>
-            {(inv.lines ?? []).map((l, i) => <tr key={i} className="border-t border-line"><td className="py-2.5">{t(l.label)} <span className="text-ink-3">· {l.qty} {t(l.unit)} × {money2(l.unitPrice)}</span></td><td className="num py-2.5 text-end">{money2(l.amount)}</td></tr>)}
-            <tr className="border-t border-line-strong font-semibold"><td className="py-2.5">{t("Total")}</td><td className="num py-2.5 text-end">{money2(inv.amount)}</td></tr>
-            {inv.payments.map((p, i) => <tr key={`p${i}`} className="text-success-fg"><td className="py-1.5">{t("Paid {date} by {method}", { date: fmtDate(p.date), method: t(p.method) })}</td><td className="num py-1.5 text-end">−{money2(p.amount)}</td></tr>)}
-            <tr className="border-t border-line-strong text-[15px] font-semibold"><td className="py-3">{t("Balance")}</td><td className="num py-3 text-end">{money2(due)}</td></tr>
+            <tr className="border-t border-line"><td className="py-2.5">{b ? t("Berth, {n} nights", { n: daysBetween(b.start, b.end) }) : t("Berth")}</td><td className="num py-2.5 text-end">{money2(stay, cur)}</td></tr>
+            {(inv.lines ?? []).map((l, i) => <tr key={i} className="border-t border-line"><td className="py-2.5">{t(l.label)} <span className="text-ink-3">· {l.qty} {t(l.unit)} × {money2(l.unitPrice, cur)}</span></td><td className="num py-2.5 text-end">{money2(l.amount, cur)}</td></tr>)}
+            <tr className="border-t border-line-strong font-semibold"><td className="py-2.5">{t("Total")}</td><td className="num py-2.5 text-end">{money2(inv.amount, cur)}</td></tr>
+            {inv.payments.map((p, i) => <tr key={`p${i}`} className="text-success-fg"><td className="py-1.5">{t("Paid {date} by {method}", { date: fmtDate(p.date), method: t(p.method) })}</td><td className="num py-1.5 text-end">−{money2(p.amount, cur)}</td></tr>)}
+            <tr className="border-t border-line-strong text-[15px] font-semibold"><td className="py-3">{t("Balance")}</td><td className="num py-3 text-end">{money2(due, cur)}</td></tr>
           </tbody>
         </table>
         {inv.status === "void" && <p className="mt-4 text-[13px] text-ink-3">{t("This invoice was cancelled. Nothing is owed on it.")}</p>}

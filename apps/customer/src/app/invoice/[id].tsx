@@ -3,7 +3,7 @@ import { useState } from "react";
 import { View } from "react-native";
 import { Redirect, useLocalSearchParams } from "expo-router";
 import { CreditCard, Info, Receipt } from "lucide-react-native";
-import { amountDue, daysBetween, fmtDate, linesTotal, money2, ownerInvoices, today, withCardPayment } from "@marina/shared";
+import { amountDue, daysBetween, decimalsOf, fmtDate, linesTotal, money2, roundMoney, ownerInvoices, today, withCardPayment } from "@marina/shared";
 import { Button, Card, EmptyState, Field, Input, Sheet, StackHeader, Txt } from "@/components/ui";
 import { Body, InvoiceStatus } from "@/components/parts";
 import { useStore } from "@/store";
@@ -23,22 +23,23 @@ function Line({ label, amount, strong, color }: { label: string; amount: string;
 function PaySheet({ invoiceId, onClose }: { invoiceId: string; onClose: () => void }) {
   const { t } = useTheme();
   const tr = useTr();
-  const { db, update, toast } = useStore();
+  const { db, ix, update, toast } = useStore();
   const inv = db.invoices.find((i) => i.id === invoiceId)!;
   const due = amountDue(inv);
-  const [amount, setAmount] = useState(due.toFixed(2));
+  const cur = ix.curOfInvoice(inv);
+  const [amount, setAmount] = useState(due.toFixed(decimalsOf(cur)));
   const [error, setError] = useState("");
-  const value = Math.round(Number(amount) * 100) / 100;
+  const value = roundMoney(Number(amount), cur);
   const pay = () => {
     if (!(value > 0)) return setError(tr("Enter an amount to pay."));
-    if (value > due) return setError(tr("That's more than the {amount} still owed.", { amount: money2(due) }));
+    if (value > due) return setError(tr("That's more than the {amount} still owed.", { amount: money2(due, cur) }));
     update((d) => withCardPayment(d, inv.id, value, { now: today(), at: new Date().toISOString() }));
-    toast(value >= due ? tr("{number} is paid. Thank you!", { number: inv.number }) : tr("Payment of {amount} received", { amount: money2(value) }));
+    toast(value >= due ? tr("{number} is paid. Thank you!", { number: inv.number }) : tr("Payment of {amount} received", { amount: money2(value, cur) }));
     onClose();
   };
   return (
-    <Sheet open onClose={onClose} title={tr("Pay {number}", { number: inv.number })} subtitle={tr("{amount} still owed", { amount: money2(due) })}
-      footer={<Button variant="primary" size="lg" icon={CreditCard} label={tr("Pay {amount}", { amount: money2(Math.max(0, value || 0)) })} onPress={pay} />}>
+    <Sheet open onClose={onClose} title={tr("Pay {number}", { number: inv.number })} subtitle={tr("{amount} still owed", { amount: money2(due, cur) })}
+      footer={<Button variant="primary" size="lg" icon={CreditCard} label={tr("Pay {amount}", { amount: money2(Math.max(0, value || 0), cur) })} onPress={pay} />}>
       <View style={{ gap: 16 }}>
         <Field label={tr("Amount")} hint={tr("Pay the full balance or part of it.")} error={error}>
           <Input value={amount} keyboardType="decimal-pad" onChangeText={(v) => { setAmount(v.replace(/[^\d.]/g, "")); setError(""); }} invalid={!!error} />
@@ -70,6 +71,7 @@ export default function InvoiceScreen() {
   const b = ix.booking(inv.bookingId);
   const marina = b ? ix.marinaOfBerth(b.berthId) : undefined;
   const due = amountDue(inv);
+  const cur = ix.curOfInvoice(inv);
   const receipt = inv.status === "paid";
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
@@ -97,15 +99,15 @@ export default function InvoiceScreen() {
             </View>
           )}
           <View style={{ marginTop: 16 }}>
-            <Line label={b ? tr("Berth, {n} nights", { n: daysBetween(b.start, b.end) }) : tr("Berth")} amount={money2(inv.amount - linesTotal(inv))} />
-            {(inv.lines ?? []).map((l, i) => <Line key={i} label={`${tr(l.label)} · ${l.qty} ${tr(l.unit)} × ${money2(l.unitPrice)}`} amount={money2(l.amount)} />)}
-            <Line strong label={tr("Total")} amount={money2(inv.amount)} />
-            {inv.payments.map((p, i) => <Line key={`p${i}`} label={tr("Paid {date} by {method}", { date: fmtDate(p.date), method: tr(p.method) })} amount={`−${money2(p.amount)}`} color={t.success.fg} />)}
-            <Line strong label={tr("Balance")} amount={money2(due)} />
+            <Line label={b ? tr("Berth, {n} nights", { n: daysBetween(b.start, b.end) }) : tr("Berth")} amount={money2(inv.amount - linesTotal(inv), cur)} />
+            {(inv.lines ?? []).map((l, i) => <Line key={i} label={`${tr(l.label)} · ${l.qty} ${tr(l.unit)} × ${money2(l.unitPrice, cur)}`} amount={money2(l.amount, cur)} />)}
+            <Line strong label={tr("Total")} amount={money2(inv.amount, cur)} />
+            {inv.payments.map((p, i) => <Line key={`p${i}`} label={tr("Paid {date} by {method}", { date: fmtDate(p.date), method: tr(p.method) })} amount={`−${money2(p.amount, cur)}`} color={t.success.fg} />)}
+            <Line strong label={tr("Balance")} amount={money2(due, cur)} />
           </View>
           {inv.status === "void" && <Txt v="bodySm" color={t.text3}>{tr("This invoice was cancelled. Nothing is owed on it.")}</Txt>}
         </Card>
-        {due > 0 && <Button variant="primary" size="lg" icon={CreditCard} label={tr("Pay {amount}", { amount: money2(due) })} onPress={() => setPaying(true)} />}
+        {due > 0 && <Button variant="primary" size="lg" icon={CreditCard} label={tr("Pay {amount}", { amount: money2(due, cur) })} onPress={() => setPaying(true)} />}
       </Body>
       {paying && <PaySheet invoiceId={inv.id} onClose={() => setPaying(false)} />}
     </View>

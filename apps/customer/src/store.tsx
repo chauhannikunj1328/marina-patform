@@ -6,10 +6,11 @@ import { Platform } from "react-native";
 import * as Crypto from "expo-crypto";
 import NetInfo from "@react-native-community/netinfo";
 import {
-  createSeed, DEMO_OWNER_EMAIL, Index, OWNER_PASSWORD_HASHES, sendOwnerEmail, setCurrency, setTimeZone, today, withDemoOwner, withMarinaPoints, withOwner,
+  createSeed, delocalizeDb, DEMO_OWNER_EMAIL, Index, localizeDb, OWNER_PASSWORD_HASHES, sendOwnerEmail, setCurrency, setTimeZone, today, withDemoOwner, withMarinaPoints, withOwner,
   type Boat, type BoatOwner, type Db,
 } from "@marina/shared";
 import { load, remove, save } from "./lib/storage";
+import { useLang } from "./lib/i18n";
 
 export type ToastKind = "success" | "warning" | "error";
 export interface Toast {
@@ -43,7 +44,7 @@ interface Store {
 
 const Ctx = createContext<Store | null>(null);
 
-const DATA_KEY = "marina.customer.data.v1";
+const DATA_KEY = "marina.customer.data.v2";
 const ACCOUNTS_KEY = "marina.customer.accounts";
 const SESSION_KEY = "marina.customer.session";
 
@@ -101,10 +102,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   setTimeZone(db.settings.timezone);
   setCurrency(db.settings.currency);
-  const ix = useMemo(() => new Index(db), [db]);
+  const { lang } = useLang();
+  // Screens read the data with place names in the current language; changes go to the stored data.
+  const view = useMemo(() => localizeDb(db, lang), [db, lang]);
+  const ix = useMemo(() => new Index(view), [view]);
   const owner = ownerId ? db.owners.find((o) => o.id === ownerId) : undefined;
 
-  const update = useCallback((fn: (d: Db) => Db) => setDb((d) => fn(d)), []);
+  const update = useCallback((fn: (d: Db) => Db) => setDb((d) => delocalizeDb(fn(d), d)), []);
 
   const toast = useCallback((message: string, kind: ToastKind = "success") => {
     const id = Date.now() + Math.random();
@@ -160,7 +164,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <Ctx.Provider value={{ ready, db, ix, owner, update, signIn, register, signOut, canChangePassword, changePassword, toasts, toast, online }}>
+    <Ctx.Provider value={{ ready, db: view, ix, owner, update, signIn, register, signOut, canChangePassword, changePassword, toasts, toast, online }}>
       {children}
     </Ctx.Provider>
   );

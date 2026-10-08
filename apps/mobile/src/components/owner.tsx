@@ -2,7 +2,7 @@
 import { Linking, Pressable, View } from "react-native";
 import { router } from "expo-router";
 import { ChevronRight, Mail, Phone } from "lucide-react-native";
-import { fmtDate, fmtShort, money2, today, type BoatOwner } from "@marina/shared";
+import { fmtDate, fmtShort, moneyTotal, today, type BoatOwner, ftM } from "@marina/shared";
 import { useStore } from "../store";
 import { flipRtl, useTheme } from "../theme";
 import { BookingBadge } from "./status";
@@ -19,8 +19,9 @@ export function OwnerSheet({ owner, onClose }: { owner: BoatOwner; onClose: () =
   // Stays at the marinas this person can see, newest first.
   const stays = db.bookings.filter((b) => boatIds.has(b.boatId) && ids.includes(ix.berth(b.berthId)?.marinaId ?? "")).sort((a, b) => b.start.localeCompare(a.start));
   const invoices = db.invoices.filter((i) => stays.some((b) => b.id === i.bookingId) && i.status !== "void");
-  const paid = invoices.reduce((s, i) => s + ix.paidSoFar(i), 0);
-  const owed = invoices.reduce((s, i) => s + ix.balance(i), 0);
+  const paid = moneyTotal(invoices.map((i) => ({ amount: ix.paidSoFar(i), currency: ix.curOfInvoice(i) })), true);
+  const owedBy = invoices.map((i) => ({ amount: ix.balance(i), currency: ix.curOfInvoice(i) }));
+  const owed = owedBy.reduce((s, x) => s + x.amount, 0);
   const overdue = invoices.filter((i) => i.status === "overdue").length;
   const now = today();
   const current = stays.find((b) => b.status === "checked-in" || (b.start <= now && b.end > now && b.status === "confirmed"));
@@ -35,14 +36,14 @@ export function OwnerSheet({ owner, onClose }: { owner: BoatOwner; onClose: () =
       }
     >
       <Row label={tr("Contact")} value={owner.phone || "No phone"} sub={owner.email || undefined} />
-      <Row label={tr("Paid so far")} value={money2(paid)} />
-      <Row label={tr("Owes")} value={money2(owed)} sub={overdue ? tn(overdue, "{n} overdue invoice", "{n} overdue invoices") : owed ? tr("Not yet due") : undefined} />
+      <Row label={tr("Paid so far")} value={paid} />
+      <Row label={tr("Owes")} value={moneyTotal(owedBy, true)} sub={overdue ? tn(overdue, "{n} overdue invoice", "{n} overdue invoices") : owed ? tr("Not yet due") : undefined} />
       {current && <Row label={tr("In the marina now")} value={`${ix.boat(current.boatId)?.name} · berth ${ix.berth(current.berthId)?.code}`} sub={tr("Leaves {date}", { date: fmtShort(current.end) })} />}
       <Section title={tr("Boats")} count={boats.length}>
         {boats.map((b) => (
           <View key={b.id} style={{ borderWidth: 1, borderColor: t.border, borderRadius: 12, padding: 12 }}>
             <Txt weight="medium">{b.name}</Txt>
-            <Txt v="caption" color={t.text3}>{tr(b.type)} · {b.length} {tr("ft ·")} {b.registration}</Txt>
+            <Txt v="caption" color={t.text3}>{tr(b.type)} · {ftM(b.length)} · {b.registration}</Txt>
           </View>
         ))}
       </Section>
