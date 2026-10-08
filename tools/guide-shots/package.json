@@ -5,7 +5,8 @@
   "type": "module",
   "description": "Takes the page guides' screenshots (with red highlight boxes) in every language",
   "scripts": {
-    "shots": "tsx capture.ts"
+    "shots": "tsx capture.ts",
+    "site-shots": "tsx site-shots.ts"
   },
   "devDependencies": {
     "playwright-core": "^1.57.0",

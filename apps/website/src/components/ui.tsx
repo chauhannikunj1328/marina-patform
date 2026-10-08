@@ -103,6 +103,25 @@ export function PageTitle({ title, intro, actions }: { title: string; intro?: st
   );
 }
 
+/** The top of a public page: the brand canvas with the fine square grid, a large title and intro. */
+export function PageHero({ eyebrow, title, intro, actions, children }: { eyebrow?: string; title: string; intro?: ReactNode; actions?: ReactNode; children?: ReactNode }) {
+  return (
+    <section className="hero-bg border-b border-line">
+      <Container className="pt-14 pb-12 sm:pt-20 sm:pb-14">
+        {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
+        <div className="flex flex-wrap items-end justify-between gap-6">
+          <div className="max-w-3xl">
+            <h1 className="text-[40px] leading-[48px] font-medium tracking-[-0.02em] text-balance sm:text-[56px] sm:leading-[64px]">{title}</h1>
+            {intro && <p className="mt-4 max-w-2xl text-[17px] leading-7 text-ink-2">{intro}</p>}
+          </div>
+          {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
+        </div>
+        {children}
+      </Container>
+    </section>
+  );
+}
+
 export function Eyebrow({ children }: { children: ReactNode }) {
   return <p className="text-label mb-3 text-ink-3">{children}</p>;
 }

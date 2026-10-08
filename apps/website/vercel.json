@@ -4,14 +4,14 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "rewrites": [
-    { "source": "/account", "destination": "/index.html" },
-    { "source": "/account/(.*)", "destination": "/index.html" },
-    { "source": "/book/checkout", "destination": "/index.html" },
-    { "source": "/sign-in", "destination": "/index.html" },
-    { "source": "/register", "destination": "/index.html" },
-    { "source": "/forgot-password", "destination": "/index.html" }
+    { "source": "/:lang(es|ar)?/account", "destination": "/index.html" },
+    { "source": "/:lang(es|ar)?/account/:rest*", "destination": "/index.html" },
+    { "source": "/:lang(es|ar)?/book/checkout", "destination": "/index.html" },
+    { "source": "/:lang(es|ar)?/sign-in", "destination": "/index.html" },
+    { "source": "/:lang(es|ar)?/register", "destination": "/index.html" },
+    { "source": "/:lang(es|ar)?/forgot-password", "destination": "/index.html" }
   ],
   "headers": [
-    { "source": "/(account|sign-in|register|forgot-password|book/checkout)(.*)", "headers": [{ "key": "X-Robots-Tag", "value": "noindex, follow" }] }
+    { "source": "/:lang(es|ar)?/(account|sign-in|register|forgot-password|book/checkout)(.*)", "headers": [{ "key": "X-Robots-Tag", "value": "noindex, follow" }] }
   ]
 }

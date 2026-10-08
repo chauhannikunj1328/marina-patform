@@ -1,17 +1,18 @@
 // All marinas (by state, with a map) and one marina's page: berths, rates, amenities and contact.
-import { useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Droplets, Mail, MapPin, Navigation, Phone, Plug, Ruler } from "lucide-react";
 import { count, cx, directionsUrl, marinaPoint, money, t, tn } from "@marina/shared";
 import { useStore } from "@/data/store";
 import { Map, type MapMarker } from "@/components/Map";
 import { MarinaCard } from "@/components/MarinaCard";
 import { SearchForm } from "@/components/SearchForm";
-import { ButtonLink, Card, Container, EmptyState, Eyebrow, PageTitle, flip, usePageTitle } from "@/components/ui";
+import { ButtonLink, Card, Container, EmptyState, Eyebrow, PageHero, flip, usePageTitle } from "@/components/ui";
 import { marinaFacts, openMarinas, stateOf } from "@/lib/marinas";
 import { marinaMeta, marinasMeta } from "@/lib/seo";
 import { StickyCta } from "@/components/StickyCta";
 import { freeTonight, TrustPoints } from "@/components/Trust";
+import { ReviewsSection, Stars } from "@/components/Reviews";
+import { ratingOf, useReviews } from "@/data/reviews";
 
 export function Marinas() {
   const { db, ix } = useStore();
@@ -19,38 +20,44 @@ export function Marinas() {
   const nav = useNavigate();
   const all = openMarinas(db);
   const states = [...new Set(all.map((m) => stateOf(db, m)))];
-  const [state, setState] = useState("");
+  // Links like /marinas?state=Florida (from the footer) open with that state chosen.
+  const [params, setParams] = useSearchParams();
+  const state = states.includes(params.get("state") ?? "") ? params.get("state")! : "";
+  const setState = (s: string) => setParams(s ? { state: s } : {}, { replace: true });
   const shown = state ? all.filter((m) => stateOf(db, m) === state) : all;
   const markers: MapMarker[] = shown.flatMap((m) => {
     const p = marinaPoint(m, ix.city(m.cityId));
     return p ? [{ id: m.id, ...p, label: `${m.name}, ${ix.city(m.cityId)?.name}` }] : [];
   });
   return (
-    <Container className="py-12">
-      <PageTitle title={t("Marinas")} intro={t("{n} marinas with berths for boats up to {ft} ft. Pick one to see its berths, rates and amenities.", { n: all.length, ft: Math.max(...all.map((m) => marinaFacts(db, m.id).maxLength)) })} />
-      <div role="group" aria-label={t("State")} className="mb-6 flex flex-wrap gap-2">
-        {["", ...states].map((s) => (
-          <button key={s || "all"} type="button" aria-pressed={state === s} onClick={() => setState(s)}
-            className={cx("rounded-full border px-4 py-1.5 text-[13px] font-medium cursor-pointer", state === s ? "border-transparent bg-primary text-on-primary" : "border-line text-ink-2 hover:bg-sidebar")}>
-            {s ? t(s) : t("All states")} <span className="num opacity-70">{s ? all.filter((m) => stateOf(db, m) === s).length : all.length}</span>
-          </button>
-        ))}
-      </div>
-      <div className="grid gap-6 lg:grid-cols-[1fr_420px]">
-        <div className="grid content-start gap-4 sm:grid-cols-2">
-          {shown.map((m) => <MarinaCard key={m.id} marina={m} />)}
+    <>
+      <PageHero eyebrow={t("Where to stay")} title={t("Marinas")} intro={t("{n} marinas with berths for boats up to {ft} ft. Pick one to see its berths, rates and amenities.", { n: all.length, ft: Math.max(...all.map((m) => marinaFacts(db, m.id).maxLength)) })} />
+      <Container className="py-12">
+        <div role="group" aria-label={t("State")} className="mb-6 flex flex-wrap gap-2">
+          {["", ...states].map((s) => (
+            <button key={s || "all"} type="button" aria-pressed={state === s} onClick={() => setState(s)}
+              className={cx("rounded-full border px-4 py-1.5 text-[13px] font-medium cursor-pointer", state === s ? "border-transparent bg-primary text-on-primary" : "border-line text-ink-2 hover:bg-sidebar")}>
+              {s ? t(s) : t("All states")} <span className="num opacity-70">{s ? all.filter((m) => stateOf(db, m) === s).length : all.length}</span>
+            </button>
+          ))}
         </div>
-        <div className="lg:sticky lg:top-24 lg:self-start">
-          <Map label={t("Map of marinas")} markers={markers} height={520} zoom={11} onSelect={(id) => nav(`/marinas/${id}`)} />
+        <div className="grid gap-6 lg:grid-cols-[1fr_420px]">
+          <div className="grid content-start gap-4 sm:grid-cols-2">
+            {shown.map((m) => <MarinaCard key={m.id} marina={m} />)}
+          </div>
+          <div className="lg:sticky lg:top-24 lg:self-start">
+            <Map label={t("Map of marinas")} markers={markers} height={520} zoom={11} onSelect={(id) => nav(`/marinas/${id}`)} />
+          </div>
         </div>
-      </div>
-    </Container>
+      </Container>
+    </>
   );
 }
 
 export function MarinaPage() {
   const { id = "" } = useParams();
   const { db, ix } = useStore();
+  const reviews = useReviews();
   const marina = ix.marina(id);
   const meta = marina && marina.status === "active" ? marinaMeta(db, window.location.origin, marina) : undefined;
   usePageTitle(meta ? meta.title.replace(/ · Marina$/, "") : marina?.name, meta);
@@ -65,6 +72,7 @@ export function MarinaPage() {
   const point = marinaPoint(marina, city);
   const monthlyFrom = db.settings.monthlyFromNights;
   const free = freeTonight(db, marina.id);
+  const rating = ratingOf(reviews.filter((r) => r.marinaId === marina.id));
   return (
     <>
       <section className="hero-bg border-b border-line">
@@ -73,7 +81,16 @@ export function MarinaPage() {
           <Eyebrow><span className="mt-6 block">{city?.name}, {t(stateOf(db, marina))}</span></Eyebrow>
           <h1 className="text-[36px] leading-[44px] font-medium tracking-[-0.01em] sm:text-[48px] sm:leading-[56px]">{marina.name}</h1>
           <p className="mt-3 text-[15px] text-ink-2">{t("{n} berths · boats up to {ft} ft · from {price} a night", { n: f.berths, ft: f.maxLength, price: money(f.fromDaily) })}</p>
-          {free > 0 && <p className="mt-3 inline-flex rounded-full bg-success-bg px-3 py-1 text-[13px] font-medium text-success-fg">{tn(free, "{n} berth free tonight", "{n} berths free tonight")}</p>}
+          {(rating || free > 0) && (
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              {rating && (
+                <a href="#reviews" className="inline-flex items-center gap-2 text-[13px] text-ink-2 hover:text-ink">
+                  <Stars value={rating.avg} /><span className="num font-semibold text-ink">{rating.avg.toFixed(1)}</span>{tn(rating.count, "{n} review", "{n} reviews")}
+                </a>
+              )}
+              {free > 0 && <p className="inline-flex rounded-full bg-success-bg px-3 py-1 text-[13px] font-medium text-success-fg">{tn(free, "{n} berth free tonight", "{n} berths free tonight")}</p>}
+            </div>
+          )}
           <Card className="mt-8 p-5 shadow-e2 sm:p-6">
             <div id="availability" className="scroll-mt-28 mb-4 flex flex-wrap items-baseline justify-between gap-2">
               <p className="text-[15px] font-medium">{t("Check availability")}</p>
@@ -131,6 +148,10 @@ export function MarinaPage() {
               <Map label={t("Map of {name}", { name: marina.name })} markers={[{ id: marina.id, ...point, label: marina.name, selected: true }]} height={320} zoom={15} />
             </section>
           )}
+
+          <div id="reviews" className="scroll-mt-24">
+            <ReviewsSection marinaId={marina.id} title={t("What boat owners say")} />
+          </div>
         </div>
 
         <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">

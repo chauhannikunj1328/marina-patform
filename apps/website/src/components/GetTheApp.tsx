@@ -3,8 +3,8 @@
 // "Coming soon" and don't link anywhere.
 import { CalendarCheck, CircleCheck, CreditCard, Navigation } from "lucide-react";
 import { CUSTOMER_APP, t } from "@marina/shared";
-import { Container, Eyebrow } from "@/components/ui";
-import { useLang } from "@/lib/lang";
+import { Eyebrow } from "@/components/ui";
+import { Shot } from "@/lib/photos";
 
 function AppleLogo() {
   return (
@@ -46,8 +46,11 @@ export function StoreButton({ store, href }: { store: "apple" | "google"; href: 
   );
 }
 
-export function GetTheApp() {
-  const { lang } = useLang();
+/**
+ * The "Get the app" card on Home (#app): the brand's promo card, Accent 100 with the fine square
+ * grid (guide 06), store buttons and the app's home screen in a phone frame.
+ */
+export function AppCard() {
   const live = !!(CUSTOMER_APP.appStore || CUSTOMER_APP.playStore);
   const points: [typeof CalendarCheck, string][] = [
     [CalendarCheck, t("Find a free berth and book it in a few taps.")],
@@ -55,16 +58,16 @@ export function GetTheApp() {
     [Navigation, t("Call the dock office or get directions to your berth in one tap.")],
   ];
   return (
-    <section id="app" className="border-b border-line">
-      <Container className="grid items-center gap-12 py-16 lg:grid-cols-[1fr_auto]">
-        <div className="max-w-xl">
-          <Eyebrow>{t("The Marina Berths app")}</Eyebrow>
-          <h2 className="text-[28px] leading-9 font-medium">{t("Your berth in your pocket")}</h2>
-          <p className="mt-3 text-[15px] text-ink-2">{t("Everything you do on the website, on your phone: book berths, keep track of your stays and pay what you owe. Free for iPhone and Android.")}</p>
-          <ul className="mt-6 space-y-3">
+    <section id="app" aria-labelledby="app-title" className="bg-promo relative flex scroll-mt-24 flex-col overflow-hidden rounded-[28px] p-8 sm:p-10">
+      <Eyebrow>{t("The Marina Berths app")}</Eyebrow>
+      <h2 id="app-title" className="max-w-sm text-[28px] leading-9 font-medium text-ink sm:text-[32px] sm:leading-10">{t("Your berth in your pocket")}</h2>
+      <p className="mt-3 max-w-md text-[15px] text-ink-2">{t("Everything you do on the website, on your phone: book berths, keep track of your stays and pay what you owe. Free for iPhone and Android.")}</p>
+      <div className="mt-8 grid flex-1 items-end gap-8 sm:grid-cols-[1fr_200px]">
+        <div>
+          <ul className="space-y-3">
             {points.map(([Icon, text]) => (
-              <li key={text} className="flex items-start gap-3 text-[15px]">
-                <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-accent text-on-accent"><Icon className="size-4" aria-hidden /></span>
+              <li key={text} className="flex items-start gap-3 text-[14px] text-ink">
+                <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-surface text-ink shadow-e1"><Icon className="size-4" aria-hidden /></span>
                 {text}
               </li>
             ))}
@@ -73,15 +76,15 @@ export function GetTheApp() {
             <StoreButton store="apple" href={CUSTOMER_APP.appStore} />
             <StoreButton store="google" href={CUSTOMER_APP.playStore} />
           </div>
-          <p className="mt-3 flex items-center gap-2 text-xs text-ink-3">
+          <p className="mt-3 flex items-center gap-2 text-xs text-ink-2">
             <CircleCheck className="size-3.5" aria-hidden />
             {live ? t("Sign in with the same account you use here.") : t("The app is coming soon. Your account here will work in it too.")}
           </p>
         </div>
-        <div className="mx-auto w-[260px] rounded-[44px] border-[10px] border-[#111316] bg-[#111316] shadow-e2 sm:w-[290px]">
-          <img src={`/app/home-${lang}.webp`} alt={t("The Marina Berths app's home screen: your current stay, what you owe and your recent bookings")} width={600} height={1298} loading="lazy" className="block w-full rounded-[34px]" />
+        <div className="float-slow mx-auto -mb-24 w-[200px] rounded-[36px] border-[8px] border-[#111316] bg-[#111316] shadow-e3 sm:mx-0">
+          <Shot name="appHome" className="rounded-[28px]" />
         </div>
-      </Container>
+      </div>
     </section>
   );
 }

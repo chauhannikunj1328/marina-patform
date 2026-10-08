@@ -3,6 +3,29 @@
 
 /* Public website only. Brand tokens, themes, right-to-left and map styles live in brand.css. */
 
+/*
+  Dark bands (announcement bar, footer, dark feature cards): Primary 800 Slate in light mode, the
+  dark canvas in dark mode, with white text. Only brand colours; nothing new.
+*/
+:root {
+  --footer-bg: #2f3740;
+  --footer-fg: #ffffff;
+  --footer-fg-2: rgb(255 255 255 / 0.72);
+  --footer-line: rgb(255 255 255 / 0.14);
+  --squares-dark: rgb(255 255 255 / 0.06);
+}
+[data-theme="dark"] {
+  --footer-bg: #0e0f12;
+  --footer-line: rgb(255 255 255 / 0.1);
+  --squares-dark: rgb(255 255 255 / 0.04);
+}
+@theme inline {
+  --color-footer: var(--footer-bg);
+  --color-on-footer: var(--footer-fg);
+  --color-on-footer-2: var(--footer-fg-2);
+  --color-footer-line: var(--footer-line);
+}
+
 html {
   scroll-behavior: smooth;
 }
@@ -23,6 +46,53 @@ html {
     linear-gradient(90deg, var(--promo-line) 1px, transparent 1px);
   background-size: 24px 24px;
   mask-image: linear-gradient(to bottom, black 30%, transparent 100%);
+}
+
+/* The brand's fine square grid (guide 06), on dark bands: 1 px white lines at low opacity. */
+.bg-squares-dark {
+  background-image:
+    linear-gradient(var(--squares-dark) 1px, transparent 1px),
+    linear-gradient(90deg, var(--squares-dark) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+/* The same grid on light sections, fading out at the edges. */
+.bg-squares {
+  position: relative;
+  isolation: isolate;
+}
+.bg-squares::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(var(--promo-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--promo-line) 1px, transparent 1px);
+  background-size: 24px 24px;
+  mask-image: radial-gradient(ellipse at center, black 20%, transparent 75%);
+  pointer-events: none;
+}
+
+/* Product pictures float slightly; no motion for people who'd rather not. */
+@media (prefers-reduced-motion: no-preference) {
+  .float-slow {
+    animation: float 7s var(--ease) infinite alternate;
+  }
+  .float-slower {
+    animation: float 9s var(--ease) infinite alternate-reverse;
+  }
+}
+@keyframes float {
+  from { transform: translateY(0); }
+  to { transform: translateY(-8px); }
+}
+
+/* Scrolling rows (reviews) without a visible scrollbar; arrows and swipes move them. */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
 /* Receipts print on their own, in light colours. */

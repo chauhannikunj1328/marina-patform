@@ -5,7 +5,7 @@
 // don't run JavaScript) see the right title, description and image.
 //
 // Imports use a relative path so vite.config.ts can load this file too.
-import { CONTACT, CONTRACT_TERMS, marinaFacts, marinaPoint, money, openMarinas, stateOf, t, type Db, type Marina } from "../../../../packages/shared/src/index";
+import { CONTACT, CONTRACT_TERMS, getLang, LANGS, marinaFacts, marinaPoint, money, openMarinas, stateOf, t, type Db, type Lang, type Marina } from "../../../../packages/shared/src/index";
 
 export const BRAND = "Marina";
 export const DEFAULT_TITLE = "Book a berth online in California, Washington and Florida · Marina";
@@ -22,11 +22,34 @@ export interface PageMeta {
 
 /** Pages that are personal or transactional: kept out of search results (links still followed). */
 export function isPrivate(path: string, search = "") {
+  path = stripLang(path);
   return /^\/(account|sign-in|register|forgot-password|book\/checkout)(\/|$)/.test(path) || (path === "/book" && search.length > 1);
 }
 
 const title = (page?: string) => (page ? `${page} · ${BRAND}` : t(DEFAULT_TITLE));
-const abs = (base: string, path: string) => (base ? new URL(path, base).href : path);
+
+// ---- Language addresses ----------------------------------------------------------------------
+// English pages live at the root (/marinas), Spanish and Arabic under /es and /ar (/es/marinas), so
+// search engines can index each language. Inside the app, paths never carry the prefix: the router's
+// basename adds it.
+
+/** The language an address is in: /es/... Spanish, /ar/... Arabic, anything else English. */
+export function langOfPath(path: string): Lang | undefined {
+  const m = /^\/(es|ar)(?=\/|$)/.exec(path);
+  return m ? (m[1] as Lang) : undefined;
+}
+/** The address without its language prefix: /es/marinas → /marinas. */
+export const stripLang = (path: string) => path.replace(/^\/(es|ar)(?=\/|$)/, "") || "/";
+/** The address of a page in a language: (/marinas, es) → /es/marinas. */
+export const withLang = (path: string, l: Lang) => (l === "en" ? path : `/${l}${path === "/" ? "" : path}`);
+export const langBase = (l: Lang) => withLang("", l);
+
+/** An absolute URL for a page in the current language (or a site-relative one with no base). */
+const abs = (base: string, path: string) => {
+  const local = path.startsWith("/") && !/\.\w+$/.test(path) ? withLang(path, getLang()) : path;
+  return base ? new URL(local, base).href : local;
+};
+const OG_LOCALE: Record<Lang, string> = { en: "en_US", es: "es_ES", ar: "ar_AR" };
 
 function organization(base: string) {
   return {
@@ -159,9 +182,18 @@ export function bookMeta(_db: Db, _base: string): PageMeta {
   };
 }
 
+export function sitemapMeta(db: Db, base: string): PageMeta {
+  return {
+    title: title(t("Site map")),
+    description: t("Every page on the Marina website: all {n} marinas by state, rates and fees, booking, the owner account and contact.", { n: openMarinas(db).length }),
+    path: "/sitemap",
+    jsonLd: [breadcrumbs(base, [[BRAND, "/"], [t("Site map"), "/sitemap"]])],
+  };
+}
+
 /** Every page that should be in search results, for the sitemap and the static HTML files. */
 export function publicPages(db: Db, base: string): PageMeta[] {
-  return [homeMeta(db, base), marinasMeta(db, base), ...openMarinas(db).map((m) => marinaMeta(db, base, m)), pricingMeta(db, base), contactMeta(db, base), bookMeta(db, base)];
+  return [homeMeta(db, base), marinasMeta(db, base), ...openMarinas(db).map((m) => marinaMeta(db, base, m)), pricingMeta(db, base), contactMeta(db, base), bookMeta(db, base), sitemapMeta(db, base)];
 }
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -170,12 +202,18 @@ const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").repl
 export function headTags(m: PageMeta, base: string): string {
   const url = abs(base, m.path);
   const image = abs(base, OG_IMAGE);
+  const alternates = m.noindex || !base ? [] : [
+    ...LANGS.map((l) => `<link rel="alternate" hreflang="${l.code}" href="${esc(new URL(withLang(m.path, l.code), base).href)}" />`),
+    `<link rel="alternate" hreflang="x-default" href="${esc(new URL(m.path, base).href)}" />`,
+  ];
   return [
     `<title>${esc(m.title)}</title>`,
     `<meta name="description" content="${esc(m.description)}" />`,
     `<meta name="robots" content="${m.noindex ? "noindex, follow" : "index, follow"}" />`,
     base ? `<link rel="canonical" href="${esc(url)}" />` : "",
+    ...alternates,
     `<meta property="og:type" content="website" />`,
+    `<meta property="og:locale" content="${OG_LOCALE[getLang()]}" />`,
     `<meta property="og:site_name" content="${BRAND}" />`,
     `<meta property="og:title" content="${esc(m.title)}" />`,
     `<meta property="og:description" content="${esc(m.description)}" />`,
@@ -196,6 +234,17 @@ export function applyHead(m: PageMeta) {
   if (typeof document === "undefined") return;
   const base = window.location.origin;
   document.title = m.title;
+  // One alternate link per language (and x-default), for pages that are in search results.
+  document.head.querySelectorAll("link[rel=alternate][hreflang]").forEach((el) => el.remove());
+  if (!m.noindex) {
+    for (const [code, path] of [...LANGS.map((l) => [l.code, withLang(m.path, l.code)]), ["x-default", m.path]]) {
+      const el = document.createElement("link");
+      el.rel = "alternate";
+      el.hreflang = code;
+      el.href = new URL(path, base).href;
+      document.head.appendChild(el);
+    }
+  }
   const set = (selector: string, make: () => HTMLElement, attr: string, value: string) => {
     let el = document.head.querySelector<HTMLElement>(selector);
     if (!el) { el = make(); document.head.appendChild(el); }
@@ -208,6 +257,7 @@ export function applyHead(m: PageMeta) {
   set('meta[property="og:title"]', meta("property", "og:title"), "content", m.title);
   set('meta[property="og:description"]', meta("property", "og:description"), "content", m.description);
   set('meta[property="og:url"]', meta("property", "og:url"), "content", abs(base, m.path));
+  set('meta[property="og:locale"]', meta("property", "og:locale"), "content", OG_LOCALE[getLang()]);
   set('meta[name="twitter:title"]', meta("name", "twitter:title"), "content", m.title);
   set('meta[name="twitter:description"]', meta("name", "twitter:description"), "content", m.description);
   document.head.querySelectorAll("script[data-seo]").forEach((s) => s.remove());

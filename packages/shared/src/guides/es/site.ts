@@ -19,11 +19,15 @@ export const site: Record<string, Guide> = {
       {
         heading: "También en esta página",
         points: [
+          "Libres esta noche y tarifas: las marinas con más amarres libres esta noche y la tarifa por noche más baja.",
+          "Para propietarios: pestañas con lo que puedes hacer en la web (buscar y reservar, tu cuenta, pagar en línea, firmar contratos), con una imagen de cada una.",
+          "Tu cuenta y la app Marina Berths: crea una cuenta o inicia sesión, y los botones de las tiendas de la app.",
+          "Quédate una noche, una temporada o todo el año: tarifas por noche y lo que cuestan los contratos de temporada y anuales.",
           "Nuestras marinas: una tarjeta por marina con su ciudad, amarres, eslora máxima, servicios y la tarifa por noche más baja. Selecciona una tarjeta para abrir la marina.",
           "El mapa: selecciona el marcador de una marina para abrirla. Los marcadores con número agrupan varias marinas cercanas; selecciona uno para acercar.",
-          "Cómo funciona: buscar, reservar, llegar.",
-          "Para propietarios: qué ofrece tu cuenta, con botones para iniciar sesión o crear una.",
-          "¿Te quedas más tiempo?: las estancias de 28 noches o más usan la tarifa mensual, y los contratos ahorran más.",
+          "Cómo funciona: buscar, reservar, llegar. Tu solicitud llega directamente a la oficina del muelle.",
+          "Lo que dicen los propietarios: opiniones con estrellas. Usa las flechas para ver más.",
+          "Preguntas frecuentes: selecciona una pregunta para leer la respuesta.",
         ],
       },
       {
@@ -77,6 +81,7 @@ export const site: Record<string, Guide> = {
           "Oficina del muelle: dirección, teléfono y correo. Selecciona el teléfono o el correo para llamar o escribir.",
           "Cómo llegar abre Google Maps con la ruta hasta la marina.",
           "¿Te quedas una temporada o más?: las tarifas mensuales de aquí y un enlace a los precios de contrato.",
+          "Lo que dicen los propietarios: opiniones sobre esta marina con sus estrellas.",
         ],
       },
     ],
@@ -252,6 +257,7 @@ export const site: Record<string, Guide> = {
           "Las pestañas Próximas, Pasadas y Canceladas, cada una con su número.",
           "Cada reserva muestra la marina, las fechas y noches, el código, el amarre, la embarcación, el estado y el precio.",
           "Estado: Pendiente de confirmación, Confirmada, Registrada, Completada o Cancelada.",
+          "Las estancias pasadas tienen Valorar tu estancia: elige de 1 a 5 estrellas y escribe unas palabras. Tu opinión aparece en la página de la marina con tu nombre, la inicial de tu apellido y tu embarcación.",
         ],
       },
       {

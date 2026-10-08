@@ -14,6 +14,7 @@ const Marinas = page(() => import("@/pages/Marinas"), "Marinas");
 const MarinaPage = page(() => import("@/pages/Marinas"), "MarinaPage");
 const Pricing = page(() => import("@/pages/Pricing"), "Pricing");
 const Contact = page(() => import("@/pages/Contact"), "Contact");
+const Sitemap = page(() => import("@/pages/Sitemap"), "Sitemap");
 const Book = page(() => import("@/pages/Book"), "Book");
 const Checkout = page(() => import("@/pages/Book"), "Checkout");
 const SignIn = page(() => import("@/pages/Auth"), "SignIn");
@@ -59,6 +60,7 @@ export default function App() {
           <Route path="marinas/:id" element={<MarinaPage />} />
           <Route path="pricing" element={<Pricing />} />
           <Route path="contact" element={<Contact />} />
+          <Route path="sitemap" element={<Sitemap />} />
           <Route path="book" element={<Book />} />
           <Route path="book/checkout" element={<RequireOwner><Checkout /></RequireOwner>} />
           <Route path="sign-in" element={<SignIn />} />

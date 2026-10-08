@@ -1,20 +1,26 @@
-// Page frame: header (navigation, language, theme, account), footer and confirmation messages.
+// Page frame: announcement bar, header (navigation, language, theme, account), footer and
+// confirmation messages.
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
-import { CircleCheck, Languages, Mail, Menu, Moon, Phone, Sun, UserRound, X } from "lucide-react";
+import { ArrowRight, ArrowUpRight, CircleCheck, Languages, Mail, Menu, Moon, Phone, Sun, UserRound, X } from "lucide-react";
 import { CONTACT, cx, LANGS, t } from "@marina/shared";
 import { useStore } from "@/data/store";
 import { useLang } from "@/lib/lang";
 import { useTheme } from "@/lib/theme";
+import { openMarinas, stateOf } from "@/lib/marinas";
+import { withLang } from "@/lib/seo";
 import { Logo } from "./Logo";
-import { ButtonLink, Container, IconButton } from "./ui";
+import { ButtonLink, Container, IconButton, flip } from "./ui";
 
 /** The company's own contact details (sample values until the real ones are set). */
 export const SITE = CONTACT;
+export const tel = (phone: string) => `tel:${phone.replace(/[^\d+]/g, "")}`;
 
 const NAV = [
   { to: "/marinas", label: "Marinas" },
   { to: "/pricing", label: "Pricing" },
+  { to: "/#reviews", label: "Reviews" },
+  { to: "/#app", label: "Get the app" },
   { to: "/contact", label: "Contact" },
 ];
 
@@ -48,43 +54,55 @@ function LanguageMenu() {
   );
 }
 
+/** A thin bar above the header with the booking promise and the phone number. */
+function Announcement() {
+  return (
+    <div className="bg-footer text-on-footer no-print">
+      <Container className="flex h-9 items-center justify-center gap-6 text-xs sm:justify-between">
+        <p className="truncate"><span className="me-2 inline-block size-1.5 rounded-full bg-green align-middle" aria-hidden />{t("No booking fees. Nothing to pay until the marina confirms.")}</p>
+        <div className="hidden items-center gap-5 sm:flex">
+          <a href={tel(SITE.phone)} className="inline-flex items-center gap-1.5 opacity-80 hover:opacity-100"><Phone className="size-3.5" aria-hidden /><bdi className="num">{SITE.phone}</bdi></a>
+          <Link to="/#app" className="inline-flex items-center gap-1 font-medium underline-offset-4 hover:underline">{t("Get the app")}<ArrowUpRight className={cx("size-3.5", flip(ArrowUpRight))} aria-hidden /></Link>
+        </div>
+      </Container>
+    </div>
+  );
+}
+
 function Header() {
   const { owner } = useStore();
   const [theme, toggleTheme] = useTheme();
   const [menu, setMenu] = useState(false);
   const loc = useLocation();
   // Close the phone menu after navigating.
-  const [path, setPath] = useState(loc.pathname);
-  if (path !== loc.pathname) {
-    setPath(loc.pathname);
+  const [path, setPath] = useState(loc.pathname + loc.hash);
+  if (path !== loc.pathname + loc.hash) {
+    setPath(loc.pathname + loc.hash);
     setMenu(false);
   }
-  const link = ({ isActive }: { isActive: boolean }) => cx("rounded-full px-3.5 py-2 text-sm font-medium transition-colors", isActive ? "bg-sidebar text-ink" : "text-ink-2 hover:text-ink");
+  const active = (to: string) => !to.includes("#") && (loc.pathname === to || loc.pathname.startsWith(`${to}/`));
+  const link = (to: string) => cx("rounded-full px-3.5 py-2 text-sm font-medium transition-colors", active(to) ? "bg-sidebar text-ink" : "text-ink-2 hover:text-ink");
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-[color-mix(in_srgb,var(--bg)_88%,transparent)] backdrop-blur no-print">
       <Container className="flex h-16 items-center gap-2">
-        <Link to="/" className="me-4 rounded-[8px]"><Logo /></Link>
-        <nav aria-label={t("Main")} className="hidden items-center gap-1 md:flex">
-          {NAV.map((n) => <NavLink key={n.to} to={n.to} className={link}>{t(n.label)}</NavLink>)}
+        <Link to="/" className="me-4 rounded-[8px]" aria-label={t("Marina home")}><Logo /></Link>
+        <nav aria-label={t("Main")} className="hidden flex-1 items-center justify-center gap-1 lg:flex">
+          {NAV.map((n) => <NavLink key={n.to} to={n.to} className={link(n.to)}>{t(n.label)}</NavLink>)}
         </nav>
-        <div className="ms-auto flex items-center gap-1">
-          <a href={`tel:${SITE.phone.replace(/[^\d+]/g, "")}`} className="me-2 hidden items-center gap-2 text-sm font-medium text-ink-2 hover:text-ink lg:inline-flex">
-            <Phone className="size-4" aria-hidden /><bdi className="num">{SITE.phone}</bdi>
-          </a>
+        <div className="ms-auto flex items-center gap-1 lg:ms-0">
           <LanguageMenu />
           <IconButton icon={theme === "dark" ? Sun : Moon} label={theme === "dark" ? t("Light mode") : t("Dark mode")} onClick={toggleTheme} />
-          <Link to={owner ? "/account" : "/sign-in"} className="hidden items-center gap-2 rounded-full px-3 py-2 text-sm font-medium text-ink-2 hover:text-ink sm:inline-flex">
-            <UserRound className="size-4" aria-hidden /> {owner ? t("My account") : t("Sign in")}
-          </Link>
-          <ButtonLink to="/book" variant="primary" className="hidden sm:inline-flex">{t("Book a berth")}</ButtonLink>
-          <IconButton icon={menu ? X : Menu} label={t("Menu")} aria-expanded={menu} onClick={() => setMenu((m) => !m)} className="md:hidden" />
+          <ButtonLink to={owner ? "/account" : "/sign-in"} icon={UserRound} className="ms-1 max-sm:hidden">{owner ? t("My account") : t("Sign in")}</ButtonLink>
+          <ButtonLink to="/book" variant="primary" className="max-sm:hidden">{t("Book a berth")}</ButtonLink>
+          <IconButton icon={menu ? X : Menu} label={t("Menu")} aria-expanded={menu} onClick={() => setMenu((m) => !m)} className="lg:hidden" />
         </div>
       </Container>
       {menu && (
-        <nav aria-label={t("Main")} className="border-t border-line bg-bg md:hidden animate-fade">
+        <nav aria-label={t("Main")} className="border-t border-line bg-bg lg:hidden animate-fade">
           <Container className="flex flex-col gap-1 py-3">
-            {NAV.map((n) => <NavLink key={n.to} to={n.to} className={link}>{t(n.label)}</NavLink>)}
-            <NavLink to={owner ? "/account" : "/sign-in"} className={link}>{owner ? t("My account") : t("Sign in")}</NavLink>
+            {NAV.map((n) => <NavLink key={n.to} to={n.to} className={link(n.to)}>{t(n.label)}</NavLink>)}
+            <NavLink to={owner ? "/account" : "/sign-in"} className={link(owner ? "/account" : "/sign-in")}>{owner ? t("My account") : t("Sign in")}</NavLink>
+            <a href={tel(SITE.phone)} className="flex items-center gap-2 rounded-full px-3.5 py-2 text-sm font-medium text-ink-2"><Phone className="size-4" aria-hidden /><bdi className="num">{SITE.phone}</bdi></a>
             <ButtonLink to="/book" variant="primary" className="mt-2">{t("Book a berth")}</ButtonLink>
           </Container>
         </nav>
@@ -95,35 +113,69 @@ function Header() {
 
 function Footer() {
   const { db } = useStore();
-  const states = [...new Set(db.counties.map((c) => c.state))].sort();
+  const { lang, setLang } = useLang();
+  const loc = useLocation();
+  const marinas = openMarinas(db);
+  const states = [...new Set(marinas.map((m) => stateOf(db, m)))].sort();
   return (
-    <footer className="mt-24 border-t border-line bg-sidebar no-print">
-      <Container className="grid gap-10 py-12 sm:grid-cols-2 lg:grid-cols-4">
-        <div>
-          <Logo />
-          <p className="mt-4 max-w-xs text-[13px] leading-5 text-ink-2">{t("{n} marinas in {states}. Book a berth for a night, a season or the whole year.", { n: db.marinas.filter((m) => m.status === "active").length, states: states.map((s) => t(s)).join(", ") })}</p>
-        </div>
-        <FooterCol title={t("Visit")}>
-          <Link to="/marinas">{t("All marinas")}</Link>
-          <Link to="/book">{t("Book a berth")}</Link>
-          <Link to="/pricing">{t("Rates and fees")}</Link>
-        </FooterCol>
-        <FooterCol title={t("Boat owners")}>
-          <Link to="/account">{t("My account")}</Link>
-          <Link to="/account/invoices">{t("Pay an invoice")}</Link>
-          <Link to="/account/contracts">{t("Sign a contract")}</Link>
-          <a href="/#app">{t("Get the app")}</a>
-        </FooterCol>
-        <FooterCol title={t("Contact")}>
-          <a href={`tel:${SITE.phone.replace(/[^\d+]/g, "")}`} className="inline-flex items-center gap-2"><Phone className="size-4" aria-hidden /><bdi>{SITE.phone}</bdi></a>
-          <a href={`mailto:${SITE.email}`} className="inline-flex items-center gap-2"><Mail className="size-4" aria-hidden /><bdi>{SITE.email}</bdi></a>
-          <span className="text-ink-3">{t(SITE.hours)}</span>
-        </FooterCol>
-      </Container>
-      <Container className="flex flex-wrap justify-between gap-2 border-t border-line pt-6 pb-20 text-xs text-ink-3">
-        <span>© {YEAR} {db.settings.company}</span>
-        <span>{t("Sample data. Bookings and payments made here stay in this browser.")}</span>
-      </Container>
+    <footer className="bg-footer text-on-footer no-print">
+      <div className="bg-squares-dark">
+        <Container className="grid gap-12 pt-16 pb-12 lg:grid-cols-[1.1fr_1fr]">
+          <div>
+            <p className="max-w-xs text-[15px] text-on-footer-2">{t("Your berth, booked in minutes.")}</p>
+            <h2 className="mt-8 max-w-md text-[36px] leading-[44px] font-medium tracking-[-0.02em] sm:text-[44px] sm:leading-[52px]">{t("Questions about a berth? Talk to us.")}</h2>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link to="/contact" className="inline-flex h-11 items-center gap-2 rounded-full bg-on-footer px-5 text-sm font-semibold text-footer hover:opacity-90">{t("Contact us")}<ArrowRight className={cx("size-4", flip(ArrowRight))} aria-hidden /></Link>
+              <a href={tel(SITE.phone)} className="inline-flex h-11 items-center gap-2 rounded-full border border-footer-line px-5 text-sm font-semibold hover:bg-white/5"><Phone className="size-4" aria-hidden /><bdi className="num">{SITE.phone}</bdi></a>
+            </div>
+            <p className="text-label mt-12 text-on-footer-2">{t("Marinas in")}</p>
+            <ul className="mt-3 flex flex-wrap gap-2">
+              {states.map((s) => (
+                <li key={s}><Link to={`/marinas?state=${encodeURIComponent(s)}`} className="inline-flex rounded-full border border-footer-line px-3.5 py-1.5 text-xs font-medium hover:bg-white/5">{t(s)}</Link></li>
+              ))}
+            </ul>
+          </div>
+          <div className="grid gap-10 sm:grid-cols-2">
+            <FooterCol title={t("Head office")}>
+              <span className="text-on-footer">{db.settings.company}</span>
+              <a href={tel(SITE.phone)} className="inline-flex items-center gap-2"><Phone className="size-4" aria-hidden /><bdi>{SITE.phone}</bdi></a>
+              <a href={`mailto:${SITE.email}`} className="inline-flex items-center gap-2 break-all"><Mail className="size-4 shrink-0" aria-hidden /><bdi>{SITE.email}</bdi></a>
+              <span>{t(SITE.hours)}</span>
+            </FooterCol>
+            <FooterCol title={t("Book")}>
+              <Link to="/book">{t("Book a berth")}</Link>
+              <Link to="/marinas">{t("All marinas")}</Link>
+              <Link to="/pricing">{t("Rates and fees")}</Link>
+              <Link to="/#reviews">{t("Reviews")}</Link>
+              <Link to="/#faq">{t("Questions people ask")}</Link>
+            </FooterCol>
+            <FooterCol title={t("Boat owners")}>
+              <Link to="/account">{t("My account")}</Link>
+              <Link to="/account/invoices">{t("Pay an invoice")}</Link>
+              <Link to="/account/contracts">{t("Sign a contract")}</Link>
+              <Link to="/#app">{t("Get the app")}</Link>
+            </FooterCol>
+            <FooterCol title={t("Site")}>
+              <Link to="/contact">{t("Contact us")}</Link>
+              <Link to="/sitemap">{t("Site map")}</Link>
+              {LANGS.map((l) => (
+                <a key={l.code} href={withLang(loc.pathname, l.code)} hrefLang={l.code} lang={l.code} aria-current={lang === l.code ? "true" : undefined}
+                  onClick={(e) => { e.preventDefault(); setLang(l.code); }} className={cx(lang === l.code && "font-semibold text-on-footer")}>{l.name}</a>
+              ))}
+            </FooterCol>
+          </div>
+        </Container>
+        <Container className="border-t border-footer-line py-6">
+          <p className="text-label mb-3 text-on-footer-2">{t("Our marinas")}</p>
+          <ul className="flex flex-wrap gap-x-5 gap-y-2 text-[13px] text-on-footer-2">
+            {marinas.map((m) => <li key={m.id}><Link to={`/marinas/${m.id}`} className="hover:text-on-footer hover:underline">{m.name}</Link></li>)}
+          </ul>
+        </Container>
+        <Container className="flex flex-wrap items-center justify-between gap-4 border-t border-footer-line pt-6 pb-24 text-xs text-on-footer-2">
+          <span className="inline-flex items-center gap-3"><Logo inverse /><span>© {YEAR} {db.settings.company}</span></span>
+          <span>{t("Sample data. Bookings and payments made here stay in this browser.")}</span>
+        </Container>
+      </div>
     </footer>
   );
 }
@@ -133,8 +185,8 @@ const YEAR = new Date().getFullYear();
 function FooterCol({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div>
-      <p className="text-label mb-4 text-ink-3">{title}</p>
-      <div className="flex flex-col items-start gap-2.5 text-[13px] text-ink-2 [&_a:hover]:text-ink [&_a:hover]:underline">{children}</div>
+      <p className="text-label mb-4 text-on-footer-2">{title}</p>
+      <div className="flex flex-col items-start gap-2.5 text-[13px] text-on-footer-2 [&_a:hover]:text-on-footer [&_a:hover]:underline">{children}</div>
     </div>
   );
 }
@@ -153,14 +205,29 @@ function Toasts() {
 }
 
 export default function Layout() {
-  const { pathname } = useLocation();
-  // Each new page starts at the top.
+  const { pathname, hash } = useLocation();
+  // Each new page starts at the top; links like /#reviews scroll to that section.
   useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [pathname]);
+    if (!hash) {
+      window.scrollTo(0, 0);
+      return;
+    }
+    const id = decodeURIComponent(hash.slice(1));
+    // The section may be on a page that's still loading.
+    let tries = 0;
+    const timer = window.setInterval(() => {
+      const el = document.getElementById(id);
+      if (el || ++tries > 20) {
+        window.clearInterval(timer);
+        el?.scrollIntoView({ block: "start", behavior: "instant" });
+      }
+    }, 50);
+    return () => window.clearInterval(timer);
+  }, [pathname, hash]);
   return (
     <div className="flex min-h-full flex-col">
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-50 focus:rounded-full focus:bg-primary focus:px-4 focus:py-2 focus:text-on-primary">{t("Skip to content")}</a>
+      <Announcement />
       <Header />
       <main id="main" className="flex-1">
         <Outlet />

@@ -104,17 +104,20 @@ The bell menu is built from live data: pending approvals, today's arrivals, over
 
 ## Public website and owner portal
 
-A public site for visitors and an account area for boat owners, in English, Spanish and Arabic, light and dark.
+A public site for visitors and an account area for boat owners, in English, Spanish and Arabic, light and dark. Each language has its own addresses: `/marinas` (English), `/es/marinas`, `/ar/marinas`.
+
+The design is minimal and clean, in the brand's colours, type and fine square grid (no new colours or fonts): a thin dark announcement bar, a large centred headline over the canvas gradient and grid, real marina photos with floating cards built from live data, product screenshots in browser and phone frames, and a dark footer.
 
 | Page | Route | What works |
 |---|---|---|
-| Home | `/` | Berth search, marinas on a map, how booking works, owner portal, **Get the app** (App Store and Google Play buttons, shown as "Coming soon" until the store links are set) |
-| Marinas | `/marinas`, `/marinas/:id` | Filter by state, map; each marina's berth sizes and rates, amenities, dock office contact, directions, availability search |
+| Home | `/` | Berth search; a marina photo with what's free tonight, the lowest nightly rate and the app; the places we have berths; about Marina with key numbers; **For boat owners** tabs (search and book, your account, pay online, sign contracts) with screenshots; your account and **Get the app** cards (App Store and Google Play buttons, shown as "Coming soon" until the store links are set); stay a night, a season or the whole year; our marinas on a map; how it works (with the dock office's web app); **reviews**; questions people ask; a final call to action |
+| Marinas | `/marinas`, `/marinas/:id` | Filter by state (`/marinas?state=Florida` opens with it chosen), map; each marina's berth sizes and rates, amenities, dock office contact, directions, availability search, rating and reviews |
 | Rates and fees | `/pricing` | Rates by marina, a price estimator, how prices are worked out (monthly rate from 28 nights, any weekend, season and long-stay rules from Settings › Pricing), contract terms and discounts, dock extras, how to pay |
 | Contact | `/contact` | Head office and every dock office; a message form |
+| Site map | `/sitemap` | Every page in one list: main pages, owner pages, the marinas by state and the three languages (search engines read `sitemap.xml`) |
 | Book a berth | `/book`, `/book/checkout` | Free berths that fit the boat for the whole stay, cheapest marina first, exact price; checkout with the owner's boat (or a new one), people on board and the berth rules; **join a marina's waitlist** when it's full (shows on the web app's Waitlist tab) |
 | Sign in, Create an account, Forgot password | `/sign-in`, `/register`, `/forgot-password` | Owner accounts; the visitor returns to where they were heading |
-| My account | `/account/…` | Overview (next stay, what's owed, contracts to sign), bookings (cancel a request the marina hasn't confirmed), invoices (pay in full or in part, print the invoice or receipt), contracts (read and sign with your typed name), boats (add and edit), waitlist requests, profile and password |
+| My account | `/account/…` | Overview (next stay, what's owed, contracts to sign), bookings (cancel a request the marina hasn't confirmed, **rate a past stay**), invoices (pay in full or in part, print the invoice or receipt), contracts (read and sign with your typed name), boats (add and edit), waitlist requests, profile and password |
 
 - **Bookings made online** are requests (`pending`), exactly like the front desk's: the berth is held, and the web app's Bookings page approves and invoices them. They're logged as "Online booking".
 - **Card payments** and **contract signatures** follow the same rules as the admin apps (`packages/shared/src/portal.ts`); the web app's Contracts page shows whether the owner has signed.
@@ -122,12 +125,13 @@ A public site for visitors and an account area for boat owners, in English, Span
 
 ### Search engines and link previews
 
-- **One HTML file per public page.** The site is a single-page app, so at build time `vite.config.ts` writes a static HTML file for Home, Marinas, every marina, Rates and fees, Contact and Book a berth, each with its own title, description, canonical URL, Open Graph and Twitter tags, and schema.org data (Organization, WebSite, FAQ, breadcrumbs, and a LocalBusiness for each marina with address, phone, map position, price range and amenities). Crawlers and link previews see these without running JavaScript; in the browser `usePageTitle` keeps the tags in step as people move around. The definitions are in `apps/website/src/lib/seo.ts`.
-- **`robots.txt` and `sitemap.xml`** are generated too. Account, sign-in, checkout and search-result pages are `noindex`. Unknown addresses return a real 404.
-- **The site's address** comes from `SITE_URL`, or from the production domain Vercel sets while building. Set `SITE_URL` in the Vercel project if you add a custom domain.
+- **One HTML file per public page and language.** The site is a single-page app, so at build time `vite.config.ts` writes a static HTML file for Home, Marinas, every marina, Rates and fees, Contact, Book a berth and the Site map, in English, Spanish and Arabic (`/es/…`, `/ar/…`, with `<html lang dir>` set), each with its own title, description, canonical URL, Open Graph and Twitter tags, and schema.org data (Organization, WebSite, FAQ, breadcrumbs, and a LocalBusiness for each marina with address, phone, map position, price range and amenities). Crawlers and link previews see these without running JavaScript; in the browser `usePageTitle` keeps the tags in step as people move around. The definitions are in `apps/website/src/lib/seo.ts`.
+- **Languages:** every page lists its Spanish, Arabic and English versions (`hreflang`, plus `x-default` → English) and has its own canonical URL and `og:locale`. The address decides the language; the language menu keeps you on the same page (`/marinas?state=Florida` → `/es/marinas?state=Florida`). Someone who chose Spanish or Arabic before and comes back to an English address from outside the site is moved to their language.
+- **`robots.txt` and `sitemap.xml`** are generated too. The sitemap lists every page in every language (60 addresses), each with its translations. Account, sign-in, checkout and search-result pages are `noindex` in every language. Unknown addresses return a real 404.
+- **The site's address** comes from `SITE_URL`, or from the production domain Vercel sets while building (`VERCEL_PROJECT_PRODUCTION_URL`), so the `.vercel.app` address works with no setup. When you add a custom domain: in the Vercel project, **Settings → Environment Variables**, add `SITE_URL` = `https://www.your-domain.com` (no trailing slash) for Production, then redeploy. The sitemap, canonical URLs, language links and structured data all switch to it.
 - **Link preview image:** `apps/website/public/og-image.png` (1200 × 630).
 - The admin web app and the staff and customer app web previews send `X-Robots-Tag: noindex` so they stay out of search results (link previews still work).
-- Not done yet: Spanish and Arabic pages have no addresses of their own (the language is a setting), so search engines only see English. Adding `/es/` and `/ar/` paths with `hreflang` tags would let them rank in those languages.
+- **Alt text:** every photo and screenshot has a description in all three languages (`apps/website/src/lib/photos.tsx`); decorative pictures are hidden from screen readers.
 
 ### Conversion
 
@@ -140,7 +144,16 @@ The booking path keeps the next step visible and answers the usual worries befor
 - Checkout explains what happens next and gives the dock office's number.
 - Rates and fees: Check availability at the top, Best value on the annual contract, and Ask about a contract buttons that open the contact form with the topic (and marina) filled in.
 
-Real customer reviews would be the next biggest lift; the site doesn't show any rather than invent them.
+### Reviews
+
+- **Owners rate their stays:** in **My account → Bookings → Past**, each stay has **Rate your stay** (1–5 stars and a few words). The review appears on the marina's page and on Home with the owner's first name, last initial and boat. Until there's a backend, reviews are kept in the browser.
+- **Sample reviews:** `SAMPLE_REVIEWS` in `apps/website/src/data/reviews.ts` are **dummy reviews for the preview**, marked `sample: true`, and the site says so under them. **Replace them with real reviews before going live:** showing made-up reviews to customers is misleading and illegal in many places (e.g. the US FTC's rule on fake reviews).
+- Ratings aren't added to the structured data (no `AggregateRating`) while the reviews are samples; add it once real reviews come from a server.
+
+### Photos and screenshots
+
+- **Marina photos** (`apps/website/public/photos/`, 1600 px and 800 px WebP) are from [Unsplash](https://unsplash.com) under the Unsplash License (free for commercial use; credit appreciated, not required): Cristina Gottardi (sailboats at sunrise), Zach Lisko (pier with a life ring), Eric Ward (sailboat from above), Umberto Gorni (dock in morning mist), Manny Peralta (yachts along a walkway), Christine Caswell (wooden dock). They show marinas in general, not ours, so captions never name a marina. Swap in photos of your own marinas when you have them.
+- **Product screenshots** (`apps/website/public/shots/`): the website's search results, owner account, an invoice and contracts, the dock office's web app, and the Marina Berths app, in every language. To retake them, start the website, web app and customer app dev servers and run `npm run site-shots` (set `SITE_URL`, `WEB_URL` and `CUSTOMER_URL` if they aren't on 5174, 5173 and 8082).
 
 ## Customer app (Marina Berths)
 
@@ -244,14 +257,14 @@ Every page in all three apps has a **Read** button at the bottom centre. It open
 How it's put together:
 
 - The text lives in `packages/shared/src/guides/` (`en`, `es`, `ar`, one file each for the web app, the website and the phone app). The web app and website download a language's guides the first time someone opens one; the phone app ships the text, so it works offline.
-- The screenshots are taken automatically. `packages/shared/src/guides/specs.ts` says, for each guide section, which page to open, what to click first and what to box in red. `npm run shots` (in `tools/guide-shots`, using your installed Google Chrome) opens every page in every language, draws the boxes and saves WebP pictures to `apps/web/public/guides/` (web app and phone app) and `apps/website/public/guides/` (website). The phone app loads its pictures from the deployed web app, so they show when there's a connection.
+- The screenshots are taken automatically (the website's in each language's own address, `/es/…`). `packages/shared/src/guides/specs.ts` says, for each guide section, which page to open, what to click first and what to box in red. `npm run shots` (in `tools/guide-shots`, using your installed Google Chrome) opens every page in every language, draws the boxes and saves WebP pictures to `apps/web/public/guides/` (web app and phone app) and `apps/website/public/guides/` (website). The phone app loads its pictures from the deployed web app, so they show when there's a connection.
 - To retake pictures after a page changes, start the three dev servers (`npm run dev:web`, `npm run dev:website`, `npm run web:mobile`) and run `npm run shots`, or `npm run shots -- --only w.bookings --lang es` for one guide and language. Set `DEBUG=1` to list what's on the page when a target isn't found.
 - Tests check that every page has a guide in every language, that Spanish and Arabic match the English section for section, and that every screenshot exists in every language.
 - When a page changes, update its guide text in all three languages and retake its pictures.
 
 ## Languages
 
-Every app runs in **English** (default), **Spanish** and **Arabic**. Switch from the language button in the web app's and website's top bar, **Me → Language** in the staff app, or **Account → Language** in the customer app; the choice is remembered.
+Every app runs in **English** (default), **Spanish** and **Arabic**. Switch from the language button in the web app's and website's top bar (the website also has the languages in its footer and its own address per language), **Me → Language** in the staff app, or **Account → Language** in the customer app; the choice is remembered.
 
 - **Arabic reads right to left:** the layout is mirrored (sidebar and tab order on the right, arrows and chevrons flipped, chart axes reversed) and text uses **IBM Plex Sans Arabic**. Numbers stay in Western digits (0–9), and codes, emails, phone numbers and amounts keep reading left to right.
 - Dates, times, currency and plurals follow the language (Arabic has its own forms for 1, 2, 3–10 and 11+).
@@ -297,7 +310,7 @@ apps/
   website/      Vite app: public site and boat-owner portal (src/pages, src/pages/account)
   customer/     Expo app for boat owners (Marina Berths): src/app (tabs and screens), src/components, src/store.tsx
 tools/
-  guide-shots/  takes the page guides' screenshots in every language
+  guide-shots/  takes the page guides' screenshots and the website's product screenshots in every language
 packages/
   shared/       types, sample data, pricing, selectors, permissions, dates, brand tokens, demo accounts
 brand/          logo SVGs and the brand guide

@@ -19,11 +19,15 @@ export const site: Record<string, Guide> = {
       {
         heading: "Also on this page",
         points: [
+          "Free tonight and nightly rates: the marinas with the most berths free tonight, and the lowest nightly rate.",
+          "For boat owners: tabs show what you can do on the website (search and book, your account, pay online, sign contracts), with a picture of each.",
+          "Your account and the Marina Berths app: create an account or sign in, and the app's store buttons.",
+          "Stay a night, a season or the whole year: nightly rates, and what seasonal and annual contracts cost.",
           "Our marinas: a card for each marina with its city, berths, longest boat, amenities and the lowest nightly rate. Select a card to open the marina.",
           "The map: select a marina's pin to open it. Numbered pins hold several marinas close together; select one to zoom in.",
-          "How it works: search, book, arrive.",
-          "For boat owners: what your account does, with buttons to sign in or create one.",
-          "Staying longer: stays of 28 nights or more use the monthly rate, and contracts save more.",
+          "How it works: search, book, arrive. Your request goes straight to the dock office.",
+          "What boat owners say: reviews with star ratings. Use the arrows to see more.",
+          "Questions people ask: select a question to read the answer.",
         ],
       },
       {
@@ -77,6 +81,7 @@ export const site: Record<string, Guide> = {
           "Dock office: address, phone and email. Select the phone number or email to call or write.",
           "Directions opens Google Maps with the route to the marina.",
           "Staying a season or longer: monthly rates here and a link to contract prices.",
+          "What boat owners say: reviews of this marina with their star ratings.",
         ],
       },
     ],
@@ -252,6 +257,7 @@ export const site: Record<string, Guide> = {
           "Upcoming, Past and Cancelled tabs, each with a count.",
           "Each booking shows the marina, dates and nights, booking code, berth, boat, status and price.",
           "Status: Waiting for confirmation, Confirmed, Checked in, Completed or Cancelled.",
+          "Past stays have Rate your stay: choose 1 to 5 stars and write a few words. Your review appears on the marina's page with your first name, last initial and boat.",
         ],
       },
       {

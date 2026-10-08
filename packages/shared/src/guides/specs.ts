@@ -120,10 +120,10 @@ export const SHOTS: Partial<Record<GuideKey, (Shot | null)[]>> = {
   "s.home": [
     { path: "/", as: "visitor", boxes: [{ label: "Marina" }, { label: "Arrive" }, { label: "date|Leave" }, { label: "Boat length (ft)" }, { role: "button", name: "Search" }] },
     { path: "/", as: "visitor", boxes: [{ css: ".map-shell" }] },
-    { path: "/", as: "visitor", boxes: [{ role: "button", name: "Language" }, { role: "button", name: "Dark mode" }, { css: "header a[href='/sign-in']" }, { css: "header a[href='/book']" }] },
+    { path: "/", as: "visitor", boxes: [{ role: "button", name: "Language" }, { role: "button", name: "Dark mode" }, { css: "header a[href$='/sign-in']" }, { css: "header a[href$='/book']" }] },
   ],
   "s.marinas": [
-    { path: "/marinas", as: "visitor", boxes: [{ role: "group", name: "State" }, { css: "main a[href^='/marinas/']" }] },
+    { path: "/marinas", as: "visitor", boxes: [{ role: "group", name: "State" }, { css: "main a[href*='/marinas/']" }] },
     { path: "/marinas", as: "visitor", boxes: [{ css: ".map-shell" }] },
   ],
   "s.marina": [
@@ -166,10 +166,10 @@ export const SHOTS: Partial<Record<GuideKey, (Shot | null)[]>> = {
   "s.bookings": [
     { path: "/account/bookings", as: "owner", boxes: [{ role: "tab", name: "Upcoming", exact: false }, { role: "tab", name: "Past", exact: false }, { role: "tab", name: "Cancelled", exact: false }, { css: "main ul li" }] },
     { path: "/account/bookings", as: "owner", boxes: [{ css: "main ul li" }] },
-    { path: "/account/bookings", as: "owner", boxes: [{ css: "main a[href='/book']" }] },
+    { path: "/account/bookings", as: "owner", boxes: [{ css: "main a[href$='/book']" }] },
   ],
   "s.invoices": [
-    { path: "/account/invoices", as: "owner", boxes: [{ css: "main a[href^='/account/invoices/']" }] },
+    { path: "/account/invoices", as: "owner", boxes: [{ css: "main a[href*='/account/invoices/']" }] },
     null,
   ],
   "s.invoice": [

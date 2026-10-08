@@ -25,6 +25,8 @@ const URL = { web: process.env.WEB_URL ?? "http://localhost:5173", website: proc
 /** Where each app's pictures are saved. The phone app's are served by the web app. */
 const OUT = { web: "apps/web/public/guides", website: "apps/website/public/guides", mobile: "apps/web/public/guides" };
 const VIEWPORT = { web: { width: 1280, height: 800, scale: 1 }, website: { width: 1280, height: 800, scale: 1 }, mobile: { width: 390, height: 844, scale: 2 } };
+/** The website has an address per language: /es/marinas, /ar/marinas (English at the root). */
+const sitePage = (path: string, lang: Lang) => `${URL.website}${lang === "en" ? "" : `/${lang}`}${path === "/" && lang !== "en" ? "" : path}`;
 const CHROME = process.env.CHROME ?? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 
 const arg = (name: string) => { const i = process.argv.indexOf(`--${name}`); return i > 0 ? process.argv[i + 1] : undefined; };
@@ -158,10 +160,10 @@ async function signIn(page: Page, app: "web" | "website" | "mobile", who: ShotUs
     await page.locator("form button[type=submit]").click();
     await page.waitForURL((u) => !u.pathname.startsWith("/login"), { timeout: 15000 });
   } else if (app === "website") {
-    await page.goto(`${URL.website}/sign-in`);
+    await page.goto(sitePage("/sign-in", lang));
     await page.getByText(CREDENTIALS[who], { exact: true }).click();
     await page.locator("form button[type=submit]").click();
-    await page.waitForURL((u) => u.pathname.startsWith("/account"), { timeout: 15000 });
+    await page.waitForURL((u) => u.pathname.includes("/account"), { timeout: 15000 });
   } else {
     await page.goto(`${URL.mobile}/login`);
     // The demo buttons' labels use the role's name in the app's language, in lower case.
@@ -188,7 +190,7 @@ async function newContext(browser: Browser, app: "web" | "website" | "mobile", l
 }
 
 async function capture(page: Page, app: "web" | "website" | "mobile", key: GuideKey, index: number, shot: Shot, lang: Lang) {
-  await page.goto(`${URL[app]}${shot.path}`);
+  await page.goto(app === "website" ? sitePage(shot.path, lang) : `${URL[app]}${shot.path}`);
   await page.waitForLoadState("networkidle").catch(() => {});
   await page.waitForTimeout(900);
   // Close anything left open (welcome dialogs, menus).
