@@ -336,9 +336,40 @@ packages/
 brand/          logo SVGs and the brand guide
 ```
 
+## Backend (Supabase, in progress)
+
+The apps are moving onto a real database: **Supabase's free plan** (Postgres, sign-in and row-level security). It's built in phases, **admins first**:
+
+1. **Database** (done): a table for every kind of record, sample data, tests.
+2. **Admin sign-in and the web app on the database** (done, ready to connect): with the keys set, admins sign in with Supabase and every change is saved to the database.
+3. Managers (their marinas only), 4. the staff app, 5. boat owners (website and customer app), 6. payments in test mode, email and push notifications, scheduled jobs.
+
+Without the keys every app still runs as the demo, on sample data in the browser.
+
+| Where | What |
+|---|---|
+| `supabase/migrations/` | The tables (`…_core_schema.sql`) and who can see what (`…_admin_access.sql`: active admins can do everything; others only read their own account). Ids are the apps' own (`m-gg`, `bk-0417`). |
+| `packages/shared/src/backend.ts` | Which table holds each collection, its columns, records ↔ rows, and the changes to save. A test checks it matches the migrations. |
+| `tools/db/` | `npm run db:setup` applies new migrations (and `-- --seed` loads the sample data); `npm run db:seed` writes the sample data to `supabase/seed.sql`. |
+| `apps/web/src/data/remote.ts` | The web app's sign-in, loading and saving. The Supabase library only downloads when the backend is on. |
+
+**Connect your project (once):**
+
+1. Create a free project at [supabase.com](https://supabase.com).
+2. Load the tables and sample data from your computer. Copy the connection string from **Project Settings → Database → Connection string → URI** (it contains your database password; keep it to yourself), then run:
+   ```bash
+   DATABASE_URL="postgresql://postgres:YOUR-PASSWORD@…" npm run db:setup -- --seed
+   ```
+   It needs `psql` (`brew install libpq` on a Mac). Running it again is safe.
+3. **Authentication → Users → Add user**: `admin@marina.com` (or any admin in `app_users`) with a password you choose. The account is matched to `app_users` by email.
+4. In `apps/web`, copy `.env.example` to `.env.local` and fill in the project URL and **anon** key from **Project Settings → API**. On Vercel, add the same two variables to the web app project. Never use the `service_role` key in an app.
+5. `npm run dev:web` and sign in as the admin.
+
+**For now:** only admins can sign in with the database (managers and staff are told it's coming). Accounts are added in Supabase, not with Create account. Changes are saved as they happen; if a save fails, the app says so and reloads the saved data. New records still get their ids in the browser, so two admins adding records at the same moment could clash: fine for testing, and it moves to the database in a later phase along with recurring work orders and overdue invoices.
+
 ## Not built yet
 
-- Real backend, database and authentication. Until then each app keeps its own copy of the sample data, so a check-in, clock-in, request or message on the phone doesn't show up in the web app (and the other way round). A password changed in the staff app only works on that phone. Demo password hashes live in `packages/shared/src/accounts.ts`.
+- Backend for managers, staff and boat owners (admins are connected; see "Backend"). Until then each app keeps its own copy of the sample data, so a check-in, clock-in, request or message on the phone doesn't show up in the web app (and the other way round). A password changed in the staff app only works on that phone. Demo password hashes live in `packages/shared/src/accounts.ts`.
 - Push notifications from the server (shift reminders are local phone notifications; everything else is in-app for now)
 - Scheduled report emails are saved but not sent
 - Card payments in the app (Stripe Terminal / Tap to Pay); staff record payments taken on the marina's card reader

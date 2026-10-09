@@ -2698,4 +2698,9 @@ export const es: Record<string, Entry> = {
   "If something is hard to use, email {email} or call {phone}. We'll help you book another way and fix the problem.": "Si algo es difícil de usar, escribe a {email} o llama al {phone}. Te ayudaremos a reservar de otra forma y solucionaremos el problema.",
   "By creating an account you agree to the": "Al crear una cuenta aceptas las",
   "See how we use your data in the": "Consulta cómo usamos tus datos en la",
+  "This account isn't active yet.": "Esta cuenta aún no está activa.",
+  "Only admins can use the web app with the live database for now.": "Por ahora, solo los administradores pueden usar la app web con la base de datos real.",
+  "Couldn't save the change. Showing the latest saved data.": "No se pudo guardar el cambio. Se muestran los últimos datos guardados.",
+  "Couldn't reach the server. Check your connection and try again.": "No se pudo conectar con el servidor. Comprueba tu conexión e inténtalo de nuevo.",
+  "Accounts are created by an administrator. Ask yours to add you.": "Las cuentas las crea un administrador. Pide al tuyo que te dé de alta.",
 };

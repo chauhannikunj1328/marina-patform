@@ -10,6 +10,7 @@
     "lint": "oxlint --react-plugin --import-plugin --deny-warnings src"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.116.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^1.50.0",
     "qrcode-generator": "^2.0.4",

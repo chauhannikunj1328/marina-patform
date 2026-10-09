@@ -1,7 +1,7 @@
 import { lazy, Suspense, type ReactNode } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useStore } from "@/data/store";
-import { AREAS, type Area } from "@marina/shared";
+import { AREAS, t, type Area } from "@marina/shared";
 import Layout from "@/components/Layout";
 import { ErrorBoundary, NoAccess, NotFoundPage, StaffUseMobile } from "@/components/StatusPage";
 import { PageSkeleton } from "@/components/Skeleton";
@@ -30,8 +30,10 @@ const Analytics = page(() => import("@/pages/Insights"), "Analytics");
 const AccessControl = page(() => import("@/pages/System"), "AccessControl");
 const Settings = page(() => import("@/pages/System"), "Settings");
 function RequireAuth({ children }: { children: ReactNode }) {
-  const { user } = useStore();
+  const { user, ready } = useStore();
   const loc = useLocation();
+  // Backend: wait while a saved sign-in is checked and its data loads.
+  if (!ready) return <div role="status" aria-label={t("Loading…")} className="flex min-h-screen items-center justify-center"><div className="size-8 animate-spin rounded-full border-2 border-line border-t-ink" /></div>;
   if (!user) return <Navigate to="/login" replace state={{ from: loc.pathname + loc.search }} />;
   return <>{children}</>;
 }

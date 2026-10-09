@@ -404,7 +404,7 @@ function ExchangeRatesCard() {
 }
 
 export function Settings() {
-  const { db, user, update, toast, resetData } = useStore();
+  const { db, user, update, toast, resetData, backend } = useStore();
   const [confirmReset, setConfirmReset] = useState(false);
   const [profile, setProfile] = useState({ name: user?.name ?? "", email: user?.email ?? "" });
   const [org, setOrg] = useState({
@@ -492,13 +492,13 @@ export function Settings() {
         {isAdmin && <ExchangeRatesCard />}
         {isAdmin && <BrandingCard />}
 
-        <Card className="xl:col-span-2">
+        {!backend && <Card className="xl:col-span-2">
           <CardHeader title={t("Demo data")} description={t("This prototype keeps your changes in this browser until midnight.")} />
           <div className="flex items-center justify-between gap-4 px-5 py-4">
             <p className="text-[13px] text-ink-2">{t("Reset to discard every booking, marina, staff and invoice change you've made and start from fresh sample data.")}</p>
             <Button onClick={() => setConfirmReset(true)}>{t("Reset demo data")}</Button>
           </div>
-        </Card>
+        </Card>}
       </div>
       {preview && <DailySummary onClose={() => setPreview(false)} />}
       <ConfirmDialog

@@ -14,3 +14,7 @@ apps/mobile/android
 *.p12
 *.key
 *.mobileprovision
+
+# Database sample data (made by npm run db:seed)
+supabase/seed.sql
+supabase/.temp

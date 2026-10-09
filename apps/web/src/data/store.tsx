@@ -1,4 +1,4 @@
-import { useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { StoreContext } from "./context";
 import { withMarinaPoints, withRecurringTasks, diffDb, marinaTimeZones, setMarinaTimeZones, setTimeZone, today } from "@marina/shared";
 import { setCurrency } from "@marina/shared";
@@ -7,6 +7,8 @@ import { DEFAULT_PERMISSIONS, levelFor, type Area, type Level } from "@marina/sh
 import { createSeed, type Db } from "@marina/shared";
 import { Index } from "@marina/shared";
 import { BUILT_IN_USERS, nextId, PASSWORD_HASHES, SIGN_IN_ERROR, type SystemUser } from "@marina/shared";
+import { changesBetween, hasChanges, t } from "@marina/shared";
+import { BACKEND, emptyDb, fetchDb, ownAccount, saveChanges, sessionEmail, signInRemote, signOutRemote } from "./remote";
 
 export type ToastKind = "success" | "info" | "warning" | "error" | "celebrate";
 
@@ -43,6 +45,10 @@ interface Store {
   activity: Db["activity"];
   /** Permission level of the signed-in user for an area of the app. */
   can: (area?: Area) => Level;
+  /** True when the data comes from the database (Supabase) rather than the demo's sample data. */
+  backend: boolean;
+  /** False while a saved sign-in is being checked and its data loaded (backend only). */
+  ready: boolean;
 }
 
 
@@ -107,7 +113,8 @@ const sampleMarinas = () => (sample ??= createSeed().marinas);
 
 function normalize(db: Db): Db {
   const now = today();
-  const missing = [...BUILT_IN_USERS(), ...readAccounts().map(toUser)].filter((b) => !db.users.some((u) => u.email.toLowerCase() === b.email.toLowerCase()));
+  // Demo only: the built-in accounts and accounts made in this browser. The database has its own.
+  const missing = BACKEND ? [] : [...BUILT_IN_USERS(), ...readAccounts().map(toUser)].filter((b) => !db.users.some((u) => u.email.toLowerCase() === b.email.toLowerCase()));
   // Recurring maintenance creates the work orders it owes whenever data loads.
   return withRecurringTasks({
     ...withMarinaPoints(db, sampleMarinas()),
@@ -145,13 +152,17 @@ function readSession(): string | null {
 }
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [db, setDb] = useState<Db>(loadDb);
-  const [userId, setUserId] = useState<string | null>(readSession);
+  const [db, setDb] = useState<Db>(() => (BACKEND ? emptyDb() : loadDb()));
+  const [userId, setUserId] = useState<string | null>(() => (BACKEND ? null : readSession()));
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [ready, setReady] = useState(!BACKEND);
+  /** Backend: the data as last saved to (or loaded from) the database; changes are worked out from it. */
+  const synced = useRef<Db | null>(null);
 
   const ix = useMemo(() => new Index(db), [db]);
 
   useEffect(() => {
+    if (BACKEND) return;
     const t = setTimeout(() => {
       try {
         localStorage.setItem(DATA_KEY, JSON.stringify({ day: today(), db }));
@@ -162,7 +173,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return () => clearTimeout(t);
   }, [db]);
 
-  const resetData = useCallback(() => setDb(createSeed()), []);
+  // The database's data is never replaced by sample data.
+  const resetData = useCallback(() => { if (!BACKEND) setDb(createSeed()); }, []);
   const user = db.users.find((u) => u.id === userId) ?? null;
   const scope = useMemo(
     () => (!user ? [] : user.marinaIds.length ? user.marinaIds : db.marinas.map((m) => m.id)),
@@ -218,6 +230,52 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [restore, dismiss],
   );
 
+  /** Backend: loads everything for an admin's account. Resolves to an error message, or null. */
+  const loadRemote = useCallback(async (email: string): Promise<string | null> => {
+    const account = await ownAccount(email);
+    if (!account || account.status !== "active") return t("This account isn't active yet.");
+    // Phase 1 of the backend: only admins use the web app with the database.
+    if (account.role !== "admin") return t("Only admins can use the web app with the live database for now.");
+    const data = normalize(await fetchDb());
+    synced.current = data;
+    setDb(data);
+    setUserId(account.id);
+    return null;
+  }, []);
+
+  // Backend: pick up the sign-in saved on this device.
+  useEffect(() => {
+    if (!BACKEND) return;
+    let live = true;
+    sessionEmail()
+      .then(async (email) => {
+        if (!email || !live) return;
+        if (await loadRemote(email)) await signOutRemote();
+      })
+      .catch(() => { /* offline or the session expired: show the sign-in page */ })
+      .finally(() => live && setReady(true));
+    return () => { live = false; };
+  }, [loadRemote]);
+
+  // Backend: save each change. Saves run one after another, in the order the changes were made.
+  const saving = useRef(Promise.resolve());
+  useEffect(() => {
+    if (!BACKEND || !synced.current || synced.current === db) return;
+    const changes = changesBetween(synced.current, db);
+    synced.current = db;
+    if (!hasChanges(changes)) return;
+    saving.current = saving.current.then(() => saveChanges(changes)).catch(async () => {
+      toast(t("Couldn't save the change. Showing the latest saved data."), undefined, "error");
+      try {
+        const fresh = normalize(await fetchDb());
+        synced.current = fresh;
+        setDb(fresh);
+      } catch {
+        /* still offline: keep what's on screen */
+      }
+    });
+  }, [db, toast]);
+
   const can = useCallback((area?: Area) => levelFor(db.settings.permissions, user?.role, area), [db.settings.permissions, user?.role]);
 
   const activity = useMemo(
@@ -238,6 +296,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (email: string, password: string, remember = false) => {
     const key = email.trim().toLowerCase();
+    if (BACKEND) {
+      try {
+        if (await signInRemote(key, password)) return SIGN_IN_ERROR;
+        const problem = await loadRemote(key);
+        if (problem) await signOutRemote();
+        return problem;
+      } catch {
+        return t("Couldn't reach the server. Check your connection and try again.");
+      }
+    }
     const u = db.users.find((x) => x.email.toLowerCase() === key);
     const account = readAccounts().find((a) => a.email.toLowerCase() === key);
     const expected = PASSWORD_HASHES[key] ?? account?.hash;
@@ -249,6 +317,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   };
 
   const register = async ({ name, email, company, password }: { name: string; email: string; company?: string; password: string }) => {
+    if (BACKEND) return t("Accounts are created by an administrator. Ask yours to add you.");
     const key = email.trim().toLowerCase();
     if (PASSWORD_HASHES[key] || db.users.some((x) => x.email.toLowerCase() === key) || readAccounts().some((a) => a.email.toLowerCase() === key))
       return "An account with this email already exists. Sign in instead.";
@@ -267,6 +336,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const signOut = () => {
     setUserId(null);
+    if (BACKEND) {
+      synced.current = null;
+      setDb(emptyDb());
+      void signOutRemote();
+      return;
+    }
     try {
       sessionStorage.removeItem(SESSION_KEY);
       localStorage.removeItem(SESSION_KEY);
@@ -276,7 +351,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <StoreContext.Provider value={{ db, ix, update, restore, user, signIn, register, signOut, can, scope, resetData, toasts, toast, activity }}>{children}</StoreContext.Provider>
+    <StoreContext.Provider value={{ db, ix, update, restore, user, signIn, register, signOut, can, scope, resetData, toasts, toast, activity, backend: BACKEND, ready }}>{children}</StoreContext.Provider>
   );
 }
 

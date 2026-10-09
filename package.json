@@ -16,6 +16,8 @@
     "test": "npm --prefix packages/shared test",
     "lint": "npm --prefix apps/web run lint && npm --prefix apps/website run lint && npm --prefix apps/mobile run lint && npm --prefix apps/customer run lint",
     "shots": "npm --prefix tools/guide-shots run shots --",
-    "site-shots": "npm --prefix tools/guide-shots run site-shots --"
+    "site-shots": "npm --prefix tools/guide-shots run site-shots --",
+    "db:setup": "npx tsx tools/db/setup.ts",
+    "db:seed": "npx tsx tools/db/seed.ts"
   }
 }

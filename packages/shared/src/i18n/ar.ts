@@ -2699,4 +2699,9 @@ export const ar: Record<string, Entry> = {
   "If something is hard to use, email {email} or call {phone}. We'll help you book another way and fix the problem.": "إذا كان شيء ما صعب الاستخدام، فراسلنا على {email} أو اتصل على {phone}. سنساعدك على الحجز بطريقة أخرى ونصلح المشكلة.",
   "By creating an account you agree to the": "بإنشاء حساب فإنك توافق على",
   "See how we use your data in the": "اطّلع على كيفية استخدامنا لبياناتك في",
+  "This account isn't active yet.": "هذا الحساب غير مفعّل بعد.",
+  "Only admins can use the web app with the live database for now.": "حاليًا، يمكن للمسؤولين فقط استخدام تطبيق الويب مع قاعدة البيانات الفعلية.",
+  "Couldn't save the change. Showing the latest saved data.": "تعذّر حفظ التغيير. يتم عرض آخر بيانات محفوظة.",
+  "Couldn't reach the server. Check your connection and try again.": "تعذّر الوصول إلى الخادم. تحقّق من اتصالك وحاول مرة أخرى.",
+  "Accounts are created by an administrator. Ask yours to add you.": "يُنشئ المسؤول الحسابات. اطلب من المسؤول لديك إضافتك.",
 };
