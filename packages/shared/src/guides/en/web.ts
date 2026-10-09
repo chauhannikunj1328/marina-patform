@@ -592,7 +592,7 @@ export const web: Record<string, Guide> = {
       {
         heading: "Company defaults (admins)",
         points: [
-          "Company name (on invoices), currency, time zone, how many days until an invoice is due, and from how many nights the monthly rate applies.",
+          "Company name (on invoices), currency, head office time zone (each marina's clock-ins and other times show in its own local time), how many days until an invoice is due, and from how many nights the monthly rate applies.",
         ],
       },
       {

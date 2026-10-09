@@ -17,8 +17,9 @@ export const tel = telLink;
 const NAV = [
   { to: "/marinas", label: "Marinas" },
   { to: "/pricing", label: "Pricing" },
-  { to: "/#reviews", label: "Reviews" },
-  { to: "/#app", label: "Get the app" },
+  { to: "/long-term", label: "Long-term" },
+  { to: "/services", label: "Services" },
+  { to: "/help", label: "Help" },
   { to: "/contact", label: "Contact" },
 ];
 
@@ -79,24 +80,24 @@ function Header() {
     setMenu(false);
   }
   const active = (to: string) => !to.includes("#") && (loc.pathname === to || loc.pathname.startsWith(`${to}/`));
-  const link = (to: string) => cx("rounded-full px-3.5 py-2 text-sm font-medium transition-colors", active(to) ? "bg-sidebar text-ink" : "text-ink-2 hover:text-ink");
+  const link = (to: string) => cx("rounded-full px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors", active(to) ? "bg-sidebar text-ink" : "text-ink-2 hover:text-ink");
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-[color-mix(in_srgb,var(--bg)_88%,transparent)] backdrop-blur no-print">
       <Container className="flex h-16 items-center gap-2">
         <Link to="/" className="me-4 rounded-[8px]" aria-label={t("Marina home")}><Logo /></Link>
-        <nav aria-label={t("Main")} className="hidden flex-1 items-center justify-center gap-1 lg:flex">
+        <nav aria-label={t("Main")} className="hidden flex-1 items-center justify-center gap-1 xl:flex">
           {NAV.map((n) => <NavLink key={n.to} to={n.to} className={link(n.to)}>{t(n.label)}</NavLink>)}
         </nav>
-        <div className="ms-auto flex items-center gap-1 lg:ms-0">
+        <div className="ms-auto flex items-center gap-1 xl:ms-0">
           <LanguageMenu />
           <IconButton icon={theme === "dark" ? Sun : Moon} label={theme === "dark" ? t("Light mode") : t("Dark mode")} onClick={toggleTheme} />
           <ButtonLink to={owner ? "/account" : "/sign-in"} icon={UserRound} className="ms-1 max-sm:hidden">{owner ? t("My account") : t("Sign in")}</ButtonLink>
           <ButtonLink to="/book" variant="primary" className="max-sm:hidden">{t("Book a berth")}</ButtonLink>
-          <IconButton icon={menu ? X : Menu} label={t("Menu")} aria-expanded={menu} onClick={() => setMenu((m) => !m)} className="lg:hidden" />
+          <IconButton icon={menu ? X : Menu} label={t("Menu")} aria-expanded={menu} onClick={() => setMenu((m) => !m)} className="xl:hidden" />
         </div>
       </Container>
       {menu && (
-        <nav aria-label={t("Main")} className="border-t border-line bg-bg lg:hidden animate-fade">
+        <nav aria-label={t("Main")} className="border-t border-line bg-bg xl:hidden animate-fade">
           <Container className="flex flex-col gap-1 py-3">
             {NAV.map((n) => <NavLink key={n.to} to={n.to} className={link(n.to)}>{t(n.label)}</NavLink>)}
             <NavLink to={owner ? "/account" : "/sign-in"} className={link(owner ? "/account" : "/sign-in")}>{owner ? t("My account") : t("Sign in")}</NavLink>
@@ -149,8 +150,9 @@ function Footer() {
               <Link to="/book">{t("Book a berth")}</Link>
               <Link to="/marinas">{t("All marinas")}</Link>
               <Link to="/pricing">{t("Rates and fees")}</Link>
+              <Link to="/long-term">{t("Long-term berths")}</Link>
+              <Link to="/services">{t("Services and amenities")}</Link>
               <Link to="/#reviews">{t("Reviews")}</Link>
-              <Link to="/#faq">{t("Questions people ask")}</Link>
             </FooterCol>
             <FooterCol title={t("Boat owners")}>
               <Link to="/account">{t("My account")}</Link>
@@ -158,7 +160,9 @@ function Footer() {
               <Link to="/account/contracts">{t("Sign a contract")}</Link>
               <Link to="/#app">{t("Get the app")}</Link>
             </FooterCol>
-            <FooterCol title={t("Site")}>
+            <FooterCol title={t("Company")}>
+              <Link to="/about">{t("About us")}</Link>
+              <Link to="/help">{t("Help centre")}</Link>
               <Link to="/contact">{t("Contact us")}</Link>
               <Link to="/sitemap">{t("Site map")}</Link>
               {LANGS.map((l) => (
@@ -176,7 +180,10 @@ function Footer() {
         </Container>
         <Container className="flex flex-wrap items-center justify-between gap-4 border-t border-footer-line pt-6 pb-24 text-xs text-on-footer-2">
           <span className="inline-flex items-center gap-3"><Logo inverse /><span>© {YEAR} {db.settings.company}</span></span>
-          <span>{t("Sample data. Bookings and payments made here stay in this browser.")}</span>
+          <nav aria-label={t("Legal")} className="flex flex-wrap gap-x-5 gap-y-2">
+            {LEGAL_LINKS.map(([to, label]) => <Link key={to} to={to} className="hover:text-on-footer hover:underline">{t(label)}</Link>)}
+          </nav>
+          <span className="w-full">{t("Sample data. Bookings and payments made here stay in this browser.")}</span>
         </Container>
       </div>
     </footer>
@@ -184,6 +191,7 @@ function Footer() {
 }
 
 const YEAR = new Date().getFullYear();
+const LEGAL_LINKS = [["/privacy", "Privacy policy"], ["/terms", "Terms of use and booking"], ["/cookies", "Cookies and storage"], ["/accessibility", "Accessibility"]] as const;
 
 function FooterCol({ title, children }: { title: string; children: ReactNode }) {
   return (

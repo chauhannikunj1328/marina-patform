@@ -592,7 +592,7 @@ export const web: Record<string, Guide> = {
       {
         heading: "Valores de la empresa (administradores)",
         points: [
-          "Nombre de la empresa (en las facturas), moneda, zona horaria, días hasta que vence una factura y a partir de cuántas noches se aplica la tarifa mensual.",
+          "Nombre de la empresa (en las facturas), moneda, zona horaria de la oficina central (los fichajes y demás horas de cada marina se muestran en su hora local), días hasta que vence una factura y a partir de cuántas noches se aplica la tarifa mensual.",
         ],
       },
       {

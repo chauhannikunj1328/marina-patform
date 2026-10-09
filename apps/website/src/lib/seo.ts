@@ -191,9 +191,101 @@ export function sitemapMeta(db: Db, base: string): PageMeta {
   };
 }
 
+/** The help centre's questions, by topic. The first four answers are the ones on Home. */
+export function helpTopics(db: Db): { id: string; title: string; items: { q: string; a: string }[] }[] {
+  const [pay, cancel, fees, fit, longer, checkIn] = faqs(db);
+  return [
+    { id: "booking", title: t("Booking"), items: [pay, cancel, fees, fit, { q: t("What if the marina is full?"), a: t("Join the marina's waitlist from the search results. The dock office contacts you when a berth your boat fits is free.") }] },
+    {
+      id: "paying",
+      title: t("Paying"),
+      items: [
+        { q: t("When is the invoice due?"), a: t("The marina sends the invoice when it confirms your booking. It's due within {n} days.", { n: db.settings.invoiceDueDays }) },
+        { q: t("How can I pay?"), a: t("Online by card from your account, in full or in part. Or at the dock office by card, bank transfer, cash or check.") },
+        { q: t("Which currency do I pay in?"), a: t("Each marina charges in its own country's currency: US dollars in the United States, dirhams in the UAE, riyals in Saudi Arabia, and so on.") },
+        { q: t("Are power and water included?"), a: t("No. Shore power and fresh water are metered and added to your invoice at the marina's rates, like fuel and other services.") },
+        { q: t("Where are my receipts?"), a: t("In your account under Invoices, as soon as a payment is made. You can print them from there.") },
+      ],
+    },
+    { id: "longer", title: t("Longer stays"), items: [longer, { q: t("How do berth contracts work?"), a: t("You keep the same berth for a month, a season or a year. The whole term is invoiced up front, you sign the contract online, and we remind you before it ends so you can renew.") }] },
+    { id: "marina", title: t("At the marina"), items: [checkIn, { q: t("What are the berth rules?"), a: t("Check in at the dock office on arrival, follow the dock staff's instructions, keep the berth clear on departure, and pay the invoice by its due date.") }] },
+    {
+      id: "account",
+      title: t("Your account"),
+      items: [
+        { q: t("I forgot my password"), a: t("Select Forgot your password? on the sign-in page and follow the steps.") },
+        { q: t("Can I use the app with the same account?"), a: t("Yes. Sign in to the Marina Berths app with the same email and password, and your bookings, invoices and boats are there.") },
+        { q: t("How do I add a boat?"), a: t("Open Boats in your account and add it with its name, type and length. You can also add one at checkout.") },
+      ],
+    },
+  ];
+}
+
+export function aboutMeta(db: Db, base: string): PageMeta {
+  return {
+    title: title(t("About us")),
+    description: t("{company} runs {n} marinas in the United States, the UAE and across the Gulf, with booking offices in San Francisco and Dubai. Clear prices, a dock office at every marina and one account everywhere.", { company: db.settings.company, n: openMarinas(db).length }),
+    path: "/about",
+    jsonLd: [breadcrumbs(base, [[BRAND, "/"], [t("About us"), "/about"]]), organization(base)],
+  };
+}
+
+export function servicesMeta(db: Db, base: string): PageMeta {
+  return {
+    title: title(t("Services and amenities")),
+    description: t("Shore power, fresh water, fuel, pump-out, showers, laundry, security and parking at {n} marinas. See what each marina has and what services cost.", { n: openMarinas(db).length }),
+    path: "/services",
+    jsonLd: [breadcrumbs(base, [[BRAND, "/"], [t("Services and amenities"), "/services"]])],
+  };
+}
+
+export function longTermMeta(_db: Db, base: string): PageMeta {
+  return {
+    title: title(t("Long-term berths")),
+    description: t("Monthly, seasonal and annual berth contracts at every Marina location: the same berth all season, one invoice per term and up to {pct}% off the monthly rate.", { pct: CONTRACT_TERMS.annual.discount * 100 }),
+    path: "/long-term",
+    jsonLd: [breadcrumbs(base, [[BRAND, "/"], [t("Long-term berths"), "/long-term"]])],
+  };
+}
+
+export function helpMeta(db: Db, base: string): PageMeta {
+  return {
+    title: title(t("Help centre")),
+    description: t("Answers about booking a berth, paying, longer stays, arriving at the marina and your account."),
+    path: "/help",
+    jsonLd: [
+      breadcrumbs(base, [[BRAND, "/"], [t("Help centre"), "/help"]]),
+      { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: helpTopics(db).flatMap((g) => g.items).map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })) },
+    ],
+  };
+}
+
+/** The legal pages: same shape, so one definition. */
+export const LEGAL = {
+  privacy: { path: "/privacy", name: "Privacy policy", description: "How {company} collects, uses and protects your personal data when you use the website and the Marina Berths app, and the choices you have." },
+  terms: { path: "/terms", name: "Terms of use and booking", description: "The terms for using the Marina website and app and for booking a berth: requests and confirmation, prices, paying, cancelling, contracts and the berth rules." },
+  cookies: { path: "/cookies", name: "Cookies and storage", description: "What the Marina website keeps in your browser and why. No advertising or tracking cookies." },
+  accessibility: { path: "/accessibility", name: "Accessibility", description: "How we make the Marina website usable for everyone, what we know still needs work, and how to tell us about a problem." },
+} as const;
+export type LegalKey = keyof typeof LEGAL;
+
+export function legalMeta(db: Db, base: string, key: LegalKey): PageMeta {
+  const l = LEGAL[key];
+  return {
+    title: title(t(l.name)),
+    description: t(l.description, { company: db.settings.company }),
+    path: l.path,
+    jsonLd: [breadcrumbs(base, [[BRAND, "/"], [t(l.name), l.path]])],
+  };
+}
+
 /** Every page that should be in search results, for the sitemap and the static HTML files. */
 export function publicPages(db: Db, base: string): PageMeta[] {
-  return [homeMeta(db, base), marinasMeta(db, base), ...openMarinas(db).map((m) => marinaMeta(db, base, m)), pricingMeta(db, base), contactMeta(db, base), bookMeta(db, base), sitemapMeta(db, base)];
+  return [
+    homeMeta(db, base), marinasMeta(db, base), ...openMarinas(db).map((m) => marinaMeta(db, base, m)), pricingMeta(db, base), longTermMeta(db, base), servicesMeta(db, base),
+    aboutMeta(db, base), helpMeta(db, base), contactMeta(db, base), bookMeta(db, base), sitemapMeta(db, base),
+    ...(Object.keys(LEGAL) as LegalKey[]).map((k) => legalMeta(db, base, k)),
+  ];
 }
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");

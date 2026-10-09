@@ -6,7 +6,7 @@ import { useStore } from "@/data/store";
 import { useLang } from "@/lib/lang";
 import { Card, Container, PageHero, usePageTitle } from "@/components/ui";
 import { openMarinas, stateOf } from "@/lib/marinas";
-import { sitemapMeta, withLang } from "@/lib/seo";
+import { LEGAL, sitemapMeta, withLang, type LegalKey } from "@/lib/seo";
 
 function Group({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -33,6 +33,8 @@ export function Sitemap() {
           <li><Link to="/marinas">{t("All marinas")}</Link></li>
           <li><Link to="/book">{t("Book a berth")}</Link></li>
           <li><Link to="/pricing">{t("Rates and fees")}</Link></li>
+          <li><Link to="/long-term">{t("Long-term berths")}</Link></li>
+          <li><Link to="/services">{t("Services and amenities")}</Link></li>
           <li><Link to="/contact">{t("Contact us")}</Link></li>
           <li><Link to="/#reviews">{t("Reviews")}</Link></li>
           <li><Link to="/#faq">{t("Questions people ask")}</Link></li>
@@ -48,6 +50,11 @@ export function Sitemap() {
           <li><Link to="/account/contracts">{t("Contracts")}</Link></li>
           <li><Link to="/account/boats">{t("Boats")}</Link></li>
           <li><Link to="/account/profile">{t("Profile")}</Link></li>
+        </Group>
+        <Group title={t("Company")}>
+          <li><Link to="/about">{t("About us")}</Link></li>
+          <li><Link to="/help">{t("Help centre")}</Link></li>
+          {(Object.keys(LEGAL) as LegalKey[]).map((k) => <li key={k}><Link to={LEGAL[k].path}>{t(LEGAL[k].name)}</Link></li>)}
         </Group>
         <Group title={t("Languages")}>
           {LANGS.map((l) => (

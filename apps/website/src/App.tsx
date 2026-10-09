@@ -15,6 +15,14 @@ const MarinaPage = page(() => import("@/pages/Marinas"), "MarinaPage");
 const Pricing = page(() => import("@/pages/Pricing"), "Pricing");
 const Contact = page(() => import("@/pages/Contact"), "Contact");
 const Sitemap = page(() => import("@/pages/Sitemap"), "Sitemap");
+const About = page(() => import("@/pages/Company"), "About");
+const Services = page(() => import("@/pages/Company"), "Services");
+const LongTerm = page(() => import("@/pages/Company"), "LongTerm");
+const Help = page(() => import("@/pages/Company"), "Help");
+const Privacy = page(() => import("@/pages/Legal"), "Privacy");
+const Terms = page(() => import("@/pages/Legal"), "Terms");
+const Cookies = page(() => import("@/pages/Legal"), "Cookies");
+const Accessibility = page(() => import("@/pages/Legal"), "Accessibility");
 const Book = page(() => import("@/pages/Book"), "Book");
 const Checkout = page(() => import("@/pages/Book"), "Checkout");
 const SignIn = page(() => import("@/pages/Auth"), "SignIn");
@@ -61,6 +69,14 @@ export default function App() {
           <Route path="pricing" element={<Pricing />} />
           <Route path="contact" element={<Contact />} />
           <Route path="sitemap" element={<Sitemap />} />
+          <Route path="about" element={<About />} />
+          <Route path="services" element={<Services />} />
+          <Route path="long-term" element={<LongTerm />} />
+          <Route path="help" element={<Help />} />
+          <Route path="privacy" element={<Privacy />} />
+          <Route path="terms" element={<Terms />} />
+          <Route path="cookies" element={<Cookies />} />
+          <Route path="accessibility" element={<Accessibility />} />
           <Route path="book" element={<Book />} />
           <Route path="book/checkout" element={<RequireOwner><Checkout /></RequireOwner>} />
           <Route path="sign-in" element={<SignIn />} />

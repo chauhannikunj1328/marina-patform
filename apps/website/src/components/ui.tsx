@@ -103,7 +103,7 @@ export function PageTitle({ title, intro, actions }: { title: string; intro?: st
   );
 }
 
-/** The top of a public page: the brand canvas with the fine square grid, a large title and intro. */
+/** The top of a public page: the promo yellow with the fine square grid, a large title and intro. */
 export function PageHero({ eyebrow, title, intro, actions, children }: { eyebrow?: string; title: string; intro?: ReactNode; actions?: ReactNode; children?: ReactNode }) {
   return (
     <section className="hero-bg border-b border-line">

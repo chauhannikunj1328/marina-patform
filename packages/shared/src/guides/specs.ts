@@ -20,7 +20,7 @@ export const SHOTS: Partial<Record<GuideKey, (Shot | null)[]>> = {
   "w.overview": [
     { path: "/", as: "admin", boxes: [{ text: "Berths occupied today", exact: false, card: true }, { text: "Revenue booked this month", exact: false, card: true }, { text: "Occupancy rate", exact: false, card: true }] },
     { path: "/", as: "admin", boxes: [{ role: "heading", name: "Revenue", card: true }, { role: "heading", name: "Occupancy", card: true }] },
-    { path: "/", as: "admin", boxes: [{ role: "heading", name: "Today", card: true }, { role: "heading", name: "Recent activity" }] },
+    { path: "/", as: "admin", boxes: [{ role: "heading", name: "Today", card: true }] },
     { path: "/", as: "admin", boxes: [{ role: "button", name: "New booking" }, { role: "button", name: "Export CSV" }] },
     { path: "/", as: "admin", boxes: [{ css: "#global-search" }, { role: "button", name: "Notifications", exact: false }, { role: "button", name: "Keyboard shortcuts (?)" }] },
   ],
@@ -45,7 +45,7 @@ export const SHOTS: Partial<Record<GuideKey, (Shot | null)[]>> = {
   ],
   "w.berths": [
     { path: "/berths", as: "admin", boxes: [{ role: "tab", name: "List" }, { role: "tab", name: "Dock map" }, { role: "tab", name: "Meters" }, { label: "Search berth, boat or marina" }] },
-    { path: "/berths", as: "admin", actions: [{ click: { role: "button", name: "Add berth" } }], boxes: [{ label: "Berth number", inDialog: true }, { label: "Max boat length (ft)", inDialog: true }, { label: "Daily rate ($)", inDialog: true }, { label: "Monthly rate ($)", inDialog: true }] },
+    { path: "/berths", as: "admin", actions: [{ click: { role: "button", name: "Add berth" } }], boxes: [{ label: "Berth number", inDialog: true }, { label: "Max boat length (ft)", inDialog: true }, { label: "Daily rate ({code})", vars: { code: "USD" }, inDialog: true }, { label: "Monthly rate ({code})", vars: { code: "USD" }, inDialog: true }] },
     { path: "/berths", as: "admin", boxes: [{ role: "button", name: "Mark {code} for maintenance", vars: { code: "A-01" } }, { role: "button", name: "Return {code} to service", vars: { code: "A-04" } }] },
     { path: "/berths", as: "admin", actions: [{ click: { role: "tab", name: "Meters" } }], boxes: [{ role: "button", name: "Record reading" }] },
     { path: "/berths", as: "admin", boxes: [{ role: "button", name: "QR labels" }] },
@@ -65,7 +65,7 @@ export const SHOTS: Partial<Record<GuideKey, (Shot | null)[]>> = {
   ],
   "w.locations": [
     { path: "/locations", as: "admin", boxes: [{ role: "tab", name: "Counties", exact: false }, { role: "tab", name: "Cities", exact: false }, { role: "tab", name: "Map" }] },
-    { path: "/locations", as: "admin", actions: [{ click: { role: "button", name: "Add location" } }], boxes: [{ label: "Type", inDialog: true }, { label: "County name", inDialog: true }, { label: "State", inDialog: true }, { role: "button", name: "Add {kind}", vars: { kind: "county" }, translateVars: true, inDialog: true }] },
+    { path: "/locations", as: "admin", actions: [{ click: { role: "button", name: "Add location" } }], boxes: [{ label: "Type", inDialog: true }, { label: "County, emirate or province", inDialog: true }, { label: "State", inDialog: true }, { role: "button", name: "Add {kind}", vars: { kind: "county" }, translateVars: true, inDialog: true }] },
     null,
   ],
   "w.staff": [
@@ -123,7 +123,7 @@ export const SHOTS: Partial<Record<GuideKey, (Shot | null)[]>> = {
     { path: "/", as: "visitor", boxes: [{ role: "button", name: "Language" }, { role: "button", name: "Dark mode" }, { css: "header a[href$='/sign-in']" }, { css: "header a[href$='/book']" }] },
   ],
   "s.marinas": [
-    { path: "/marinas", as: "visitor", boxes: [{ role: "group", name: "State" }, { css: "main a[href*='/marinas/']" }] },
+    { path: "/marinas", as: "visitor", boxes: [{ role: "group", name: "Location" }, { css: "main a[href*='/marinas/']" }] },
     { path: "/marinas", as: "visitor", boxes: [{ css: ".map-shell" }] },
   ],
   "s.marina": [

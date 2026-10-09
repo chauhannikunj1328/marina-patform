@@ -43,13 +43,13 @@ export const site: Record<string, Guide> = {
 
   "s.marinas": {
     title: "Marinas",
-    summary: "Todas nuestras marinas, por estado, con un mapa.",
+    summary: "Todas nuestras marinas, por estado o país, con un mapa.",
     who: "Todos.",
     sections: [
       {
         heading: "Explorar",
         steps: [
-          "Selecciona un estado arriba para ver solo sus marinas, o Todos los estados.",
+          "Selecciona un estado o país arriba para ver solo sus marinas, o Todas las ubicaciones.",
           "Cada tarjeta muestra la ciudad, el número de amarres, la eslora máxima, los servicios y la tarifa por noche más baja.",
           "Selecciona una tarjeta, o un marcador del mapa, para abrir esa marina.",
         ],

@@ -30,9 +30,9 @@ html {
   scroll-behavior: smooth;
 }
 
-/* Hero: the brand canvas gradient with the fine promo grid fading out toward the bottom. */
+/* Hero and page headers: the promo card's Accent 100 yellow with the fine promo grid fading out toward the bottom. */
 .hero-bg {
-  background: var(--canvas);
+  background: var(--promo-bg);
   position: relative;
   isolation: isolate;
 }

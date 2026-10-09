@@ -206,6 +206,9 @@ export function Checkout() {
               <span>{t("I agree to the marina's berth rules: check in at the dock office on arrival, keep the berth clear on departure, and pay the invoice by its due date.")}</span>
             </label>
             {errors.agree && <p className="mt-2 text-xs font-medium text-error-fg">{errors.agree}</p>}
+            <p className="mt-3 text-xs text-ink-3">
+              <Link to="/terms" target="_blank" className="font-medium text-ink-2 underline">{t("Terms of use and booking")}</Link> · <Link to="/privacy" target="_blank" className="font-medium text-ink-2 underline">{t("Privacy policy")}</Link>
+            </p>
           </Card>
           {error && <Notice tone="error">{error}</Notice>}
           <Button type="submit" variant="primary" size="lg" className="w-full sm:w-auto">{t("Send booking request")}</Button>

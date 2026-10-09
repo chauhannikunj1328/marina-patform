@@ -111,6 +111,7 @@ export function Register() {
         <Field label={t("Password")} error={errors.password} hint={t("At least 8 characters.")}>{(id) => <PasswordInput id={id} autoComplete="new-password" value={f.password} onChange={(v) => set("password", v)} />}</Field>
         {error && <Notice tone="error">{error}</Notice>}
         <Button type="submit" variant="primary" size="lg" className="w-full" disabled={busy}>{busy ? t("Creating your account…") : t("Create account")}</Button>
+        <p className="text-center text-xs text-ink-3">{t("By creating an account you agree to the")} <Link to="/terms" className="font-medium text-ink-2 underline">{t("Terms of use and booking")}</Link>. {t("See how we use your data in the")} <Link to="/privacy" className="font-medium text-ink-2 underline">{t("Privacy policy")}</Link>.</p>
         <p className="text-center text-[13px] text-ink-2">{t("Already have an account?")} <Link to="/sign-in" state={{ from: to }} className="font-semibold text-green-text hover:underline">{t("Sign in")}</Link></p>
         <p className="text-center text-xs text-ink-3">{t("Your account is saved only in this browser for now.")}</p>
       </form>
