@@ -190,7 +190,7 @@ function DailySummary({ onClose }: { onClose: () => void }) {
     <Modal open onClose={onClose} title={t("Daily summary preview")} description={t("What {v} would receive at 7 am", { v: user?.name.split(" ")[0] })} footer={<Button onClick={onClose}>{t("Close")}</Button>}>
       <div className="rounded-[16px] border border-line bg-sidebar p-5">
         <div className="rounded-[12px] bg-surface p-5">
-          <div className="mb-3 flex items-center gap-2 border-b-2 pb-3" style={{ borderColor: db.settings.branding?.color ?? "#2F3740" }}>
+          <div className="mb-3 flex items-center gap-2 border-b-2 pb-3" style={{ borderColor: db.settings.branding?.color ?? "#497079" }}>
             {db.settings.branding?.logo ? <img src={db.settings.branding.logo} alt="" className="h-7 max-w-28 object-contain" /> : <Logomark size={24} />}
             <span className="text-[13px] font-semibold">{db.settings.company}</span>
           </div>
@@ -314,7 +314,7 @@ function nextWeekday(day: number): string {
 function BrandingCard() {
   const { db, update, toast } = useStore();
   const saved = db.settings.branding ?? {};
-  const [f, setF] = useState({ logo: saved.logo ?? "", color: saved.color ?? "#2F3740", footer: saved.invoiceFooter ?? "" });
+  const [f, setF] = useState({ logo: saved.logo ?? "", color: saved.color ?? "#497079", footer: saved.invoiceFooter ?? "" });
   const [error, setError] = useState("");
   const dirty = useDirty(f);
   const pickLogo = (file?: File) => {

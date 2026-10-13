@@ -306,6 +306,7 @@ Every figure is calculated from one data set (`packages/shared/src/seed.ts`) by 
 The UI follows the **Marina Brand to Product Handoff Guide v1**. Web tokens, themes and shared styles live in `packages/shared/src/brand.css`, used by both the web app and the website (light and dark); the mobile app uses the same values from `packages/shared/src/brand.ts`.
 
 - **Color:** Slate `#2F3740` for primary buttons and the active nav bar, Teal `#497079` for rings and focus, Sunlight `#F7E8A6` for highlight pills and update cards, Green `#0E9A50` for links, progress and "new" (Green 700 `#0B6B37` for small text). Warm sidebar `#F1F0EC`.
+- **Admin web app palette:** the web app alone uses the "Colors" variables from the Figma file "MMS | Admin Side", set at the top of `apps/web/src/index.css` under the same names (`--primary-600` is Primary/600). Primary is Teal (`#497079` for buttons and the active nav bar), Secondary is the yellow of the "In repair" berths (`#FBBE3C`; highlight pills use `#FDDD99`), Grey is the guide's warm Neutral, and Success, Error, Warning and Info are Tailwind's green, red, amber and sky. The website and the mobile apps keep the guide's colors above.
 - **Type:** Poppins for UI, Inter with tabular figures for numbers (`.num` class).
 - **Shape:** pill buttons and badges, 12 px inputs, 16 px cards, 20 px dialogs; borders instead of shadows.
 - **Status badges:** section 07 colors (ocean blue, amber, red, coral, slate), always with an icon.

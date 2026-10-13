@@ -506,7 +506,7 @@ function useShortcuts(openHelp: () => void) {
 
 const TOAST_ICON: Record<ToastKind, { icon: LucideIcon; cls: string }> = {
   success: { icon: CircleCheck, cls: "text-success" },
-  info: { icon: Info, cls: "text-secondary" },
+  info: { icon: Info, cls: "text-info" },
   warning: { icon: TriangleAlert, cls: "text-warning" },
   error: { icon: CircleAlert, cls: "text-error" },
   celebrate: { icon: Sparkles, cls: "text-accent-strong" },
