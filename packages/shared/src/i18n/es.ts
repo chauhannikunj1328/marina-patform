@@ -137,6 +137,7 @@ export const es: Record<string, Entry> = {
   "Account": "Cuenta",
   "Account menu": "Menú de la cuenta",
   "Actions": "Acciones",
+  "action|Open": "Abrir",
   "Active": "Activo",
   "Active contracts": "Contratos activos",
   "Activity": "Actividad",

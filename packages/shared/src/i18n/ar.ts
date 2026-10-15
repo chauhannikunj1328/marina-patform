@@ -138,6 +138,7 @@ export const ar: Record<string, Entry> = {
   "Account": "الحساب",
   "Account menu": "قائمة الحساب",
   "Actions": "الإجراءات",
+  "action|Open": "فتح",
   "Active": "نشط",
   "Active contracts": "العقود النشطة",
   "Activity": "النشاط",
