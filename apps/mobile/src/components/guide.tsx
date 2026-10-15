@@ -9,7 +9,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ArrowLeft, ArrowRight, BookOpen, X } from "lucide-react-native";
 import { guideFor, shotFile, type GuideKey, type GuideSection } from "@marina/shared";
 import "@marina/shared/guides/bundled";
-import { Txt } from "./ui";
+import { READ_BUTTON, Txt } from "./ui";
 import { flipRtl, useTheme } from "../theme";
 import { useLang, useTr } from "../lib/i18n";
 import { useRole } from "../lib/role";
@@ -178,7 +178,7 @@ export function GuideButton() {
   const key = mobileGuideKey(segments, office);
   if (!key || !guideFor(key, lang)) return null;
   // Above the tab bar on tab screens; near the bottom edge elsewhere.
-  const bottom = insets.bottom + (segments[0] === "(tabs)" ? 64 + 10 : 16);
+  const bottom = insets.bottom + (segments[0] === "(tabs)" ? 64 + 10 : READ_BUTTON.gap);
   return (
     <>
       <View pointerEvents="box-none" style={{ position: "absolute", start: 0, end: 0, bottom, alignItems: "center" }}>
@@ -187,7 +187,7 @@ export function GuideButton() {
           accessibilityRole="button"
           accessibilityLabel={tr("Read the guide for this page")}
           style={({ pressed }) => ({
-            flexDirection: "row", alignItems: "center", gap: 8, height: 44, paddingHorizontal: 20, borderRadius: 9999,
+            flexDirection: "row", alignItems: "center", gap: 8, height: READ_BUTTON.height, paddingHorizontal: 20, borderRadius: 9999,
             backgroundColor: pressed ? t.primaryPressed : t.primary,
             shadowColor: "#000", shadowOpacity: 0.18, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 6,
           })}

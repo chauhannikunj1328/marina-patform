@@ -3,9 +3,8 @@ import { useRef, useState } from "react";
 import { Platform, View } from "react-native";
 import { Redirect, router, useLocalSearchParams } from "expo-router";
 import { CameraView, useCameraPermissions } from "expo-camera";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Camera } from "lucide-react-native";
-import { Button, Field, Input, StackHeader, Txt } from "@/components/ui";
+import { Button, Field, Input, StackHeader, Txt, useReadButtonRoom } from "@/components/ui";
 import { ALL, useMe, useStore } from "@/store";
 import { useTheme } from "@/theme";
 import { useTr } from "@/lib/i18n";
@@ -21,7 +20,7 @@ export default function Scan() {
   const params = useLocalSearchParams<{ patrol?: string }>();
   const { t } = useTheme();
   const tr = useTr();
-  const insets = useSafeAreaInsets();
+  const readRoom = useReadButtonRoom();
   const [permission, requestPermission] = useCameraPermissions();
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
@@ -57,8 +56,7 @@ export default function Scan() {
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
       <StackHeader title={tr("Scan berth")} subtitle={tr("Point the camera at the QR label on the berth post")} />
-      {/* Bottom padding keeps the berth field above the floating Read button (16 + 44 tall + 16 gap). */}
-      <View style={{ flex: 1, padding: 16, paddingBottom: insets.bottom + 16 + 44 + 16, gap: 16 }}>
+      <View style={{ flex: 1, padding: 16, paddingBottom: readRoom, gap: 16 }}>
         <View style={{ flex: 1, borderRadius: 20, overflow: "hidden", backgroundColor: "#000", alignItems: "center", justifyContent: "center" }}>
           {permission?.granted ? (
             <>

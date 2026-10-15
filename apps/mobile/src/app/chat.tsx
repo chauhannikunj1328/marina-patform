@@ -3,10 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from "react-native";
 import { Redirect, useLocalSearchParams } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MessagesSquare, SendHorizontal } from "lucide-react-native";
 import { fmtShort, fmtTime, localDay, nextId, today, zoneOf } from "@marina/shared";
-import { EmptyState, StackHeader, Txt } from "@/components/ui";
+import { EmptyState, StackHeader, Txt, useReadButtonRoom } from "@/components/ui";
 import { useMe, useStore } from "@/store";
 import { fonts, useTheme } from "@/theme";
 import { useTr } from "@/lib/i18n";
@@ -21,7 +20,7 @@ export default function Chat() {
   const me = office ? other : self;
   const { t } = useTheme();
   const tr = useTr();
-  const insets = useSafeAreaInsets();
+  const readRoom = useReadButtonRoom();
   const [text, setText] = useState("");
   const scroll = useRef<ScrollView>(null);
   const manager = me && db.staff.find((s) => s.marinaId === me.marinaId && s.position === "Marina Manager");
@@ -82,7 +81,7 @@ export default function Chat() {
             );
           })}
         </ScrollView>
-        <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 8, padding: 12, paddingBottom: Math.max(insets.bottom, 12), borderTopWidth: 1, borderColor: t.border, backgroundColor: t.surface }}>
+        <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 8, padding: 12, paddingBottom: readRoom, borderTopWidth: 1, borderColor: t.border, backgroundColor: t.surface }}>
           <TextInput
             value={text}
             onChangeText={setText}

@@ -161,11 +161,19 @@ export function IconButton({ icon: IconCmp, label, onPress, plain, badge = 0 }: 
 
 // ---- Layout -----------------------------------------------------------------
 
+/** The floating Read button on stack screens: its gap from the safe-area bottom, and its height. */
+export const READ_BUTTON = { gap: 16, height: 44 };
+/** Bottom room a stack screen leaves so its last control sits above the Read button, with a 16 gap. */
+export function useReadButtonRoom() {
+  return useSafeAreaInsets().bottom + READ_BUTTON.gap + READ_BUTTON.height + 16;
+}
+
 /** Scrollable screen body with brand side padding. */
 export function Screen({ children, title, right }: { children: ReactNode; title?: string; right?: ReactNode }) {
   const { t } = useTheme();
+  const room = useReadButtonRoom();
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: t.bg }} contentContainerStyle={{ padding: 16, paddingBottom: 88 }} keyboardShouldPersistTaps="handled">
+    <ScrollView style={{ flex: 1, backgroundColor: t.bg }} contentContainerStyle={{ padding: 16, paddingBottom: Math.max(88, room) }} keyboardShouldPersistTaps="handled">
       {title && (
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
           <Txt v="h1">{title}</Txt>
