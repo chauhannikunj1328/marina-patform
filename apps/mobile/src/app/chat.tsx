@@ -20,7 +20,7 @@ export default function Chat() {
   const me = office ? other : self;
   const { t } = useTheme();
   const tr = useTr();
-  const readRoom = useReadButtonRoom();
+  const readRoom = useReadButtonRoom(12);
   const [text, setText] = useState("");
   const scroll = useRef<ScrollView>(null);
   const manager = me && db.staff.find((s) => s.marinaId === me.marinaId && s.position === "Marina Manager");
@@ -55,8 +55,8 @@ export default function Chat() {
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
       <StackHeader
-        title={office ? me.name : `${ix.marina(me.marinaId)?.name} office`}
-        subtitle={office ? `${me.position} · ${ix.marina(me.marinaId)?.name}` : manager ? tr("{name}, Marina Manager", { name: manager.name }) : tr("Marina managers")}
+        title={office ? me.name : tr("{marina} office", { marina: ix.marina(me.marinaId)?.name })}
+        subtitle={office ? `${tr(me.position)} · ${ix.marina(me.marinaId)?.name}` : manager ? tr("{name}, Marina Manager", { name: manager.name }) : tr("Marina managers")}
       />
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
         <ScrollView ref={scroll} contentContainerStyle={{ padding: 16, gap: 8, flexGrow: 1, justifyContent: "flex-end" }} onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: false })}>

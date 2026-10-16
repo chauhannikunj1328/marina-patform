@@ -2181,6 +2181,7 @@ export const ar: Record<string, Entry> = {
   "{marina} checks the berth is right for your boat and confirms, usually within one business day.": "تتحقق {marina} من ملاءمة المرسى لقاربك وتؤكّد الحجز، عادةً خلال يوم عمل واحد.",
   "{marina} closed to new bookings": "أُغلقت {marina} أمام الحجوزات الجديدة",
   "{marina} hasn't confirmed this yet. The berth is held for you.": "لم تؤكد {marina} هذا الحجز بعد. المرسى محجوز لك.",
+  "{marina} office": "مكتب {marina}",
   "{marina} reopened to new bookings": "أُعيد فتح {marina} للحجوزات الجديدة",
   "{marina} · berth {berth} · {code}": "{marina} · المرسى {berth} · {code}",
   "{marina}, berth {code}": "{marina}، المرسى {code}",

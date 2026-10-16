@@ -9,7 +9,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ArrowLeft, ArrowRight, BookOpen, X } from "lucide-react-native";
 import { guideFor, shotFile, type GuideKey, type GuideSection } from "@marina/shared";
 import "@marina/shared/guides/bundled";
-import { READ_BUTTON, Txt } from "./ui";
+import { READ_BUTTON, Txt, useKeyboardShown } from "./ui";
 import { flipRtl, useTheme } from "../theme";
 import { useLang, useTr } from "../lib/i18n";
 import { useRole } from "../lib/role";
@@ -174,6 +174,7 @@ export function GuideButton() {
   const tr = useTr();
   const { t } = useTheme();
   const insets = useSafeAreaInsets();
+  const keyboard = useKeyboardShown();
   const [open, setOpen] = useState(false);
   const key = mobileGuideKey(segments, office);
   if (!key || !guideFor(key, lang)) return null;
@@ -181,21 +182,24 @@ export function GuideButton() {
   const bottom = insets.bottom + (segments[0] === "(tabs)" ? 64 + 10 : READ_BUTTON.gap);
   return (
     <>
-      <View pointerEvents="box-none" style={{ position: "absolute", start: 0, end: 0, bottom, alignItems: "center" }}>
-        <Pressable
-          onPress={() => setOpen(true)}
-          accessibilityRole="button"
-          accessibilityLabel={tr("Read the guide for this page")}
-          style={({ pressed }) => ({
-            flexDirection: "row", alignItems: "center", gap: 8, height: READ_BUTTON.height, paddingHorizontal: 20, borderRadius: 9999,
-            backgroundColor: pressed ? t.primaryPressed : t.primary,
-            shadowColor: "#000", shadowOpacity: 0.18, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 6,
-          })}
-        >
-          <BookOpen size={16} color={t.onPrimary} strokeWidth={1.5} />
-          <Txt weight="semibold" color={t.onPrimary}>{tr("Read")}</Txt>
-        </Pressable>
-      </View>
+      {/* Hidden while typing: the keyboard covers it, and screens drop the room they left for it. */}
+      {!keyboard && (
+        <View pointerEvents="box-none" style={{ position: "absolute", start: 0, end: 0, bottom, alignItems: "center" }}>
+          <Pressable
+            onPress={() => setOpen(true)}
+            accessibilityRole="button"
+            accessibilityLabel={tr("Read the guide for this page")}
+            style={({ pressed }) => ({
+              flexDirection: "row", alignItems: "center", gap: 8, height: READ_BUTTON.height, paddingHorizontal: 20, borderRadius: 9999,
+              backgroundColor: pressed ? t.primaryPressed : t.primary,
+              shadowColor: "#000", shadowOpacity: 0.18, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 6,
+            })}
+          >
+            <BookOpen size={16} color={t.onPrimary} strokeWidth={1.5} />
+            <Txt weight="semibold" color={t.onPrimary}>{tr("Read")}</Txt>
+          </Pressable>
+        </View>
+      )}
       {open && <GuideDialog guideKey={key} onClose={() => setOpen(false)} />}
     </>
   );

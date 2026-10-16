@@ -1,8 +1,8 @@
 // Brand components for React Native (guide sections 04–08): type scale, pill buttons,
 // bordered cards, status badges, bottom sheets, inputs, the logomark and toasts.
-import { useState, type ComponentType, type ReactNode } from "react";
+import { useEffect, useState, type ComponentType, type ReactNode } from "react";
 import {
-  ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View,
+  ActivityIndicator, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View,
   type StyleProp, type TextInputProps, type TextStyle, type ViewStyle,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -163,9 +163,24 @@ export function IconButton({ icon: IconCmp, label, onPress, plain, badge = 0 }: 
 
 /** The floating Read button on stack screens: its gap from the safe-area bottom, and its height. */
 export const READ_BUTTON = { gap: 16, height: 44 };
-/** Bottom room a stack screen leaves so its last control sits above the Read button, with a 16 gap. */
-export function useReadButtonRoom() {
-  return useSafeAreaInsets().bottom + READ_BUTTON.gap + READ_BUTTON.height + 16;
+/** Whether the on-screen keyboard is up (never on web, which has no keyboard events). */
+export function useKeyboardShown() {
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    const ios = Platform.OS === "ios";
+    const show = Keyboard.addListener(ios ? "keyboardWillShow" : "keyboardDidShow", () => setShown(true));
+    const hide = Keyboard.addListener(ios ? "keyboardWillHide" : "keyboardDidHide", () => setShown(false));
+    return () => { show.remove(); hide.remove(); };
+  }, []);
+  return shown;
+}
+/**
+ * Bottom room a stack screen leaves so its last control sits above the Read button, with a 16 gap.
+ * While the keyboard is up the Read button hides, so only `min` is left.
+ */
+export function useReadButtonRoom(min = 16) {
+  const bottom = useSafeAreaInsets().bottom;
+  return useKeyboardShown() ? min : bottom + READ_BUTTON.gap + READ_BUTTON.height + 16;
 }
 
 /** Scrollable screen body with brand side padding. */

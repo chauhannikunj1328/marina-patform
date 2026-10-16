@@ -2180,6 +2180,7 @@ export const es: Record<string, Entry> = {
   "{marina} checks the berth is right for your boat and confirms, usually within one business day.": "{marina} comprueba que el amarre es adecuado para tu embarcación y confirma, normalmente en un día hábil.",
   "{marina} closed to new bookings": "{marina} cerrada a nuevas reservas",
   "{marina} hasn't confirmed this yet. The berth is held for you.": "{marina} aún no la ha confirmado. El amarre está reservado para ti.",
+  "{marina} office": "Oficina de {marina}",
   "{marina} reopened to new bookings": "{marina} reabierta a nuevas reservas",
   "{marina} · berth {berth} · {code}": "{marina} · amarre {berth} · {code}",
   "{marina}, berth {code}": "{marina}, amarre {code}",
