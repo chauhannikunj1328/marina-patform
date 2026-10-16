@@ -10,7 +10,7 @@ import Svg, { Path } from "react-native-svg";
 import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, CircleAlert, LogIn, LogOut, Minus, Plus, CircleCheck, Eye, EyeOff, Search, Send, TriangleAlert, Undo2, WifiOff, X, type LucideProps } from "lucide-react-native";
 
 import { router } from "expo-router";
-import { weekday, fmtShort, fromISO, LOGOMARK_PATHS, radius, type as typeScale } from "@marina/shared";
+import { weekday, fmtShort, fromISO, LOGOMARK_PATHS, palette, radius, type as typeScale } from "@marina/shared";
 import { alignEnd, flipRtl, fonts, useTheme } from "../theme";
 import { useStore } from "../store";
 import { useTr } from "../lib/i18n";
@@ -497,7 +497,7 @@ export function Toasts({ top }: { top?: number }) {
     <View pointerEvents="box-none" style={[{ position: "absolute", start: 12, end: 12, gap: 8 }, top !== undefined ? { top } : { bottom: 136 }]} accessibilityLiveRegion="polite">
       {toasts.map((x) => {
         const IconCmp = x.kind === "warning" ? TriangleAlert : x.kind === "error" ? CircleAlert : CircleCheck;
-        const color = x.kind === "warning" ? "#E0A11B" : x.kind === "error" ? t.error.base : t.green;
+        const color = x.kind === "warning" ? palette.warning[500] : x.kind === "error" ? t.error.base : t.green;
         return (
           <View key={x.id} style={{ flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: t.raised, borderWidth: 1, borderColor: t.border, borderRadius: radius.lg, paddingHorizontal: 16, paddingVertical: 12, shadowColor: "#17191E", shadowOpacity: 0.08, shadowRadius: 24, shadowOffset: { width: 0, height: 8 }, elevation: 4 }}>
             <IconCmp size={20} color={color} />

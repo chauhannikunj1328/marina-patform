@@ -286,7 +286,7 @@ How it's put together:
 
 Every app runs in **English** (default), **Spanish** and **Arabic**. Switch from the language button in the web app's and website's top bar (the website also has the languages in its footer and its own address per language), **Me → Language** in the staff app, or **Account → Language** in the customer app; the choice is remembered.
 
-- **Arabic reads right to left:** the layout is mirrored (sidebar and tab order on the right, arrows and chevrons flipped, chart axes reversed) and text uses **IBM Plex Sans Arabic**. Numbers stay in Western digits (0–9), and codes, emails, phone numbers and amounts keep reading left to right.
+- **Arabic reads right to left:** the layout is mirrored (sidebar and tab order on the right, arrows and chevrons flipped, chart axes reversed) and text uses **Noto Sans Arabic**. Numbers stay in Western digits (0–9), and codes, emails, phone numbers and amounts keep reading left to right.
 - Dates, times, number formats and plurals follow the language (Arabic has its own forms for 1, 2, 3–10 and 11+). Each amount is in its marina's currency (see "Locations and currencies").
 - Text is written in English in the code (`t("Check in")` on the web, `tr("Check in")` on mobile, where `t` is the theme). Translations live in `packages/shared/src/i18n/es.ts` and `ar.ts`, keyed by the English text; anything missing falls back to English. The web app downloads a language's translations only when someone picks it, so English visitors don't load them.
 - The activity log and notifications are stored in English and shown in the reader's language.
@@ -303,14 +303,13 @@ Every figure is calculated from one data set (`packages/shared/src/seed.ts`) by 
 
 ## Brand
 
-The UI follows the **Marina Brand to Product Handoff Guide v1**. Web tokens, themes and shared styles live in `packages/shared/src/brand.css`, used by both the web app and the website (light and dark); the mobile app uses the same values from `packages/shared/src/brand.ts`.
+All four apps follow the Figma design system **"MMS | Design System File"**. Web tokens, themes and shared styles live in `packages/shared/src/brand.css`, used by both the admin web app and the website (light and dark); the staff and customer apps use the same values from `packages/shared/src/brand.ts`. The scales are Figma's "Colors" variables by the same names (`--primary-600` is Primary/600) and every role maps to a "Colors Token" variable, named in the comments.
 
-- **Color:** Slate `#2F3740` for primary buttons and the active nav bar, Teal `#497079` for rings and focus, Sunlight `#F7E8A6` for highlight pills and update cards, Green `#0E9A50` for links, progress and "new" (Green 700 `#0B6B37` for small text). Warm sidebar `#F1F0EC`.
-- **Admin web app palette:** the web app alone uses the "Colors" variables from the Figma file "MMS | Admin Side", set at the top of `apps/web/src/index.css` under the same names (`--primary-600` is Primary/600). Primary is Teal (`#497079` for buttons and the active nav bar), Secondary is the yellow of the "In repair" berths (`#FBBE3C`; highlight pills use `#FDDD99`), Grey is the guide's warm Neutral, and Success, Error, Warning and Info are Tailwind's green, red, amber and sky. The website and the mobile apps keep the guide's colors above.
-- **Type:** Poppins for UI, Inter with tabular figures for numbers (`.num` class).
+- **Color:** Primary is Teal (`#497079` for buttons, links, focus and the active nav bar; `#9FB4B9` in dark mode), Secondary is yellow (`#FBBE3C`; highlight pills use `#FDDD99`), Grey is a warm neutral (page `#F1F0EC` on the phones, borders `#E5E5E1`, text `#17191E`), and Success, Error, Warning and Info are Tailwind's green, red, amber and sky. The website's footer and dark bands use Primary 900 `#22373C`.
+- **Type:** Montserrat for everything, numbers too (tabular figures with the `.num` class), and Noto Sans Arabic in Arabic.
 - **Shape:** pill buttons and badges, 12 px inputs, 16 px cards, 20 px dialogs; borders instead of shadows.
-- **Status badges:** section 07 colors (ocean blue, amber, red, coral, slate), always with an icon.
-- **Charts:** section 10 palette, horizontal dashed gridlines, legend top right.
+- **Status badges:** Figma's status colors (sky, amber, red, the yellow accent for In repair, grey), always with an icon.
+- **Charts:** Figma's Chart/1–7 colors in order, horizontal dashed gridlines, legend top right.
 - **Formats:** dates "3 Oct 2026" (localized month names in Spanish and Arabic), relative times under 24 hours, invoices with 2 decimals.
 - **Logo:** source files in `brand/logo/`; the logomark paths are shared in `packages/shared/src/brand.ts`; wordmark "Marina".
 

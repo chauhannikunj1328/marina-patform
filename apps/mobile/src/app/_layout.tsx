@@ -5,9 +5,8 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { Poppins_400Regular, Poppins_500Medium, Poppins_600SemiBold, useFonts } from "@expo-google-fonts/poppins";
-import { Inter_500Medium, Inter_600SemiBold } from "@expo-google-fonts/inter";
-import { IBMPlexSansArabic_400Regular, IBMPlexSansArabic_500Medium, IBMPlexSansArabic_600SemiBold } from "@expo-google-fonts/ibm-plex-sans-arabic";
+import { Montserrat_400Regular, Montserrat_500Medium, Montserrat_600SemiBold, useFonts } from "@expo-google-fonts/montserrat";
+import { NotoSansArabic_400Regular, NotoSansArabic_500Medium, NotoSansArabic_600SemiBold } from "@expo-google-fonts/noto-sans-arabic";
 import { StoreProvider, useStore } from "@/store";
 import { ThemeProvider, useTheme } from "@/theme";
 import { Toasts } from "@/components/ui";
@@ -21,7 +20,7 @@ SplashScreen.setOptions({ duration: 300, fade: true });
 function Shell() {
   const { t } = useTheme();
   const { ready } = useStore();
-  const [fontsLoaded, fontError] = useFonts({ Poppins_400Regular, Poppins_500Medium, Poppins_600SemiBold, Inter_500Medium, Inter_600SemiBold, IBMPlexSansArabic_400Regular, IBMPlexSansArabic_500Medium, IBMPlexSansArabic_600SemiBold });
+  const [fontsLoaded, fontError] = useFonts({ Montserrat_400Regular, Montserrat_500Medium, Montserrat_600SemiBold, NotoSansArabic_400Regular, NotoSansArabic_500Medium, NotoSansArabic_600SemiBold });
   const loaded = (fontsLoaded || !!fontError) && ready;
 
   useEffect(() => {

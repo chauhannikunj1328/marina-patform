@@ -129,9 +129,9 @@ export function MarinaPage() {
               </table>
             </div>
             <ul className="mt-4 flex flex-wrap gap-4 text-[13px] text-ink-2">
-              {f.power && <li className="inline-flex items-center gap-1.5"><Plug className="size-4 text-secondary" aria-hidden /> {t("Shore power")}</li>}
-              {f.water && <li className="inline-flex items-center gap-1.5"><Droplets className="size-4 text-secondary" aria-hidden /> {t("Fresh water")}</li>}
-              <li className="inline-flex items-center gap-1.5"><Ruler className="size-4 text-secondary" aria-hidden /> {t("Boats up to {ft} ft", { ft: f.maxLength })}</li>
+              {f.power && <li className="inline-flex items-center gap-1.5"><Plug className="size-4 text-primary" aria-hidden /> {t("Shore power")}</li>}
+              {f.water && <li className="inline-flex items-center gap-1.5"><Droplets className="size-4 text-primary" aria-hidden /> {t("Fresh water")}</li>}
+              <li className="inline-flex items-center gap-1.5"><Ruler className="size-4 text-primary" aria-hidden /> {t("Boats up to {ft} ft", { ft: f.maxLength })}</li>
             </ul>
           </section>
 

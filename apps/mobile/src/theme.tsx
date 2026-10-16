@@ -6,14 +6,14 @@ import { load, save } from "./lib/storage";
 
 export type ThemeMode = "system" | "light" | "dark";
 
-const LATIN = { regular: "Poppins_400Regular", medium: "Poppins_500Medium", semibold: "Poppins_600SemiBold" };
-const ARABIC = { regular: "IBMPlexSansArabic_400Regular", medium: "IBMPlexSansArabic_500Medium", semibold: "IBMPlexSansArabic_600SemiBold" };
+const LATIN = { regular: "Montserrat_400Regular", medium: "Montserrat_500Medium", semibold: "Montserrat_600SemiBold" };
+const ARABIC = { regular: "NotoSansArabic_400Regular", medium: "NotoSansArabic_500Medium", semibold: "NotoSansArabic_600SemiBold" };
 
-/** Font families. Text fonts switch to IBM Plex Sans Arabic in Arabic; numbers stay in Inter. */
+/** Font families, as in Figma: Montserrat, switching to Noto Sans Arabic in Arabic. Numbers use Montserrat too. */
 export const fonts = {
   ...LATIN,
-  num: "Inter_500Medium",
-  numBold: "Inter_600SemiBold",
+  num: "Montserrat_500Medium",
+  numBold: "Montserrat_600SemiBold",
 };
 
 /** Called by the language provider before the app re-renders in the new language. */

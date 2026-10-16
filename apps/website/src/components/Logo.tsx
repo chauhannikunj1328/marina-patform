@@ -1,4 +1,4 @@
-// Guide section 02: logomark in Ink, wordmark in Poppins Medium beside it.
+// Guide section 02: logomark in Ink, wordmark in Montserrat Medium beside it.
 // Brand logomark (public/brand/logomark-*.svg).
 import { cx } from "@marina/shared";
 

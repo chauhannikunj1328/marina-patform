@@ -55,9 +55,9 @@ export default function MarinaScreen() {
             ))}
           </Card>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 14 }}>
-            {f.power && <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}><Plug size={16} color={t.secondary} /><Txt v="bodySm" color={t.text2}>{tr("Shore power")}</Txt></View>}
-            {f.water && <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}><Droplets size={16} color={t.secondary} /><Txt v="bodySm" color={t.text2}>{tr("Fresh water")}</Txt></View>}
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}><Ruler size={16} color={t.secondary} /><Txt v="bodySm" color={t.text2}>{tr("Boats up to {ft} ft", { ft: f.maxLength })}</Txt></View>
+            {f.power && <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}><Plug size={16} color={t.primary} /><Txt v="bodySm" color={t.text2}>{tr("Shore power")}</Txt></View>}
+            {f.water && <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}><Droplets size={16} color={t.primary} /><Txt v="bodySm" color={t.text2}>{tr("Fresh water")}</Txt></View>}
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}><Ruler size={16} color={t.primary} /><Txt v="bodySm" color={t.text2}>{tr("Boats up to {ft} ft", { ft: f.maxLength })}</Txt></View>
           </View>
         </Section>
 

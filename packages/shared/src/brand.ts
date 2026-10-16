@@ -1,13 +1,22 @@
-// Marina Brand to Product Handoff Guide v1 as plain values, for apps that can't read the
-// web app's CSS variables (React Native). Keep in sync with apps/web/src/index.css.
+// The Figma design system ("MMS | Design System File") as plain values, for apps that can't read
+// CSS variables (React Native). `palette` is the "Colors" collection and the light and dark themes
+// map each app role to a "Colors Token" variable (named in the comments). Keep in sync with
+// packages/shared/src/brand.css and with Figma.
+
+const scale = (...hex: string[]) => Object.fromEntries([50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950].map((k, i) => [k, hex[i]])) as Record<50 | 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900 | 950, string>;
 
 export const palette = {
-  slate: { 50: "#F5F5F5", 100: "#DCDDDF", 600: "#60666D", 700: "#484F57", 800: "#2F3740", 900: "#1F252B" },
-  teal: { 100: "#D9E1E3", 200: "#BCCBCE", 300: "#9FB4B9", 500: "#66878E", 600: "#497079", 800: "#2F4A51" },
-  sun: { 100: "#FEECC7", 200: "#F7E8A6", 400: "#FBBE3C" },
-  green: { base: "#0E9A50", text: "#0B6B37", dark: "#34C27A" },
-  ink: "#17191E",
+  grey: scale("#FAFAF8", "#F1F0EC", "#E5E5E1", "#D9D9D6", "#A3A39F", "#656565", "#484848", "#36363A", "#26272B", "#17191E", "#0E0F12"),
+  primary: scale("#F6F8F8", "#D9E1E3", "#BCCBCE", "#9FB4B9", "#839DA3", "#66878E", "#497079", "#3C5D65", "#2F4A51", "#22373C", "#152428"),
+  secondary: scale("#FFFCF5", "#FEECC7", "#FDDD99", "#FCCD6A", "#FBBE3C", "#DFA833", "#C3932A", "#A77D22", "#8C6719", "#705110", "#543C07"),
+  sidebar: scale("#F8F8F5", "#F1F0EC", "#E8E7E2", "#D9D8D3", "#B3B3AF", "#88898A", "#636568", "#414448", "#262A2F", "#1F2226", "#16181B"),
+  success: scale("#F0FDF4", "#DCFCE7", "#BBF7D0", "#86EFAC", "#4ADE80", "#22C55E", "#16A34A", "#15803D", "#166534", "#14532D", "#052E16"),
+  error: scale("#FEF2F2", "#FEE2E2", "#FECACA", "#FCA5A5", "#F87171", "#EF4444", "#DC2626", "#B91C1C", "#991B1B", "#7F1D1D", "#450A0A"),
+  warning: scale("#FFFBEB", "#FEF3C7", "#FDE68A", "#FCD34D", "#FBBF24", "#F59E0B", "#D97706", "#B45309", "#92400E", "#78350F", "#451A03"),
+  info: scale("#F0F9FF", "#E0F2FE", "#BAE6FD", "#7DD3FC", "#38BDF8", "#0EA5E9", "#0284C7", "#0369A1", "#075985", "#0C4A6E", "#082F49"),
+  chart: ["#0EA5E9", "#F97316", "#8B5CF6", "#3B82F6", "#06B6D4", "#14B8A6", "#64748B"],
   white: "#FFFFFF",
+  black: "#000000",
 } as const;
 
 export interface Theme {
@@ -51,86 +60,88 @@ export interface Theme {
   scrim: string;
 }
 
+const { grey, primary, secondary, sidebar, success, error, warning, info } = palette;
+
 export const lightTheme: Theme = {
   dark: false,
-  bg: "#FFFFFF",
-  surface: "#FFFFFF",
-  surface2: "#FAFAF8",
-  surface3: "#F1F0EC",
-  sidebar: "#F1F0EC",
-  raised: "#FFFFFF",
-  border: "#E5E5E1",
-  borderStrong: "#D9D9D6",
-  text: "#17191E",
-  text2: "#484848",
-  text3: "#656565",
-  primary: "#2F3740",
-  primaryPressed: "#1F252B",
-  onPrimary: "#FFFFFF",
-  secondary: "#497079",
-  accent: "#F7E8A6",
-  onAccent: "#17191E",
-  accentSoft: "#FEECC7",
-  green: "#0E9A50",
-  greenText: "#0B6B37",
-  focus: "#497079",
-  tealStrong: "#497079",
-  onTealStrong: "#FFFFFF",
-  tealSoft: "#BCCBCE",
-  onTealSoft: "#17191E",
-  success: { bg: "#E7F5EC", fg: "#0B6B37" },
-  warning: { bg: "#FDF4DC", fg: "#8A5A00" },
-  error: { bg: "#FDECEC", fg: "#A12424", base: "#D93B3B" },
-  info: { bg: "#E8F0F1", fg: "#2F4D53" },
+  bg: grey[100], // Background/Muted: the mobile screens' page colour
+  surface: palette.white, // Background/Surface
+  surface2: grey[50], // Background/Subtle
+  surface3: grey[200], // Background/Strong: avatar circles, segmented tracks
+  sidebar: sidebar[200], // Background/Sidebar Hover: pressed rows
+  raised: palette.white, // Background/Surface (sheets)
+  border: grey[200], // Border/Default
+  borderStrong: grey[300], // Border/Strong
+  text: grey[900], // Text/Primary
+  text2: grey[600], // Text/Secondary
+  text3: grey[500], // Text/Tertiary
+  primary: primary[600], // Background/Brand
+  primaryPressed: primary[800], // Background/Brand Pressed
+  onPrimary: palette.white, // Text/On Brand
+  secondary: secondary[400], // Background/Accent
+  accent: secondary[200], // Background/Accent Muted
+  onAccent: grey[900], // Text/On Accent
+  accentSoft: secondary[100], // Background/Accent Soft
+  green: success[600], // Background/Success
+  greenText: success[700], // Text/Success Strong
+  focus: primary[600], // Border/Brand
+  tealStrong: primary[600], // Background/Brand
+  onTealStrong: palette.white,
+  tealSoft: primary[200], // Background/Brand Muted
+  onTealSoft: grey[900],
+  success: { bg: success[100], fg: success[700] }, // Background/Success Soft, Text/Success Strong
+  warning: { bg: warning[100], fg: warning[700] },
+  error: { bg: error[100], fg: error[700], base: error[600] }, // Background/Error Soft, Text/Error Strong, Background/Error
+  info: { bg: info[100], fg: info[700] },
   status: {
-    active: "#0369A1",
-    pending: { bg: "#FEF3C7", fg: "#B45309" },
-    cancelled: "#DC2626",
-    maintenance: { bg: "#FFEDD5", fg: "#C2410C" },
-    neutral: { bg: "#F1F5F9", fg: "#475569" },
+    active: info[700],
+    pending: { bg: warning[100], fg: warning[700] },
+    cancelled: error[600],
+    maintenance: { bg: secondary[100], fg: secondary[800] }, // In repair is the Accent in Figma
+    neutral: { bg: grey[100], fg: grey[600] },
   },
-  scrim: "rgba(23,25,30,0.4)",
+  scrim: "rgba(0,0,0,0.4)", // Background/Black 40
 };
 
 export const darkTheme: Theme = {
   dark: true,
-  bg: "#121417",
-  surface: "#1A1D21",
-  surface2: "#1E2125",
-  surface3: "#24282D",
-  sidebar: "#16181B",
-  raised: "#22262B",
-  border: "#2A2E33",
-  borderStrong: "#3A3F45",
-  text: "#F2F2EF",
-  text2: "#B9BCBF",
-  text3: "#8B9096",
-  primary: "#FAFAF8",
-  primaryPressed: "#D9D9D6",
-  onPrimary: "#17191E",
-  secondary: "#9FB4B9",
-  accent: "#F7E8A6",
-  onAccent: "#17191E",
-  accentSoft: "#3A321C",
-  green: "#34C27A",
-  greenText: "#34C27A",
-  focus: "#9FB4B9",
-  tealStrong: "#66878E",
-  onTealStrong: "#FFFFFF",
-  tealSoft: "#2F4A51",
-  onTealSoft: "#D9E1E3",
-  success: { bg: "#12301F", fg: "#6FD8A2" },
-  warning: { bg: "#33280E", fg: "#F3D58A" },
-  error: { bg: "#3A1A1A", fg: "#F4A3A3", base: "#F06060" },
-  info: { bg: "#1B2A2D", fg: "#C3D5D8" },
+  bg: grey[800], // Background/Muted
+  surface: grey[900], // Background/Surface
+  surface2: grey[950], // Background/Subtle
+  surface3: grey[700], // Background/Strong
+  sidebar: grey[700], // pressed rows: one step lighter than the page
+  raised: grey[900],
+  border: grey[700], // Border/Default
+  borderStrong: grey[600], // Border/Strong
+  text: grey[50], // Text/Primary
+  text2: grey[300], // Text/Secondary
+  text3: grey[400], // Text/Tertiary
+  primary: primary[300], // Background/Brand
+  primaryPressed: primary[400], // Background/Brand Pressed
+  onPrimary: grey[900], // Text/On Brand
+  secondary: secondary[400],
+  accent: secondary[900], // Background/Accent Muted
+  onAccent: grey[900],
+  accentSoft: secondary[950], // Background/Accent Soft
+  green: success[500],
+  greenText: success[300],
+  focus: primary[300],
+  tealStrong: primary[500],
+  onTealStrong: palette.white,
+  tealSoft: primary[800],
+  onTealSoft: primary[100],
+  success: { bg: success[950], fg: success[300] },
+  warning: { bg: warning[950], fg: warning[300] },
+  error: { bg: error[950], fg: error[300], base: error[400] },
+  info: { bg: info[950], fg: info[300] },
   status: {
-    active: "#0369A1",
-    pending: { bg: "#3A2C0C", fg: "#FCD34D" },
-    cancelled: "#DC2626",
-    maintenance: { bg: "#3B1F10", fg: "#FDBA74" },
-    neutral: { bg: "#262C34", fg: "#CBD5E1" },
+    active: info[700],
+    pending: { bg: warning[950], fg: warning[300] },
+    cancelled: error[600],
+    maintenance: { bg: secondary[950], fg: secondary[300] },
+    neutral: { bg: grey[700], fg: grey[300] },
   },
-  scrim: "rgba(0,0,0,0.6)",
+  scrim: "rgba(0,0,0,0.4)",
 };
 
 /** 06 Corner radius and 05 spacing tokens (px / dp). */

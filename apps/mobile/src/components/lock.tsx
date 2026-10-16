@@ -31,14 +31,14 @@ export function LockScreen() {
   }, [locked]);
   if (!locked) return null;
   return (
-    <View style={[StyleSheet.absoluteFill, { backgroundColor: palette.slate[800], alignItems: "center", justifyContent: "center", padding: 32, gap: 16, zIndex: 100 }]} accessibilityViewIsModal>
+    <View style={[StyleSheet.absoluteFill, { backgroundColor: palette.primary[900], alignItems: "center", justifyContent: "center", padding: 32, gap: 16, zIndex: 100 }]} accessibilityViewIsModal>
       <Logomark size={56} color="#FFFFFF" />
       <Txt v="h2" color="#FFFFFF">{tr("Marina is locked")}</Txt>
-      <Txt v="bodySm" color={palette.teal[200]} style={{ textAlign: "center" }}>{tr("{name}. Use {method} to open the app.", { name: user?.name, method: label })}</Txt>
+      <Txt v="bodySm" color={palette.primary[200]} style={{ textAlign: "center" }}>{tr("{name}. Use {method} to open the app.", { name: user?.name, method: label })}</Txt>
       {failed && <Txt v="bodySm" color="#FFFFFF">{tr("That didn't work. Try again.")}</Txt>}
       <Button variant="secondary" size="lg" icon={Fingerprint} label={tr("Unlock with {label}", { label: label })} onPress={tryUnlock} style={{ alignSelf: "stretch" }} />
       <Pressable accessibilityRole="button" onPress={() => { signOut(); unlock(); router.replace("/login"); }} hitSlop={8}>
-        <Txt v="bodySm" weight="semibold" color={palette.teal[200]}>{tr("Sign out instead")}</Txt>
+        <Txt v="bodySm" weight="semibold" color={palette.primary[200]}>{tr("Sign out instead")}</Txt>
       </Pressable>
     </View>
   );

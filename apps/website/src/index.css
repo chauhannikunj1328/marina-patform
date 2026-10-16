@@ -4,18 +4,18 @@
 /* Public website only. Brand tokens, themes, right-to-left and map styles live in brand.css. */
 
 /*
-  Dark bands (announcement bar, footer, dark feature cards): Primary 800 Slate in light mode, the
-  dark canvas in dark mode, with white text. Only brand colours; nothing new.
+  Dark bands (announcement bar, footer, dark feature cards): Figma's Background/Brand Deep
+  (Primary 900, Primary 950 in dark mode) with white text.
 */
 :root {
-  --footer-bg: #2f3740;
+  --footer-bg: var(--brand-deep);
   --footer-fg: #ffffff;
   --footer-fg-2: rgb(255 255 255 / 0.72);
   --footer-line: rgb(255 255 255 / 0.14);
   --squares-dark: rgb(255 255 255 / 0.06);
 }
 [data-theme="dark"] {
-  --footer-bg: #0e0f12;
+  --footer-bg: var(--brand-deep);
   --footer-line: rgb(255 255 255 / 0.1);
   --squares-dark: rgb(255 255 255 / 0.04);
 }

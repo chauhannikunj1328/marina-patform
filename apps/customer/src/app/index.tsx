@@ -23,12 +23,12 @@ export default function Splash() {
   }, [fade, rise]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: palette.slate[800], alignItems: "center", justifyContent: "center" }} accessibilityLabel={tr("Marina Berths")}>
+    <View style={{ flex: 1, backgroundColor: palette.primary[900], alignItems: "center", justifyContent: "center" }} accessibilityLabel={tr("Marina Berths")}>
       <Animated.View style={{ alignItems: "center", opacity: fade, transform: [{ translateY: rise }] }}>
         <Logomark size={72} color="#FFFFFF" />
         <Text style={{ fontFamily: fonts.medium, fontSize: 30, color: "#FFFFFF", marginTop: 20, letterSpacing: -0.3 }}>{tr("Marina Berths")}</Text>
       </Animated.View>
-      <Text style={{ position: "absolute", bottom: 48, fontFamily: fonts.regular, fontSize: 12, color: palette.teal[300] }}>{tr("Your berth, booked in minutes.")}</Text>
+      <Text style={{ position: "absolute", bottom: 48, fontFamily: fonts.regular, fontSize: 12, color: palette.primary[200] }}>{tr("Your berth, booked in minutes.")}</Text>
     </View>
   );
 }
