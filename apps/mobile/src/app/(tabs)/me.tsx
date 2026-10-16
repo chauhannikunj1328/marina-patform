@@ -68,7 +68,7 @@ export default function Me() {
         <Avatar name={user?.name ?? ""} size={56} dot />
         <View style={{ flex: 1 }}>
           <Txt v="h2" numberOfLines={1}>{user?.name}</Txt>
-          <Txt v="bodySm" color={t.text3} numberOfLines={1}>{isAdmin ? tr("Admin") : user?.role === "manager" ? tr("Marina manager") : me?.position ?? tr("Staff")} · {office ? user?.email : me?.phone ?? user?.email}</Txt>
+          <Txt v="bodySm" color={t.text3} numberOfLines={1}>{isAdmin ? tr("Admin") : user?.role === "manager" ? tr("Marina manager") : me?.position ?? tr("role|Staff")} · {office ? user?.email : me?.phone ?? user?.email}</Txt>
         </View>
       </View>
 
@@ -116,7 +116,7 @@ export default function Me() {
       )}
 
       {me && !office && (
-        <Section title={tr("Time off and swaps")} action={<Button size="sm" icon={Plus} label={tr("Request")} onPress={() => setSheet("request")} />}>
+        <Section title={tr("Time off and swaps")} action={<Button size="sm" icon={Plus} label={tr("action|Request")} onPress={() => setSheet("request")} />}>
           {mine.length === 0 && askedToCover.length === 0 && <Txt v="bodySm" color={t.text3}>{tr("Ask for time off or swap a shift with a colleague. Your manager approves it.")}</Txt>}
           {askedToCover.map((r) => (
             <View key={r.id} style={{ borderWidth: 1, borderColor: t.border, borderRadius: 16, padding: 12, backgroundColor: t.accentSoft }}>

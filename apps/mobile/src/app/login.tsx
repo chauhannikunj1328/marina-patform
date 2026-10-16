@@ -84,7 +84,7 @@ export default function Login() {
 
           {/* Prototype only: lets reviewers try each role. Remove before publishing to the stores. */}
           <View style={{ flexDirection: "row", gap: 8, marginTop: 32 }}>
-            {[[tr("Admin"), "admin@marina.com", "admin123"], [tr("Manager"), "manager@marina.com", "manager123"], [tr("Staff"), "staff@marina.com", "staff123"]].map(([role, mail, pw]) => (
+            {[[tr("Admin"), "admin@marina.com", "admin123"], [tr("Manager"), "manager@marina.com", "manager123"], [tr("role|Staff"), "staff@marina.com", "staff123"]].map(([role, mail, pw]) => (
               <Pressable
                 key={role}
                 accessibilityRole="button"
