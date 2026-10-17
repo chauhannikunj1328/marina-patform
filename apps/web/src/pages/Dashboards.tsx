@@ -1,5 +1,5 @@
 
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Anchor, ArrowUpRight, CalendarDays, CalendarPlus, CircleAlert, DollarSign, Download, FileText, Gauge, LogIn, LogOut, Plus, Wrench } from "lucide-react";
 import { useStore } from "@/data/store";
 import { tn, t, tx, fmtDateTime, lastMonths, zoneOf } from "@marina/shared";
@@ -288,20 +288,26 @@ export function GlobalOverview() {
   );
 }
 
+/** County dashboard. The City filter narrows it to one city (?city=<id>): the table then lists that city's marinas. */
 export function CountyDashboard() {
   const { db, ix, scope } = useStore();
   const { id } = useParams();
+  const [params] = useSearchParams();
   const navigate = useNavigate();
   const counties = db.counties.filter((c) => ix.marinaIdsInCounty(c.id).some((m) => scope.includes(m)));
   const county = counties.find((c) => c.id === id) ?? counties[0];
   if (!county) return <PageHeader title={t("County Dashboard")} description={t("You don't have access to any county yet.")} />;
-  const ids = ix.marinaIdsInCounty(county.id).filter((m) => scope.includes(m));
   const cities = db.cities.filter((c) => c.countyId === county.id).map((c) => ({ c, ids: ix.marinaIdsInCity(c.id).filter((m) => scope.includes(m)) })).filter((x) => x.ids.length);
+  const city = cities.find((x) => x.c.id === params.get("city"));
+  const marinas = city ? db.marinas.filter((m) => m.cityId === city.c.id && scope.includes(m.id)) : [];
+  const ids = city ? city.ids : ix.marinaIdsInCounty(county.id).filter((m) => scope.includes(m));
+  const groups = city ? marinas.map((m) => ({ name: m.name, ids: [m.id] })) : cities.map((x) => ({ name: x.c.name, ids: x.ids }));
+  const showCity = (cityId: string) => navigate(cityId ? `/county/${county.id}?city=${cityId}` : `/county/${county.id}`);
   return (
     <>
       <PageHeader
-        title={county.name}
-        description={`${t(county.state)} · ${tn(cities.length, "{n} city", "{n} cities")}`}
+        title={city ? city.c.name : county.name}
+        description={city ? `${county.name}, ${t(county.state)}` : `${t(county.state)} · ${tn(cities.length, "{n} city", "{n} cities")}`}
         actions={
           <>
             <Select look="plain" aria-label={t("Choose county")} value={county.id} onChange={(e) => navigate(`/county/${e.target.value}`)}>
@@ -309,16 +315,26 @@ export function CountyDashboard() {
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </Select>
-            <Button icon={Download} onClick={() => exportSummary(ix, cities.map((x) => ({ name: x.c.name, ids: x.ids })), `${county.name}.csv`)}>{t("Export CSV")}</Button>
+            <Select look="plain" aria-label={t("Choose city")} value={city?.c.id ?? ""} onChange={(e) => showCity(e.target.value)}>
+              <option value="">{t("All cities")}</option>
+              {cities.map((x) => (
+                <option key={x.c.id} value={x.c.id}>{x.c.name}</option>
+              ))}
+            </Select>
+            <Button icon={Download} onClick={() => exportSummary(ix, groups, `${city ? city.c.name : county.name}.csv`)}>{t("Export CSV")}</Button>
           </>
         }
       />
       <div className="space-y-4">
-        <KpiRow ids={ids} scopeLabel={tn(cities.length, "in {n} city", "in {n} cities")} />
-        <Charts groups={cities.map((x) => ({ name: x.c.name, ids: x.ids }))} />
+        <KpiRow ids={ids} scopeLabel={city ? t("in {name}", { name: city.c.name }) : tn(cities.length, "in {n} city", "in {n} cities")} />
+        <Charts groups={groups} />
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
           <div className="xl:col-span-2">
-            <RankTable title={t("Cities in {name}", { name: county.name })} nameHead="City" rows={cities.map((x) => ({ id: x.c.id, name: x.c.name, sub: tn(x.ids.length, "{n} marina", "{n} marinas"), ids: x.ids, to: `/city/${x.c.id}` }))} />
+            {city ? (
+              <RankTable title={t("Marinas in {name}", { name: city.c.name })} nameHead="Marina" rows={marinas.map((m) => ({ id: m.id, name: m.name, sub: m.address, ids: [m.id], to: `/marinas/${m.id}` }))} />
+            ) : (
+              <RankTable title={t("Cities in {name}", { name: county.name })} nameHead="City" rows={cities.map((x) => ({ id: x.c.id, name: x.c.name, sub: tn(x.ids.length, "{n} marina", "{n} marinas"), ids: x.ids, to: `/county/${county.id}?city=${x.c.id}` }))} />
+            )}
           </div>
           <div className="space-y-4">
             <BerthRing ids={ids} />
@@ -330,45 +346,10 @@ export function CountyDashboard() {
   );
 }
 
-export function CityDashboard() {
-  const { db, ix, scope } = useStore();
+/** Old /city/:id links open the County dashboard filtered to that city. */
+export function CityRedirect() {
+  const { db } = useStore();
   const { id } = useParams();
-  const navigate = useNavigate();
-  const cities = db.cities.filter((c) => ix.marinaIdsInCity(c.id).some((m) => scope.includes(m)));
-  const city = cities.find((c) => c.id === id) ?? cities[0];
-  if (!city) return <PageHeader title={t("City Dashboard")} description={t("You don't have access to any city yet.")} />;
-  const marinas = db.marinas.filter((m) => m.cityId === city.id && scope.includes(m.id));
-  const ids = marinas.map((m) => m.id);
-  const county = ix.county(city.countyId);
-  return (
-    <>
-      <PageHeader
-        title={city.name}
-        description={`${county?.name}, ${county?.state}`}
-        actions={
-          <>
-            <Select look="plain" aria-label={t("Choose city")} value={city.id} onChange={(e) => navigate(`/city/${e.target.value}`)}>
-              {cities.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </Select>
-            <Button icon={Download} onClick={() => exportSummary(ix, marinas.map((m) => ({ name: m.name, ids: [m.id] })), `${city.name}.csv`)}>{t("Export CSV")}</Button>
-          </>
-        }
-      />
-      <div className="space-y-4">
-        <KpiRow ids={ids} scopeLabel={t("in {name}", { name: city.name })} />
-        <Charts groups={marinas.map((m) => ({ name: m.name, ids: [m.id] }))} />
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-          <div className="xl:col-span-2">
-            <RankTable title={t("Marinas in {name}", { name: city.name })} nameHead="Marina" rows={marinas.map((m) => ({ id: m.id, name: m.name, sub: m.address, ids: [m.id], to: `/marinas/${m.id}` }))} />
-          </div>
-          <div className="space-y-4">
-            <BerthRing ids={ids} />
-            <TodayPanel ids={ids} />
-          </div>
-        </div>
-      </div>
-    </>
-  );
+  const city = db.cities.find((c) => c.id === id);
+  return <Navigate to={city ? `/county/${city.countyId}?city=${city.id}` : "/county"} replace />;
 }

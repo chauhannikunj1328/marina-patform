@@ -89,47 +89,34 @@ export const web: Record<string, Guide> = {
 
   "w.county": {
     title: "Panel del condado",
-    summary: "Las mismas cifras que el Resumen global, para un condado y sus ciudades y marinas.",
+    summary: "Las mismas cifras que el Resumen global, para un condado o para una de sus ciudades.",
     who: "Administradores, y gerentes con marinas en más de un lugar.",
     sections: [
       {
-        heading: "Elige un condado",
-        steps: ["Usa Elegir condado en la parte superior para cambiar de condado.", "Las cifras, gráficos y listas de abajo se actualizan solo para ese condado."],
-      },
-      {
-        heading: "Lo que ves",
-        points: [
-          "Amarres ocupados hoy, ingresos reservados este mes y tasa de ocupación del condado.",
-          "Las ciudades del condado con sus cifras. Selecciona una ciudad para abrir su panel.",
-          "Las marinas del condado ordenadas por ingresos de este mes. Selecciona una para abrir su página.",
-          "Gráficos de ingresos y ocupación de los últimos meses.",
+        heading: "Elige un condado y una ciudad",
+        steps: [
+          "Usa Elegir condado en la parte superior para cambiar de condado.",
+          "Usa Elegir ciudad para ver solo una ciudad. Todas las ciudades vuelve a mostrar el condado entero.",
+          "Las cifras, gráficos y listas de abajo se actualizan según lo que elijas.",
         ],
-      },
-      {
-        heading: "Conviene saber",
-        points: ["Si ves «Aún no tienes acceso a ningún condado», pide a un administrador que te asigne marinas.", "Los gerentes con una sola marina no ven esta página; su Resumen ya muestra esa marina."],
-      },
-    ],
-  },
-
-  "w.city": {
-    title: "Panel de la ciudad",
-    summary: "Las cifras de una ciudad: sus marinas, lo llenas que están y el dinero reservado este mes.",
-    who: "Administradores y gerentes con marinas en esa ciudad.",
-    sections: [
-      {
-        heading: "Elige una ciudad",
-        steps: ["Usa Elegir ciudad en la parte superior para cambiar de ciudad.", "Todo lo de abajo muestra solo esa ciudad."],
       },
       {
         heading: "Lo que ves",
         points: [
           "Amarres ocupados hoy, ingresos reservados este mes y tasa de ocupación.",
-          "Las marinas de la ciudad ordenadas por ingresos. Selecciona una marina para abrir su página.",
-          "Ingresos y ocupación de los últimos meses, y las llegadas, salidas y aprobaciones de hoy.",
+          "Todas las ciudades: las ciudades del condado ordenadas por ingresos de este mes. Selecciona una ciudad para ver solo esa ciudad.",
+          "Una ciudad: sus marinas ordenadas por ingresos de este mes. Selecciona una marina para abrir su página.",
+          "Gráficos de ingresos y ocupación de los últimos meses, y las llegadas, salidas y aprobaciones de hoy.",
         ],
       },
-      { heading: "Consejo", text: "Desde el mapa de Ubicaciones, selecciona el marcador de una marina y después Abrir panel de la ciudad para llegar directamente aquí." },
+      {
+        heading: "Conviene saber",
+        points: [
+          "Si ves «Aún no tienes acceso a ningún condado», pide a un administrador que te asigne marinas.",
+          "Los gerentes con una sola marina no ven esta página; su Resumen ya muestra esa marina.",
+          "Desde el mapa de Ubicaciones, selecciona el marcador de una marina y después Abrir panel de la ciudad para llegar directamente a esa ciudad aquí.",
+        ],
+      },
     ],
   },
 

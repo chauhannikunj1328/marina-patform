@@ -12,7 +12,7 @@ export function guideKeyFor(path: string): GuideKey | undefined {
   if (["/login", "/register", "/forgot-password"].includes(path)) return "w.login";
   const [, first, second] = path.split("/");
   const keys: Record<string, GuideKey> = {
-    county: "w.county", city: "w.city", berths: "w.berths", bookings: "w.bookings", contracts: "w.contracts", locations: "w.locations",
+    county: "w.county", city: "w.county", berths: "w.berths", bookings: "w.bookings", contracts: "w.contracts", locations: "w.locations",
     staff: "w.staff", maintenance: "w.maintenance", incidents: "w.incidents", users: "w.people", billing: "w.billing", reports: "w.reports",
     analytics: "w.analytics", access: "w.access", settings: "w.settings",
   };

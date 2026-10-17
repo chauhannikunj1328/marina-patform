@@ -105,7 +105,7 @@ function LocationMap() {
                 <li key={id}><Link to={`/marinas/${id}`} className="block px-5 py-2.5 text-[13px] hover:bg-row-hover">{ix.marina(id)?.name}</Link></li>
               ))}
             </ul>
-            {ids.length > 0 && <div className="p-5"><Link to={`/city/${city.id}`}><Button className="w-full">{t("Open city dashboard")}</Button></Link></div>}
+            {ids.length > 0 && <div className="p-5"><Link to={`/county/${city.countyId}?city=${city.id}`}><Button className="w-full">{t("Open city dashboard")}</Button></Link></div>}
           </>
         ) : (
           <p className="p-5 text-[13px] text-ink-3">{t("Select a city on the map.")}</p>
@@ -168,7 +168,7 @@ export function Locations() {
               const county = ix.county(c.countyId);
               return (
                 <tr key={c.id}>
-                  <td className="font-medium">{ids.length ? <Link to={`/city/${c.id}`} className="underline-offset-2 hover:underline">{c.name}</Link> : c.name}</td>
+                  <td className="font-medium">{ids.length ? <Link to={`/county/${c.countyId}?city=${c.id}`} className="underline-offset-2 hover:underline">{c.name}</Link> : c.name}</td>
                   <td>{county?.name}<span className="block text-xs text-ink-3">{t(county?.state)}</span></td>
                   <td>{ids.length}</td>
                   <td>{m.berths}</td>

@@ -25,14 +25,9 @@ export const SHOTS: Partial<Record<GuideKey, (Shot | null)[]>> = {
     { path: "/", as: "admin", boxes: [{ css: "#global-search" }, { role: "button", name: "Notifications", exact: false }, { role: "button", name: "Keyboard shortcuts (?)" }] },
   ],
   "w.county": [
-    { path: "/county", as: "admin", boxes: [{ role: "combobox", name: "Choose county" }] },
+    { path: "/county", as: "admin", boxes: [{ role: "combobox", name: "Choose county" }, { role: "combobox", name: "Choose city" }] },
     { path: "/county", as: "admin", boxes: [{ role: "heading", name: "Cities in {name}", vars: { name: "San Francisco County" } }] },
     null,
-  ],
-  "w.city": [
-    { path: "/city", as: "admin", boxes: [{ role: "combobox", name: "Choose city" }] },
-    { path: "/city", as: "admin", boxes: [{ role: "heading", name: "Marinas in {name}", vars: { name: "San Francisco" } }] },
-    { path: "/locations", as: "admin", actions: [{ click: { role: "tab", name: "Map" } }, { wait: 1200 }], boxes: [{ css: ".map-shell" }] },
   ],
   "w.marinas": [
     { path: "/marinas", as: "admin", boxes: [{ label: "Search by marina or city" }, { label: "Filter by city" }, { role: "button", name: "Map" }] },

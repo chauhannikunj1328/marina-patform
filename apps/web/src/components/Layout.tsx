@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Languages, Check, ShieldAlert, FileSignature,
-  Anchor, ArrowLeft, ArrowRight, Bell, Eye, Building, CalendarDays, ChartLine, CircleAlert, CircleCheck, EllipsisVertical, FileText, Globe, House, Info, Landmark,
+  Anchor, ArrowLeft, ArrowRight, Bell, Eye, CalendarDays, ChartLine, CircleAlert, CircleCheck, EllipsisVertical, FileText, Globe, House, Info, Landmark,
   Keyboard, LogOut, MapPin, Menu, Moon, Sparkles, Receipt, Search, Settings, ShieldCheck, Sun, TriangleAlert, UserCog, Users, Warehouse, Wrench, X,
   type LucideIcon,
 } from "lucide-react";
@@ -31,7 +31,6 @@ export const NAV: { group: string; items: NavItem[] }[] = [
     items: [
       { to: "/", label: "Global Overview", icon: Globe },
       { to: "/county", label: "County Dashboard", icon: Landmark, multiMarina: true },
-      { to: "/city", label: "City Dashboard", icon: Building, multiMarina: true },
     ],
   },
   {

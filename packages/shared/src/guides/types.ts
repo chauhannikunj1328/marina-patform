@@ -22,7 +22,7 @@ export interface Guide {
  * Every language has a guide for every key (a test checks this).
  */
 export const GUIDE_KEYS = [
-  "w.login", "w.overview", "w.county", "w.city", "w.marinas", "w.marina", "w.berths", "w.bookings", "w.contracts", "w.locations",
+  "w.login", "w.overview", "w.county", "w.marinas", "w.marina", "w.berths", "w.bookings", "w.contracts", "w.locations",
   "w.staff", "w.maintenance", "w.incidents", "w.people", "w.billing", "w.reports", "w.analytics", "w.access", "w.settings",
   "s.home", "s.marinas", "s.marina", "s.pricing", "s.contact", "s.book", "s.checkout", "s.signin", "s.account", "s.bookings",
   "s.invoices", "s.invoice", "s.contracts", "s.boats", "s.profile",

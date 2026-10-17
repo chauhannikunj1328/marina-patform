@@ -13,7 +13,7 @@ const page = <K extends string>(load: () => Promise<Record<K, React.ComponentTyp
   lazy(() => load().then((m) => ({ default: m[name] })));
 const GlobalOverview = page(() => import("@/pages/Dashboards"), "GlobalOverview");
 const CountyDashboard = page(() => import("@/pages/Dashboards"), "CountyDashboard");
-const CityDashboard = page(() => import("@/pages/Dashboards"), "CityDashboard");
+const CityRedirect = page(() => import("@/pages/Dashboards"), "CityRedirect");
 const Marinas = page(() => import("@/pages/Marinas"), "Marinas");
 const MarinaDetail = page(() => import("@/pages/Marinas"), "MarinaDetail");
 const Berths = page(() => import("@/pages/Berths"), "Berths");
@@ -75,7 +75,7 @@ export default function App() {
         <Route element={<RequireAuth><OfficeOnly><Layout /></OfficeOnly></RequireAuth>}>
           <Route index element={<Guard area="dashboards">{lazyPage(<GlobalOverview />)}</Guard>} />
           <Route path="county/:id?" element={<Guard area="dashboards">{lazyPage(<CountyDashboard />)}</Guard>} />
-          <Route path="city/:id?" element={<Guard area="dashboards">{lazyPage(<CityDashboard />)}</Guard>} />
+          <Route path="city/:id?" element={<Guard area="dashboards">{lazyPage(<CityRedirect />)}</Guard>} />
           <Route path="marinas" element={<Guard area="marinas">{lazyPage(<Marinas />)}</Guard>} />
           <Route path="marinas/:id" element={<Guard area="marinas">{lazyPage(<MarinaDetail />)}</Guard>} />
           <Route path="berths" element={<Guard area="berths">{lazyPage(<Berths />)}</Guard>} />

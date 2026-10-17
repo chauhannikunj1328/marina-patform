@@ -89,47 +89,34 @@ export const web: Record<string, Guide> = {
 
   "w.county": {
     title: "County dashboard",
-    summary: "The same figures as the Global Overview, for one county and the cities and marinas in it.",
+    summary: "The same figures as the Global Overview, for one county or for one city in it.",
     who: "Admins, and managers whose marinas are in more than one place.",
     sections: [
       {
-        heading: "Choose a county",
-        steps: ["Use Choose county at the top to switch counties.", "The figures, charts and lists below update for that county only."],
-      },
-      {
-        heading: "What you see",
-        points: [
-          "Berths occupied today, revenue booked this month and occupancy rate for the county.",
-          "Cities in the county with their figures. Select a city to open its City dashboard.",
-          "Marinas in the county ranked by revenue this month. Select one to open its page.",
-          "Revenue and occupancy charts for the last months.",
+        heading: "Choose a county and a city",
+        steps: [
+          "Use Choose county at the top to switch counties.",
+          "Use Choose city to narrow the page to one city. All cities shows the whole county again.",
+          "The figures, charts and lists below update for what you chose.",
         ],
-      },
-      {
-        heading: "Good to know",
-        points: ["If you see “You don't have access to any county yet”, ask an admin to assign you marinas.", "Managers assigned to a single marina don't see this page; their Overview already shows that marina."],
-      },
-    ],
-  },
-
-  "w.city": {
-    title: "City dashboard",
-    summary: "Figures for one city: its marinas, how full they are and the money booked this month.",
-    who: "Admins and managers with marinas in that city.",
-    sections: [
-      {
-        heading: "Choose a city",
-        steps: ["Use Choose city at the top to switch cities.", "Everything below shows that city only."],
       },
       {
         heading: "What you see",
         points: [
           "Berths occupied today, revenue booked this month and occupancy rate.",
-          "Marinas in the city ranked by revenue. Select a marina to open its page.",
-          "Revenue and occupancy for the last months, and today's arrivals, departures and approvals.",
+          "All cities: the cities in the county ranked by revenue this month. Select a city to show only that city.",
+          "One city: its marinas ranked by revenue this month. Select a marina to open its page.",
+          "Revenue and occupancy charts for the last months, and today's arrivals, departures and approvals.",
         ],
       },
-      { heading: "Tip", text: "From the Locations map, select a marina pin and then Open city dashboard to come straight here." },
+      {
+        heading: "Good to know",
+        points: [
+          "If you see “You don't have access to any county yet”, ask an admin to assign you marinas.",
+          "Managers assigned to a single marina don't see this page; their Overview already shows that marina.",
+          "From the Locations map, select a marina pin and then Open city dashboard to come straight to that city here.",
+        ],
+      },
     ],
   },
 
